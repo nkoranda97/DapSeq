@@ -1,0 +1,30 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DAP-seq pipeline configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+samples:
+  TF1:
+    r1: data/TF1_R1.fastq.gz
+    r2: data/TF1_R2.fastq.gz
+  TF2:
+    r1: data/TF2_R1.fastq.gz
+    r2: data/TF2_R2.fastq.gz
+  input_DNA:
+    r1: null
+    r2: null
+
+# Input/control sample name — must match a key in samples above.
+# Remove this line or set to null to run without a control.
+input_control: null
+
+# ── Genome ───────────────────────────────────────────────────────────────────
+genome_ref:   "genome/reference.fa"
+genome_dir:   "genome/"
+genome_size:  "1.0e8"
+
+# ── Compute ──────────────────────────────────────────────────────────────────
+threads: 8
+
+# ── SLURM ────────────────────────────────────────────────────────────────────
+slurm_partition: "caslake"
+slurm_account:   "pi-drpepper"

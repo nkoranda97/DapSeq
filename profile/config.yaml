@@ -1,0 +1,29 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Snakemake SLURM + Singularity profile
+# Usage: snakemake --profile profile/
+#
+# Requirements:
+#   - snakemake-executor-plugin-slurm  (in environment.yml)
+#   - Singularity / Apptainer on the HPC nodes
+# ─────────────────────────────────────────────────────────────────────────────
+
+executor: slurm
+
+# jobscript runs before every SLURM job — loads Singularity module
+jobscript: "profile/slurm-jobscript.sh"
+
+# Maximum number of jobs submitted to SLURM at once
+jobs: 100
+
+# Run every rule inside the container declared in the Snakefile
+use-singularity: true
+
+# Bind HPC scratch and home directories into the container.
+# Adjust these mounts to match your HPC file system layout.
+singularity-args: "--bind /scratch,/home"
+
+# Default SLURM resources used when a rule does not specify its own.
+# Per-rule resources: blocks in the Snakefile override these values.
+default-resources:
+  mem_mb: 8000
+  runtime: 120          # minutes
