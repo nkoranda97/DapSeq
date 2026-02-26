@@ -1,8 +1,0 @@
-#!/bin/bash
-# Run the DAP-seq pipeline on HPC via SLURM + Singularity.
-# Edit config/config.yaml before running.
-#
-# Dry run:   bash run -n
-# Full run:  bash run
-
-snakemake --profile profile/ "$@"
