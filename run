@@ -1,0 +1,15 @@
+#!/bin/bash
+# Usage:
+#   bash run                                 # uses config/config.yaml
+#   bash run /path/to/project/config.yaml    # uses a project-specific config
+#   bash run /path/to/config.yaml -n         # dry run
+
+module load singularity
+
+if [[ -n "$1" && "$1" != -* ]]; then
+    CONFIG="$1"; shift
+else
+    CONFIG="config/config.yaml"
+fi
+
+snakemake --profile profile --configfile "$CONFIG" "$@"

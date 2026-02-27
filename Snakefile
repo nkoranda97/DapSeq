@@ -14,9 +14,10 @@ GEM_READ_DIST = "/opt/gem/Read_Distribution_default.txt"
 # Sample setup
 # CONTROL is None when input_control is absent or null — all rules adapt.
 # ─────────────────────────────────────────────────────────────────────────────
-SAMPLES           = list(config["samples"].keys())
+SAMPLES           = [s for s in config["samples"] if config["samples"][s]["r1"] is not None]
 CONTROL           = config.get("input_control") or None
 TREATMENT_SAMPLES = [s for s in SAMPLES if s != CONTROL]
+OUT               = config["output_dir"]
 
 wildcard_constraints:
     sample = "[^/]+",
@@ -28,14 +29,15 @@ wildcard_constraints:
 rule all:
     input:
         config["genome_ref"] + ".sizes",
-        expand("Trimmed_output/Fastqc/{sample}.{read}_fastqc.html",
+        expand(OUT + "/Fastqc/{sample}.{read}_fastqc.html",
                sample=SAMPLES, read=["R1", "R2"]),
-        "multiqc_report.html",
-        expand("bigWig/{sample}.bw",                          sample=SAMPLES),
-        *(expand("bigWig/{sample}.peaks.bw",                  sample=TREATMENT_SAMPLES) if CONTROL else []),
-        expand("compare_bed/{sample}.MACS_peak.bed",          sample=TREATMENT_SAMPLES),
-        expand("compare_bed/{sample}.GEM_peak.bed",           sample=TREATMENT_SAMPLES),
-        expand("compare_bed/{sample}.compare_peak.bed",       sample=TREATMENT_SAMPLES),
+        OUT + "/multiqc_report.html",
+        expand(OUT + "/bigWig/{sample}.bw",                      sample=SAMPLES),
+        *(expand(OUT + "/bigWig/{sample}.peaks.bw",              sample=TREATMENT_SAMPLES) if CONTROL else []),
+        expand(OUT + "/compare_bed/{sample}.MACS_peak.bed",      sample=TREATMENT_SAMPLES),
+        expand(OUT + "/compare_bed/{sample}.GEM_peak.bed",       sample=TREATMENT_SAMPLES),
+        expand(OUT + "/compare_bed/{sample}.compare_peak.bed",   sample=TREATMENT_SAMPLES),
+        expand(OUT + "/meme/{sample}-intersection/meme.txt",      sample=TREATMENT_SAMPLES),
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -56,7 +58,7 @@ rule bwa_index:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/bwa_index.log"
+        OUT + "/logs/bwa_index.log"
     shell:
         """
         bwa index -a bwtsw {input} 2>{log}
@@ -73,19 +75,19 @@ rule trimmomatic:
         r1 = lambda wc: config["samples"][wc.sample]["r1"],
         r2 = lambda wc: config["samples"][wc.sample]["r2"],
     output:
-        r1          = "Trimmed_output/{sample}.R1.fastq.gz",
-        r2          = "Trimmed_output/{sample}.R2.fastq.gz",
-        r1_unpaired = temp("Trimmed_output/{sample}.R1.unpaired.fastq.gz"),
-        r2_unpaired = temp("Trimmed_output/{sample}.R2.unpaired.fastq.gz"),
+        r1          = OUT + "/trimmed/{sample}.R1.fastq.gz",
+        r2          = OUT + "/trimmed/{sample}.R2.fastq.gz",
+        r1_unpaired = temp(OUT + "/trimmed/{sample}.R1.unpaired.fastq.gz"),
+        r2_unpaired = temp(OUT + "/trimmed/{sample}.R2.unpaired.fastq.gz"),
     resources:
         mem_mb=4000, runtime=60,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/trimmomatic/{sample}.log"
+        OUT + "/logs/trimmomatic/{sample}.log"
     shell:
         """
-        ADAPTERS=$(find $CONDA_PREFIX/share -name "TruSeq3-PE.fa" | head -1)
+        ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "TruSeq3-PE.fa" | head -1)
         trimmomatic PE -phred33 \
           {input.r1} {input.r2} \
           {output.r1} {output.r1_unpaired} \
@@ -100,18 +102,18 @@ rule trimmomatic:
 # ─────────────────────────────────────────────────────────────────────────────
 rule fastqc:
     input:
-        "Trimmed_output/{sample}.{read}.fastq.gz"
+        OUT + "/trimmed/{sample}.{read}.fastq.gz"
     output:
-        html = "Trimmed_output/Fastqc/{sample}.{read}_fastqc.html",
-        zip  = "Trimmed_output/Fastqc/{sample}.{read}_fastqc.zip",
+        html = OUT + "/Fastqc/{sample}.{read}_fastqc.html",
+        zip  = OUT + "/Fastqc/{sample}.{read}_fastqc.zip",
     resources:
         mem_mb=2000, runtime=30,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/fastqc/{sample}.{read}.log"
+        OUT + "/logs/fastqc/{sample}.{read}.log"
     shell:
-        "fastqc {input} --outdir=Trimmed_output/Fastqc/ 2>{log}"
+        "fastqc {input} --outdir={OUT}/Fastqc/ 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -119,30 +121,30 @@ rule fastqc:
 # ─────────────────────────────────────────────────────────────────────────────
 rule multiqc:
     input:
-        expand("Trimmed_output/Fastqc/{sample}.{read}_fastqc.zip",
+        expand(OUT + "/Fastqc/{sample}.{read}_fastqc.zip",
                sample=SAMPLES, read=["R1", "R2"])
     output:
-        "multiqc_report.html"
+        OUT + "/multiqc_report.html"
     resources:
         mem_mb=2000, runtime=30,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/multiqc.log"
+        OUT + "/logs/multiqc.log"
     shell:
-        "multiqc Trimmed_output/Fastqc/ -o . 2>{log}"
+        "multiqc {OUT}/Fastqc/ -o {OUT}/ 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 3: Align with BWA MEM, paired-end (ALL samples)
+# Step 3: Align with BWA MEM (ALL samples)
 # ─────────────────────────────────────────────────────────────────────────────
 rule bwa_mem:
     input:
-        r1  = "Trimmed_output/{sample}.R1.fastq.gz",
-        r2  = "Trimmed_output/{sample}.R2.fastq.gz",
+        r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
+        r2  = OUT + "/trimmed/{sample}.R2.fastq.gz",
         idx = config["genome_ref"] + ".sizes",
     output:
-        temp("Sam_File/{sample}.sam")
+        temp(OUT + "/sam/{sample}.sam")
     threads:
         config["threads"]
     resources:
@@ -150,7 +152,7 @@ rule bwa_mem:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/bwa_mem/{sample}.log"
+        OUT + "/logs/bwa_mem/{sample}.log"
     shell:
         "bwa mem -t {threads} -k 60 -B 7 -O 6 -v 0 {config[genome_ref]} {input.r1} {input.r2} > {output} 2>{log}"
 
@@ -160,12 +162,12 @@ rule bwa_mem:
 # ─────────────────────────────────────────────────────────────────────────────
 rule samtools_filter_sort_dedup:
     input:
-        "Sam_File/{sample}.sam"
+        OUT + "/sam/{sample}.sam"
     output:
-        bam = "Sam_sorted/{sample}._mapped_sorted.bam",
-        bai = "Sam_sorted/{sample}._mapped_sorted.bam.bai",
+        bam = OUT + "/bam/{sample}.bam",
+        bai = OUT + "/bam/{sample}.bam.bai",
     params:
-        prefix = "Sam_sorted/{sample}._temp",
+        prefix = OUT + "/bam/{sample}.tmp.bam",
     threads:
         config["threads"]
     resources:
@@ -173,14 +175,14 @@ rule samtools_filter_sort_dedup:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/samtools/{sample}.log"
+        OUT + "/logs/samtools/{sample}.log"
     shell:
         """
-        samtools view -@ {threads} -h -F 4 -q 30 -u -S {input} \
-          | samtools sort -@ {threads} - {params.prefix} 2>>{log}
-        samtools rmdup -s {params.prefix}.bam {output.bam} 2>>{log}
+        samtools view -@ {threads} -h -F 4 -q 30 -u {input} \
+          | samtools sort -@ {threads} -o {params.prefix} - 2>>{log}
+        samtools markdup -r -@ {threads} {params.prefix} {output.bam} 2>>{log}
         samtools index {output.bam} 2>>{log}
-        rm -f {params.prefix}.bam
+        rm -f {params.prefix}
         """
 
 
@@ -189,10 +191,10 @@ rule samtools_filter_sort_dedup:
 # ─────────────────────────────────────────────────────────────────────────────
 rule bamcoverage:
     input:
-        bam = "Sam_sorted/{sample}._mapped_sorted.bam",
-        bai = "Sam_sorted/{sample}._mapped_sorted.bam.bai",
+        bam = OUT + "/bam/{sample}.bam",
+        bai = OUT + "/bam/{sample}.bam.bai",
     output:
-        "bigWig/{sample}.bw"
+        OUT + "/bigWig/{sample}.bw"
     threads:
         config["threads"]
     resources:
@@ -200,23 +202,23 @@ rule bamcoverage:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/bamcoverage/{sample}.log"
+        OUT + "/logs/bamcoverage/{sample}.log"
     shell:
         "bamCoverage -b {input.bam} --normalizeUsing BPM --extendReads 300 -p {threads} -o {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 4.2: Sample vs control ratio bigWig — only created when CONTROL is set
+# Step 4.2: Sample vs control ratio bigWig (only when CONTROL is set)
 # ─────────────────────────────────────────────────────────────────────────────
 if CONTROL:
     rule bamcompare:
         input:
-            sample_bam  = "Sam_sorted/{sample}._mapped_sorted.bam",
-            sample_bai  = "Sam_sorted/{sample}._mapped_sorted.bam.bai",
-            control_bam = f"Sam_sorted/{CONTROL}._mapped_sorted.bam",
-            control_bai = f"Sam_sorted/{CONTROL}._mapped_sorted.bam.bai",
+            sample_bam  = OUT + "/bam/{sample}.bam",
+            sample_bai  = OUT + "/bam/{sample}.bam.bai",
+            control_bam = OUT + f"/bam/{CONTROL}.bam",
+            control_bai = OUT + f"/bam/{CONTROL}.bam.bai",
         output:
-            "bigWig/{sample}.peaks.bw"
+            OUT + "/bigWig/{sample}.peaks.bw"
         threads:
             config["threads"]
         resources:
@@ -224,13 +226,13 @@ if CONTROL:
             slurm_partition=config["slurm_partition"],
             slurm_account=config["slurm_account"],
         log:
-            "logs/bamcompare/{sample}.log"
+            OUT + "/logs/bamcompare/{sample}.log"
         shell:
             """
             bamCompare \
               -b1 {input.sample_bam} -b2 {input.control_bam} \
               -o {output} \
-              --binSize 200 --operation ratio \
+              --binSize 80 --operation ratio \
               --scaleFactorsMethod SES -n 1000 \
               -p {threads} 2>{log}
             """
@@ -238,30 +240,30 @@ if CONTROL:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 5: MACS2 peak calling (TREATMENT samples)
-# Runs with or without a control — -c flag omitted when CONTROL is null.
 # ─────────────────────────────────────────────────────────────────────────────
 rule macs2:
     input:
-        sample_bam  = "Sam_sorted/{sample}._mapped_sorted.bam",
-        control_bam = (f"Sam_sorted/{CONTROL}._mapped_sorted.bam" if CONTROL else []),
+        sample_bam  = OUT + "/bam/{sample}.bam",
+        control_bam = (OUT + f"/bam/{CONTROL}.bam" if CONTROL else []),
     output:
-        summits      = "MACS/{sample}_summits.bed",
-        narrowpeak   = "MACS/{sample}_peaks.narrowPeak",
-        treat_pileup = "MACS/{sample}_treat_pileup.bdg",
-        ctrl_lambda  = "MACS/{sample}_control_lambda.bdg",
+        summits      = OUT + "/MACS/{sample}_summits.bed",
+        narrowpeak   = OUT + "/MACS/{sample}_peaks.narrowPeak",
+        treat_pileup = OUT + "/MACS/{sample}_treat_pileup.bdg",
+        ctrl_lambda  = OUT + "/MACS/{sample}_control_lambda.bdg",
     params:
-        ctrl = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
+        ctrl   = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
+        outdir = OUT + "/MACS",
     resources:
         mem_mb=8000, runtime=60,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/macs2/{sample}.log"
+        OUT + "/logs/macs2/{sample}.log"
     shell:
         """
         macs2 callpeak \
           -t {input.sample_bam} {params.ctrl} \
-          -f BAM --outdir MACS \
+          -f BAM --outdir {params.outdir} \
           -g {config[genome_size]} -n {wildcards.sample} \
           -B -q 0.01 -m 2 50 --verbose=0 2>{log}
         """
@@ -269,18 +271,18 @@ rule macs2:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 6: GEM peak calling (TREATMENT samples)
-# Runs with or without a control — --ctrl flag omitted when CONTROL is null.
 # ─────────────────────────────────────────────────────────────────────────────
 rule gem:
     input:
-        sample_bam  = "Sam_sorted/{sample}._mapped_sorted.bam",
-        control_bam = (f"Sam_sorted/{CONTROL}._mapped_sorted.bam" if CONTROL else []),
+        sample_bam  = OUT + "/bam/{sample}.bam",
+        control_bam = (OUT + f"/bam/{CONTROL}.bam" if CONTROL else []),
         chrom_sizes = config["genome_ref"] + ".sizes",
     output:
-        gem_events = "GEM_BED/{sample}/{sample}.GEM_events.txt",
-        gps_events = "GEM_BED/{sample}/{sample}.GPS_events.txt",
+        gem_events = OUT + "/GEM/{sample}/{sample}.GEM_events.txt",
+        gps_events = OUT + "/GEM/{sample}/{sample}.GPS_events.txt",
     params:
-        ctrl = lambda wc, input: f"--ctrl {input.control_bam}" if CONTROL else "",
+        ctrl       = lambda wc, input: f"--ctrl {input.control_bam}" if CONTROL else "",
+        out_prefix = OUT + "/GEM/{sample}/{sample}",
     threads:
         config["threads"]
     resources:
@@ -288,7 +290,7 @@ rule gem:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/gem/{sample}.log"
+        OUT + "/logs/gem/{sample}.log"
     shell:
         """
         java -Xmx16G -jar {GEM_JAR} \
@@ -298,7 +300,7 @@ rule gem:
           --genome {config[genome_dir]} \
           --expt {input.sample_bam} {params.ctrl} \
           --outBED \
-          --out GEM_BED/{wildcards.sample}/{wildcards.sample} \
+          --out {params.out_prefix} \
           --k_min 6 --kmax 20 --k_seqs 600 --k_neg_dinu_shuffle 2>{log}
         """
 
@@ -308,21 +310,21 @@ rule gem:
 # ─────────────────────────────────────────────────────────────────────────────
 rule combine_peaks:
     input:
-        macs_summits = "MACS/{sample}_summits.bed",
-        gem_events   = "GEM_BED/{sample}/{sample}.GEM_events.txt",
+        macs_summits = OUT + "/MACS/{sample}_summits.bed",
+        gem_events   = OUT + "/GEM/{sample}/{sample}.GEM_events.txt",
     output:
-        combined_bed = "Combined_BED/{sample}.combined.bed",
-        macs_bed     = "compare_bed/{sample}.MACS.bed",
-        gem_bed      = "compare_bed/{sample}.GEM.bed",
+        combined_bed = OUT + "/combined_bed/{sample}.combined.bed",
+        macs_bed     = OUT + "/compare_bed/{sample}.MACS.bed",
+        gem_bed      = OUT + "/compare_bed/{sample}.GEM.bed",
     params:
-        window_size = 200,
+        window_size = 80,
         min_score   = 1,
     resources:
         mem_mb=4000, runtime=30,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/combine_peaks/{sample}.log"
+        OUT + "/logs/combine_peaks/{sample}.log"
     script:
         "scripts/combine_peaks.py"
 
@@ -332,16 +334,16 @@ rule combine_peaks:
 # ─────────────────────────────────────────────────────────────────────────────
 rule getfasta:
     input:
-        bed    = "Combined_BED/{sample}.combined.bed",
+        bed    = OUT + "/combined_bed/{sample}.combined.bed",
         genome = config["genome_ref"],
     output:
-        "fasta/{sample}.fasta"
+        OUT + "/fasta/{sample}.fasta"
     resources:
         mem_mb=4000, runtime=30,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/getfasta/{sample}.log"
+        OUT + "/logs/getfasta/{sample}.log"
     shell:
         "bedtools getfasta -fo {output} -fi {input.genome} -bed {input.bed} 2>{log}"
 
@@ -351,15 +353,15 @@ rule getfasta:
 # ─────────────────────────────────────────────────────────────────────────────
 rule dedup_fasta:
     input:
-        "fasta/{sample}.fasta"
+        OUT + "/fasta/{sample}.fasta"
     output:
-        "fasta/{sample}.fasta.nodup"
+        OUT + "/fasta/{sample}.fasta.nodup"
     resources:
         mem_mb=4000, runtime=30,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/dedup_fasta/{sample}.log"
+        OUT + "/logs/dedup_fasta/{sample}.log"
     script:
         "scripts/dedup_fasta.py"
 
@@ -369,9 +371,9 @@ rule dedup_fasta:
 # ─────────────────────────────────────────────────────────────────────────────
 rule tandem_filter:
     input:
-        "fasta/{sample}.fasta.nodup"
+        OUT + "/fasta/{sample}.fasta.nodup"
     output:
-        "fasta/{sample}.fasta.filtered.fasta"
+        OUT + "/fasta/{sample}.fasta.filtered.fasta"
     params:
         k     = 6,
         k_max = 4,
@@ -380,7 +382,7 @@ rule tandem_filter:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/tandem_filter/{sample}.log"
+        OUT + "/logs/tandem_filter/{sample}.log"
     script:
         "scripts/tandem_filter.py"
 
@@ -390,10 +392,12 @@ rule tandem_filter:
 # ─────────────────────────────────────────────────────────────────────────────
 rule meme:
     input:
-        "fasta/{sample}.fasta.filtered.fasta"
+        OUT + "/fasta/{sample}.fasta.filtered.fasta"
     output:
-        txt  = "GEM_BED/{sample}-meme/meme.txt",
-        logo = "GEM_BED/{sample}-meme/logo1.png",
+        txt  = OUT + "/meme/{sample}/meme.txt",
+        logo = OUT + "/meme/{sample}/logo1.png",
+    params:
+        outdir = OUT + "/meme/{sample}",
     threads:
         config["threads"]
     resources:
@@ -401,13 +405,13 @@ rule meme:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/meme/{sample}.log"
+        OUT + "/logs/meme/{sample}.log"
     shell:
         """
         meme {input} \
           -nmotifs 1 -minw 4 -maxw 12 \
           -dna -mod oops -nostatus \
-          -p {threads} -oc GEM_BED/{wildcards.sample}-meme 2>{log}
+          -p {threads} -oc {params.outdir} 2>{log}
         """
 
 
@@ -416,21 +420,23 @@ rule meme:
 # ─────────────────────────────────────────────────────────────────────────────
 rule fimo:
     input:
-        meme_txt = "GEM_BED/{sample}-meme/meme.txt",
+        meme_txt = OUT + "/meme/{sample}/meme.txt",
         genome   = config["genome_ref"],
     output:
-        bed = "GEM_BED/{sample}-fimo/fimo.bed",
-        gff = "GEM_BED/{sample}-fimo/fimo.gff",
+        bed = OUT + "/fimo/{sample}/fimo.bed",
+        gff = OUT + "/fimo/{sample}/fimo.gff",
+    params:
+        outdir = OUT + "/fimo/{sample}",
     resources:
         mem_mb=8000, runtime=60,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/fimo/{sample}.log"
+        OUT + "/logs/fimo/{sample}.log"
     shell:
         """
         fimo -verbosity 1 --thresh 1e-5 \
-          -oc GEM_BED/{wildcards.sample}-fimo \
+          -oc {params.outdir} \
           {input.meme_txt} {input.genome} 2>{log}
         """
 
@@ -440,22 +446,92 @@ rule fimo:
 # ─────────────────────────────────────────────────────────────────────────────
 rule bedtools_intersect:
     input:
-        fimo_bed = "GEM_BED/{sample}-fimo/fimo.bed",
-        macs_bed = "compare_bed/{sample}.MACS.bed",
-        gem_bed  = "compare_bed/{sample}.GEM.bed",
+        fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
+        macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
+        gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
     output:
-        macs_peak    = "compare_bed/{sample}.MACS_peak.bed",
-        gem_peak     = "compare_bed/{sample}.GEM_peak.bed",
-        compare_peak = "compare_bed/{sample}.compare_peak.bed",
+        macs_peak    = OUT + "/compare_bed/{sample}.MACS_peak.bed",
+        gem_peak     = OUT + "/compare_bed/{sample}.GEM_peak.bed",
+        compare_peak = OUT + "/compare_bed/{sample}.compare_peak.bed",
     resources:
         mem_mb=4000, runtime=30,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        "logs/bedtools_intersect/{sample}.log"
+        OUT + "/logs/bedtools_intersect/{sample}.log"
     shell:
         """
         bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} > {output.macs_peak} 2>{log}
         bedtools intersect -wa -a {input.fimo_bed} -b {input.gem_bed}  > {output.gem_peak}  2>>{log}
         bedtools intersect -wa -a {input.macs_bed} -b {input.gem_bed}  > {output.compare_peak} 2>>{log}
+        """
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 11: Union of MACS and GEM motif hits (intersection.bed)
+# ─────────────────────────────────────────────────────────────────────────────
+rule motif_intersect:
+    input:
+        fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
+        macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
+        gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
+    output:
+        OUT + "/compare_bed/{sample}.intersection.bed"
+    resources:
+        mem_mb=4000, runtime=30,
+        slurm_partition=config["slurm_partition"],
+        slurm_account=config["slurm_account"],
+    log:
+        OUT + "/logs/motif_intersect/{sample}.log"
+    shell:
+        """
+        bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} {input.gem_bed} \
+          | sort -u > {output} 2>{log}
+        """
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 11.1: Extract FASTA for intersection motif sites
+# ─────────────────────────────────────────────────────────────────────────────
+rule getfasta_intersection:
+    input:
+        bed    = OUT + "/compare_bed/{sample}.intersection.bed",
+        genome = config["genome_ref"],
+    output:
+        OUT + "/fasta/{sample}.motif.fasta"
+    resources:
+        mem_mb=4000, runtime=30,
+        slurm_partition=config["slurm_partition"],
+        slurm_account=config["slurm_account"],
+    log:
+        OUT + "/logs/getfasta_intersection/{sample}.log"
+    shell:
+        "bedtools getfasta -fo {output} -fi {input.genome} -bed {input.bed} 2>{log}"
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 12: MEME motif refinement on intersection sequences
+# ─────────────────────────────────────────────────────────────────────────────
+rule meme_intersection:
+    input:
+        OUT + "/fasta/{sample}.motif.fasta"
+    output:
+        txt  = OUT + "/meme/{sample}-intersection/meme.txt",
+        logo = OUT + "/meme/{sample}-intersection/logo1.png",
+    params:
+        outdir = OUT + "/meme/{sample}-intersection",
+    threads:
+        config["threads"]
+    resources:
+        mem_mb=8000, runtime=120,
+        slurm_partition=config["slurm_partition"],
+        slurm_account=config["slurm_account"],
+    log:
+        OUT + "/logs/meme_intersection/{sample}.log"
+    shell:
+        """
+        meme {input} \
+          -nmotifs 1 -minw 4 -maxw 12 \
+          -dna -mod oops -nostatus \
+          -p {threads} -oc {params.outdir} 2>{log}
         """

@@ -17,6 +17,8 @@ samples:
 # Remove this line or set to null to run without a control.
 input_control: null
 
+output_dir: "results"
+
 # ── Genome ───────────────────────────────────────────────────────────────────
 genome_ref:   "genome/reference.fa"
 genome_dir:   "genome/"
