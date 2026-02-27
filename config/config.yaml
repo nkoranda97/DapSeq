@@ -4,11 +4,11 @@
 
 samples:
   TF1:
-    r1: data/TF1_R1.fastq.gz
-    r2: data/TF1_R2.fastq.gz
+    r1: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-MRKN03_S36_L004_R1_001.fastq.gz
+    r2: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-MRKN03_S36_L004_R2_001.fastq.gz
   TF2:
-    r1: data/TF2_R1.fastq.gz
-    r2: data/TF2_R2.fastq.gz
+    r1: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-TGIF02_S34_L004_R1_001.fastq.gz
+    r2: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-TGIF02_S34_L004_R2_001.fastq.gz
   input_DNA:
     r1: null
     r2: null
@@ -18,13 +18,13 @@ samples:
 input_control: null
 
 # ── Genome ───────────────────────────────────────────────────────────────────
-genome_ref:   "genome/reference.fa"
-genome_dir:   "genome/"
-genome_size:  "1.0e8"
+genome_ref:   "/project/zhuzhuzhang/reference/Mouse/GRCm38/Mus_musculus.GRCm38.dna.primary_assembly.fa"
+genome_dir:   "/project/zhuzhuzhang/reference/Mouse/GRCm38/"
+genome_size:  "2913022398"
 
 # ── Compute ──────────────────────────────────────────────────────────────────
 threads: 8
 
 # ── SLURM ────────────────────────────────────────────────────────────────────
 slurm_partition: "caslake"
-slurm_account:   "pi-drpepper"
+slurm_account:   "pi-zhuzhuzhang"

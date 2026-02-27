@@ -14,7 +14,7 @@ GEM_READ_DIST = "/opt/gem/Read_Distribution_default.txt"
 # Sample setup
 # CONTROL is None when input_control is absent or null — all rules adapt.
 # ─────────────────────────────────────────────────────────────────────────────
-SAMPLES           = list(config["samples"].keys())
+SAMPLES           = [s for s in config["samples"] if config["samples"][s]["r1"] is not None]
 CONTROL           = config.get("input_control") or None
 TREATMENT_SAMPLES = [s for s in SAMPLES if s != CONTROL]
 

@@ -1,2 +1,13 @@
+# container build
 Dockerfile
 environment.yml
+
+# runtime files
+.cache/
+.java/
+.snakemake/
+dapseq/
+logs/
+multiqc_data/
+Trimmed_output/
+multiqc_report.html
