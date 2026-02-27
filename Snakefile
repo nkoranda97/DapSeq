@@ -311,7 +311,7 @@ rule gem:
         gps_events = OUT + "/GEM/{sample}/{sample}.GPS_events.txt",
     params:
         ctrl       = lambda wc, input: f"--ctrl {input.control_bam}" if CONTROL else "",
-        out_prefix = OUT + "/GEM/{sample}/{sample}",
+        out_prefix = OUT + "/GEM/{sample}",
     threads:
         config["threads"]
     resources:
@@ -322,7 +322,7 @@ rule gem:
         OUT + "/logs/gem/{sample}.log"
     shell:
         """
-        mkdir -p $(dirname {params.out_prefix})
+        mkdir -p {params.out_prefix}
         java -Xmx16G -jar {GEM_JAR} \
           --t {threads} --f BAM \
           --d {GEM_READ_DIST} \
@@ -425,7 +425,6 @@ rule meme:
         OUT + "/fasta/{sample}.fasta.filtered.fasta"
     output:
         txt  = OUT + "/meme/{sample}/meme.txt",
-        logo = OUT + "/meme/{sample}/logo1.png",
     params:
         outdir = OUT + "/meme/{sample}",
     threads:
@@ -453,7 +452,7 @@ rule fimo:
         meme_txt = OUT + "/meme/{sample}/meme.txt",
         genome   = config["genome_ref"],
     output:
-        bed = OUT + "/fimo/{sample}/fimo.bed",
+        tsv = OUT + "/fimo/{sample}/fimo.tsv",
         gff = OUT + "/fimo/{sample}/fimo.gff",
     params:
         outdir = OUT + "/fimo/{sample}",
@@ -469,10 +468,23 @@ rule fimo:
           -oc {params.outdir} \
           {input.meme_txt} {input.genome} 2>{log}
         """
-
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 9.2: FIMO to Bed
+# ─────────────────────────────────────────────────────────────────────────────
+rule fimo_to_bed:
+    input:
+        OUT + "/fimo/{sample}/fimo.tsv"
+    output:
+        OUT + "/fimo/{sample}/fimo.bed"
+    resources:
+        mem_mb=1000, runtime=10,
+        slurm_partition=config["slurm_partition"],
+        slurm_account=config["slurm_account"],
+    script:
+        "scripts/fimo_to_bed.py"
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 9.2: Intersect motif sites with peak beds
+# Step 9.3: Intersect motif sites with peak beds
 # ─────────────────────────────────────────────────────────────────────────────
 rule bedtools_intersect:
     input:
@@ -547,7 +559,6 @@ rule meme_intersection:
         OUT + "/fasta/{sample}.motif.fasta"
     output:
         txt  = OUT + "/meme/{sample}-intersection/meme.txt",
-        logo = OUT + "/meme/{sample}-intersection/logo1.png",
     params:
         outdir = OUT + "/meme/{sample}-intersection",
     threads:

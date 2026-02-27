@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from Bio import SeqIO
 
 
-def tandem_filter(fasta_file, k=6, k_max=3):
+def tandem_filter(fasta_file, out_file, k=6, k_max=3):
     """Remove sequences with tandem repeats or runs of Ns."""
     kmers = ["".join(c) for c in itertools.product("ACGT", repeat=k)]
 
@@ -49,15 +49,13 @@ def tandem_filter(fasta_file, k=6, k_max=3):
         if k_max > 2:
             axes[i].set_title(f"{top_kmers[i]}={len(peak_locs[i])}", fontsize=10)
 
-    # Output path expected by Snakemake: fasta/{sample}.fasta.filtered.fasta
-    out_path = fasta_file[:-5] + "filtered.fasta"
-    with open(out_path, "w") as f:
+    with open(out_file, "w") as f:
         SeqIO.write(kept, f, "fasta")
 
 
-if __name__ == "snakemake_script":
-    tandem_filter(
-        snakemake.input[0],
-        k=snakemake.params.k,
-        k_max=snakemake.params.k_max,
-    )
+tandem_filter(
+    snakemake.input[0],
+    snakemake.output[0],
+    k=snakemake.params.k,
+    k_max=snakemake.params.k_max,
+)
