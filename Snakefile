@@ -323,7 +323,6 @@ rule gem:
     shell:
         """
         mkdir -p $(dirname {params.out_prefix})
-        cd $(dirname {params.out_prefix}) && \
         java -Xmx16G -jar {GEM_JAR} \
           --t {threads} --f BAM \
           --d {GEM_READ_DIST} \
@@ -331,7 +330,7 @@ rule gem:
           --genome {input.genome_dir} \
           --expt {input.sample_bam} {params.ctrl} \
           --outBED \
-          --out {wildcards.sample} \
+          --out {params.out_prefix} \
           --k_min 6 --k_max 20 --k_seqs 600 --k_neg_dinu_shuffle 2>{log}
         """
 

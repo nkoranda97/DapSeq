@@ -6,7 +6,7 @@ environment.yml
 .cache/
 .java/
 .snakemake/
-dapseq/
+.venv/
 logs/
 multiqc_data/
 Trimmed_output/
