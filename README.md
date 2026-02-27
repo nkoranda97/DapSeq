@@ -22,6 +22,9 @@ Edit `config/config.yaml` before running, or create a project-specific config an
 
 ```bash
 pip install snakemake snakemake-executor-plugin-slurm
+
+# if using sample environment for analysis
+pip install matplotlib pandas
 ```
 
 ## Running

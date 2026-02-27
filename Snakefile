@@ -179,6 +179,7 @@ rule samtools_filter_sort_dedup:
     shell:
         """
         samtools view -@ {threads} -h -F 4 -q 30 -u {input} \
+          | samtools fixmate -m -@ {threads} - - \
           | samtools sort -@ {threads} -o {params.prefix} - 2>>{log}
         samtools markdup -r -@ {threads} {params.prefix} {output.bam} 2>>{log}
         samtools index {output.bam} 2>>{log}
