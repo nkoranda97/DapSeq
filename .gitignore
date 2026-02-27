@@ -11,3 +11,4 @@ logs/
 multiqc_data/
 Trimmed_output/
 multiqc_report.html
+results/
