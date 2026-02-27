@@ -18,6 +18,7 @@ SAMPLES           = [s for s in config["samples"] if config["samples"][s]["r1"] 
 CONTROL           = config.get("input_control") or None
 TREATMENT_SAMPLES = [s for s in SAMPLES if s != CONTROL]
 OUT               = config["output_dir"]
+GENOME_SPLIT_DIR  = config["genome_dir"] + "/split"
 
 wildcard_constraints:
     sample = "[^/]+",
@@ -64,6 +65,27 @@ rule bwa_index:
         bwa index -a bwtsw {input} 2>{log}
         samtools faidx {input} 2>>{log}
         cut -f1,2 {input}.fai > {output.sizes}
+        """
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Step 0.1: Split genome into per-chromosome FASTAs for GEM
+# ─────────────────────────────────────────────────────────────────────────────
+rule split_genome:
+    input:
+        config["genome_ref"]
+    output:
+        directory(GENOME_SPLIT_DIR)
+    resources:
+        mem_mb=8000, runtime=60,
+        slurm_partition=config["slurm_partition"],
+        slurm_account=config["slurm_account"],
+    log:
+        OUT + "/logs/split_genome.log"
+    shell:
+        """
+        mkdir -p {output}
+        awk '/^>/ {{ filename="{output}/" substr($1,2) ".fa"; print > filename; next }} {{ print >> filename }}' {input} 2>{log}
         """
 
 
@@ -278,6 +300,7 @@ rule gem:
         sample_bam  = OUT + "/bam/{sample}.bam",
         control_bam = (OUT + f"/bam/{CONTROL}.bam" if CONTROL else []),
         chrom_sizes = config["genome_ref"] + ".sizes",
+        genome_dir  = GENOME_SPLIT_DIR,
     output:
         gem_events = OUT + "/GEM/{sample}/{sample}.GEM_events.txt",
         gps_events = OUT + "/GEM/{sample}/{sample}.GPS_events.txt",
@@ -298,7 +321,7 @@ rule gem:
           --t {threads} --f BAM \
           --d {GEM_READ_DIST} \
           --g {input.chrom_sizes} \
-          --genome {config[genome_dir]} \
+          --genome {input.genome_dir} \
           --expt {input.sample_bam} {params.ctrl} \
           --outBED \
           --out {params.out_prefix} \
@@ -307,7 +330,7 @@ rule gem:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 7: Combine MACS2 + GEM peaks
+# Step 7: Combine MACS3 + GEM peaks
 # ─────────────────────────────────────────────────────────────────────────────
 rule combine_peaks:
     input:
