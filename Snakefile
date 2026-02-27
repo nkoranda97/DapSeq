@@ -240,9 +240,9 @@ if CONTROL:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 5: MACS2 peak calling (TREATMENT samples)
+# Step 5: MACS3 peak calling (TREATMENT samples)
 # ─────────────────────────────────────────────────────────────────────────────
-rule macs2:
+rule macs3:
     input:
         sample_bam  = OUT + "/bam/{sample}.bam",
         control_bam = (OUT + f"/bam/{CONTROL}.bam" if CONTROL else []),
@@ -259,10 +259,10 @@ rule macs2:
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
-        OUT + "/logs/macs2/{sample}.log"
+        OUT + "/logs/macs3/{sample}.log"
     shell:
         """
-        macs2 callpeak \
+        macs3 callpeak \
           -t {input.sample_bam} {params.ctrl} \
           -f BAM --outdir {params.outdir} \
           -g {config[genome_size]} -n {wildcards.sample} \
@@ -302,7 +302,7 @@ rule gem:
           --expt {input.sample_bam} {params.ctrl} \
           --outBED \
           --out {params.out_prefix} \
-          --k_min 6 --kmax 20 --k_seqs 600 --k_neg_dinu_shuffle 2>{log}
+          --k_min 6 --k_max 20 --k_seqs 600 --k_neg_dinu_shuffle 2>{log}
         """
 
 
