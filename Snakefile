@@ -18,7 +18,7 @@ SAMPLES           = [s for s in config["samples"] if config["samples"][s]["r1"] 
 CONTROL           = config.get("input_control") or None
 TREATMENT_SAMPLES = [s for s in SAMPLES if s != CONTROL]
 OUT               = config["output_dir"]
-GENOME_SPLIT_DIR  = config["genome_dir"] + "/split"
+GENOME_SPLIT_DIR = OUT + "/genome_split"
 
 wildcard_constraints:
     sample = "[^/]+",
@@ -73,11 +73,12 @@ rule bwa_index:
 # ─────────────────────────────────────────────────────────────────────────────
 rule split_genome:
     input:
-        config["genome_ref"]
+        fa   = config["genome_ref"],
+        fai  = config["genome_ref"] + ".fai",
     output:
         directory(GENOME_SPLIT_DIR)
     resources:
-        mem_mb=8000, runtime=60,
+        mem_mb=8000, runtime=120,
         slurm_partition=config["slurm_partition"],
         slurm_account=config["slurm_account"],
     log:
@@ -85,7 +86,11 @@ rule split_genome:
     shell:
         """
         mkdir -p {output}
-        awk '/^>/ {{ filename="{output}/" substr($1,2) ".fa"; print > filename; next }} {{ print >> filename }}' {input} 2>{log}
+        cut -f1 {input.fai} | while read chr; do
+            samtools faidx {input.fa} "$chr" \
+              | awk '/^>/ {{print ">" substr($1,2); next}} {{print}}' \
+              > {output}/${{chr}}.fa
+        done 2>{log}
         """
 
 
@@ -317,6 +322,8 @@ rule gem:
         OUT + "/logs/gem/{sample}.log"
     shell:
         """
+        mkdir -p $(dirname {params.out_prefix})
+        cd $(dirname {params.out_prefix}) && \
         java -Xmx16G -jar {GEM_JAR} \
           --t {threads} --f BAM \
           --d {GEM_READ_DIST} \
@@ -324,7 +331,7 @@ rule gem:
           --genome {input.genome_dir} \
           --expt {input.sample_bam} {params.ctrl} \
           --outBED \
-          --out {params.out_prefix} \
+          --out {wildcards.sample} \
           --k_min 6 --k_max 20 --k_seqs 600 --k_neg_dinu_shuffle 2>{log}
         """
 
