@@ -12,7 +12,6 @@ Edit `config/config.yaml` before running, or create a project-specific config an
 | `input_control` | Name of the input/control sample. Set to `null` to run without a control |
 | `output_dir` | Where all outputs will be written |
 | `genome_ref` | Path to reference genome FASTA |
-| `genome_dir` | Directory of per-chromosome FASTAs (for GEM) |
 | `genome_size` | Effective genome size string for MACS2 (e.g. `"1.0e8"`) |
 | `threads` | Threads per job |
 | `slurm_partition` | SLURM partition |

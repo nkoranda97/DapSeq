@@ -20,7 +20,7 @@ use-singularity: true
 
 # Bind HPC scratch and home directories into the container.
 # Adjust these mounts to match your HPC file system layout.
-singularity-args: "--bind /scratch,/home"
+singularity-args: "--bind /project/zhuzhuzhang"
 
 # Default SLURM resources used when a rule does not specify its own.
 # Per-rule resources: blocks in the Snakefile override these values.

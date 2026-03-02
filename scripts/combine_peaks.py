@@ -40,21 +40,21 @@ macs_scores = list(df_macs[4])
 
 with open(macs_out, "w") as f:
     for chrom, pos, name, score in zip(macs_chrs, macs_peaks, macs_names, macs_scores):
-        f.write(f"{chrom}\t{pos - half_win}\t{pos + half_win}\t{name}\t{score}\t.\n")
+        f.write(f"{chrom}\t{max(0, pos - half_win)}\t{pos + half_win}\t{name}\t{score}\t.\n")
 
 # ── GEM events ─────────────────────────────────────────────────────────────
 # Columns include: Position (chrN:pos), Fold, IP, ...
 df_GEM      = pd.read_table(gem_events)
 df_GEM_filt = df_GEM[df_GEM["Fold"] > min_score]
 
-gem_chrs   = ["chr" + pos.split(":")[0] for pos in df_GEM_filt["Position"]]
+gem_chrs   = [pos.split(":")[0] for pos in df_GEM_filt["Position"]]
 gem_peaks  = [int(pos.split(":")[1])    for pos in df_GEM_filt["Position"]]
 gem_names  = ["GEM_" + str(i) for i in range(len(df_GEM_filt))]
 gem_scores = list(df_GEM_filt["Fold"])
 
 with open(gem_out, "w") as f:
     for chrom, pos, name, score in zip(gem_chrs, gem_peaks, gem_names, gem_scores):
-        f.write(f"{chrom}\t{pos - half_win}\t{pos + half_win}\t{name}\t{score}\t.\n")
+        f.write(f"{chrom}\t{max(0, pos - half_win)}\t{pos + half_win}\t{name}\t{score}\t.\n")
 
 # ── Combined BED ───────────────────────────────────────────────────────────
 all_chrs   = macs_chrs   + gem_chrs
@@ -64,4 +64,4 @@ all_scores = macs_scores + gem_scores
 
 with open(combined_out, "w") as f:
     for chrom, pos, name, score in zip(all_chrs, all_peaks, all_names, all_scores):
-        f.write(f"{chrom}\t{pos - half_win}\t{pos + half_win}\t{name}\t{score}\t.\n")
+        f.write(f"{chrom}\t{max(0, pos - half_win)}\t{pos + half_win}\t{name}\t{score}\t.\n")

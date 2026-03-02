@@ -527,8 +527,8 @@ rule motif_intersect:
         OUT + "/logs/motif_intersect/{sample}.log"
     shell:
         """
-        bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} {input.gem_bed} \
-          | sort -u > {output} 2>{log}
+        bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} {input.gem_bed} 2>{log} \
+          | sort -u > {output}
         """
 
 
