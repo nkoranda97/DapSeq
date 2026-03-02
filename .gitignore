@@ -12,3 +12,8 @@ multiqc_data/
 Trimmed_output/
 multiqc_report.html
 results/
+
+# local uv
+.python-version
+uv.lock
+pyproject.toml
