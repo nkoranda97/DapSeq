@@ -6,18 +6,21 @@ Claude Opus 4.6 helped a lot with the conversion, I have done my best to keep th
 
 ## Changes (up for scrutiny)
 
-1. MEME runs on tandem-filtered file (new) vs unfiltered (old)
+1. **MEME runs on tandem-filtered file (new) vs unfiltered (old)**
 
-Old step 8 runs MEME on .fasta.nodup (before tandem filtering). Now it runs MEME on .fasta.filtered.fasta (after tandem filtering). I think this was a bug in the old pipeline. It runs Tandem_filter but never uses its output.
-2. chr prefix in GEM output — intentional organism difference
+   Old step 8 runs MEME on `.fasta.nodup` (before tandem filtering). Now it runs MEME on `.fasta.filtered.fasta` (after tandem filtering). I think this was a bug in the old pipeline. It runs Tandem_filter but never uses its output.
 
-The old pipeline hardcoded "chr". Now it uses whatever chromosome names GEM outputs. It should work without manual modification.
-3. bedtools intersect flag: -wo vs -wa
+2. **chr prefix in GEM output — intentional organism difference**
 
-Old pipeline uses -wo which gives output data. Because we aren't using a notebook, there is no reason to do this (I think) and -wa is used instead
-4. BED column count: 5 vs 6
+   The old pipeline hardcoded "chr". Now it uses whatever chromosome names GEM outputs. It should work without manual modification.
 
-Old pipeline writes 5-column BED (no strand). New combine_peaks.py writes 6 columns (with .\n for strand). 6-column is apparently the more standard BED format?
+3. **bedtools intersect flag: `-wo` vs `-wa`**
+
+   Old pipeline uses `-wo` which gives output data. Because we aren't using a notebook, there is no reason to do this (I think) and `-wa` is used instead.
+
+4. **BED column count: 5 vs 6**
+
+   Old pipeline writes 5-column BED (no strand). New `combine_peaks.py` writes 6 columns (with `.` for strand). 6-column is apparently the more standard BED format?
 
 ## Setup
 
@@ -56,9 +59,9 @@ snakemake --profile profile --configfile /path/to/config/file.yaml
 snakemake --profile profile --configfile /path/to/config/file.yaml -n
 ```
 
-If a run fails during execution, you can restart it with the rerun-incomplete flag
+If a run fails during execution, you can restart it with the `--rerun-incomplete` flag.
 
-To force a run to restart from the beginning use the --forceall flag
+To force a run to restart from the beginning use the `--forceall` flag.
 
 ```bash
 snakemake --profile profile --configfile /path/to/config/file.yaml --rerun-incomplete
