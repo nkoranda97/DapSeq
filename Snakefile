@@ -120,7 +120,7 @@ rule trimmomatic:
           {output.r1} {output.r1_unpaired} \
           {output.r2} {output.r2_unpaired} \
           ILLUMINACLIP:$ADAPTERS:2:30:10 \
-          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 2>{log}
+          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:20 2>{log}
         """
 
 

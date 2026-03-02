@@ -2,6 +2,8 @@
 
 Snakemake pipeline for DAP-seq analysis. Based on the original notebook pipeline by [ndu-bioinfo](https://github.com/ndu-bioinfo/Dap-Seq-pipeline).
 
+I also bundled the software into a container and call that in the pipeline.
+
 Claude Opus 4.6 helped a lot with the conversion, I have done my best to keep the actual logic as true to the original pipeline as possible, but there could still be bugs.
 
 ## Changes (up for scrutiny)
