@@ -20,10 +20,12 @@ Edit `config/config.yaml` before running, or create a project-specific config an
 
 ## Requirements
 
+You need snakemake and a slurm plugin for snakemake to run the pipeline. A minimal python env will do the trick, but conda can be used as well.
+
 ```bash
 pip install snakemake snakemake-executor-plugin-slurm
 
-# if using sample environment for analysis
+# if using the same environment for analysis
 pip install matplotlib pandas
 ```
 
@@ -31,12 +33,19 @@ pip install matplotlib pandas
 
 ```bash
 # uses config/config.yaml
-bash run
-
-# use a project-specific config outside the pipeline directory
-bash run /path/to/project/config.yaml
+module load singularity
+snakemake --profile profile --configfile /path/to/config/file.yaml
 
 # dry run
-bash run -n
-bash run /path/to/project/config.yaml -n
+snakemake --profile profile --configfile /path/to/config/file.yaml -n
+```
+
+If a run fails during execution, you can restart it with the rerun-incomplete flag
+
+To force a run to restart from the beginning use the --forceall flag
+
+```bash
+snakemake --profile profile --configfile /path/to/config/file.yaml --rerun-incomplete
+
+snakemake --profile profile --configfile /path/to/config/file.yaml --forceall
 ```
