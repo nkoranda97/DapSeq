@@ -4,11 +4,11 @@
 
 samples:
   TF1:
-    r1: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-MRKN03_S36_L004_R1_001.fastq.gz
-    r2: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-MRKN03_S36_L004_R2_001.fastq.gz
+    r1: null
+    r2: null
   TF2:
-    r1: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-TGIF02_S34_L004_R1_001.fastq.gz
-    r2: /project/zhuzhuzhang/nick/projects/dap_practice/dap_sample_data/RO-GY-2s-pl2-Zhuzhu-ampDAP-Mouse-TGIF02_S34_L004_R2_001.fastq.gz
+    r1: null
+    r2: null
   input_DNA:
     r1: null
     r2: null
@@ -17,15 +17,15 @@ samples:
 # Remove this line or set to null to run without a control.
 input_control: null
 
-output_dir: "results"
+output_dir: null
 
 # ── Genome ───────────────────────────────────────────────────────────────────
-genome_ref:   "/project/zhuzhuzhang/reference/Mouse/GRCm38/Mus_musculus.GRCm38.dna.primary_assembly.fa"
-genome_size:  "2913022398"
+genome_ref:   null
+genome_size:  null
 
 # ── Compute ──────────────────────────────────────────────────────────────────
-threads: 8
+threads: null # int
 
 # ── SLURM ────────────────────────────────────────────────────────────────────
-slurm_partition: "caslake"
-slurm_account:   "pi-zhuzhuzhang"
+slurm_partition: null
+slurm_account:   null
