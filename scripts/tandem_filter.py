@@ -53,9 +53,10 @@ def tandem_filter(fasta_file, out_file, k=6, k_max=3):
         SeqIO.write(kept, f, "fasta")
 
 
-tandem_filter(
-    snakemake.input[0],
-    snakemake.output[0],
-    k=snakemake.params.k,
-    k_max=snakemake.params.k_max,
-)
+if "snakemake" in dir():  # noqa: F821
+    tandem_filter(
+        snakemake.input[0],
+        snakemake.output[0],
+        k=snakemake.params.k,
+        k_max=snakemake.params.k_max,
+    )

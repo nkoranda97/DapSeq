@@ -115,4 +115,5 @@ def main() -> None:
     write_bed(macs_peaks + gem_peaks,  snakemake.output.combined_bed, half_win)  # noqa: F821
 
 
-main()
+if "snakemake" in dir():  # noqa: F821
+    main()
