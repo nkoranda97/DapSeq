@@ -76,3 +76,8 @@ snakemake --profile profile --configfile /path/to/config/file.yaml --forceall
 The Dockerfile used to build the container is in `docker_build/`, along with the associated `environment.yml`. The image is built for linux/amd64.
 
 The pre-built container (`docker://nkoranda/dapseq:latest`) is pulled automatically by Snakemake. To use a custom build, rebuild from the Dockerfile and update the `container:` directive at the top of the `Snakefile`.
+
+## Known bugs
+
+- GEM insists on putting its log file into the current working directory. Trying to fix this caused a whole new set of errors so for now this little detail is being ignored, but you will find the GEM logs in whatever directory you are in when you start snakemake.
+- Snakemake merges external config files with the internal one rather than replacing it. Keys in the external file override matching internal keys, but anything only in the internal config still gets passed into the workflow. This can cause unintended things to bleed in if you have params in both files. Don't delete the internal config file.
