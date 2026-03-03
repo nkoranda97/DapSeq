@@ -1,62 +1,43 @@
 import re
 import itertools
-import matplotlib
-matplotlib.use("Agg")
-import matplotlib.pyplot as plt
 from Bio import SeqIO
 
 
-def tandem_filter(fasta_file, out_file, k=6, k_max=3):
-    """Remove sequences with tandem repeats or runs of Ns."""
+def tandem_filter(fasta_file: str, out_file: str, k: int = 6, k_max: int = 3) -> None:
+    """
+    Remove sequences with tandem repeats or runs of Ns.
+
+    A sequence is removed if:
+      - The most frequent k-mer appears >= k_max times, or
+      - There is more than 1 N in the sequence
+    """
     kmers = ["".join(c) for c in itertools.product("ACGT", repeat=k)]
 
-    with open(fasta_file) as f:
-        fasta_dict = SeqIO.to_dict(rec.upper() for rec in SeqIO.parse(f, "fasta"))
+    kept = 0
+    removed = 0
 
-    kept = []
-    removed = []
-    peak_locs = []
-    top_kmers = []
-    n_locs = []
+    with open(fasta_file) as f_in, open(out_file, "w") as f_out:
+        for record in SeqIO.parse(f_in, "fasta"):
+            record = record.upper()
+            seq = str(record.seq)
 
-    for record in fasta_dict.values():
-        seq = str(record.seq)
-        counts = [seq.count(kmer) for kmer in kmers]
-        top = kmers[counts.index(max(counts))]
-        peaks = [m.start() for m in re.finditer(top, seq)]
-        ns = [m.start() for m in re.finditer("N", seq)]
-        if len(peaks) >= k_max or len(ns) > 1:
-            removed.append(record)
-            peak_locs.append(peaks)
-            top_kmers.append(top)
-            n_locs.append(ns)
-        else:
-            kept.append(record)
+            counts  = [seq.count(kmer) for kmer in kmers]
+            n_peaks = max(counts)
+            n_ns    = seq.count("N")
 
-    # Plot removed sequences for QC
-    n_rows = len(removed) // 3 + 1
-    fig, axes = plt.subplots(n_rows, 3, figsize=(12, max(3, len(removed) // 10)))
-    for ax in axes.ravel():
-        ax.set_axis_off()
-    axes = axes.ravel()
-    plt.suptitle(fasta_file.split("/")[-1].split(".")[0])
-    for i, record in enumerate(removed):
-        axes[i].plot([0, len(record)], [0, 0], "lightblue")
-        if len(n_locs[i]) > 1:
-            axes[i].plot([n_locs[i][0], n_locs[i][-1]], [0, 0], "grey")
-        for x in peak_locs[i]:
-            axes[i].plot([x, x + k], [0, 0], "r")
-        if k_max > 2:
-            axes[i].set_title(f"{top_kmers[i]}={len(peak_locs[i])}", fontsize=10)
+            if n_peaks >= k_max or n_ns > 1:
+                removed += 1
+            else:
+                SeqIO.write(record, f_out, "fasta")
+                kept += 1
 
-    with open(out_file, "w") as f:
-        SeqIO.write(kept, f, "fasta")
+    print(f"tandem_filter: kept {kept}, removed {removed}", flush=True)
 
 
 if "snakemake" in dir():  # noqa: F821
     tandem_filter(
-        snakemake.input[0],
-        snakemake.output[0],
+        snakemake.input[0],   # noqa: F821
+        snakemake.output[0],  # noqa: F821
         k=snakemake.params.k,
         k_max=snakemake.params.k_max,
     )
