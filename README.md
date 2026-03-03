@@ -70,3 +70,9 @@ snakemake --profile profile --configfile /path/to/config/file.yaml --rerun-incom
 
 snakemake --profile profile --configfile /path/to/config/file.yaml --forceall
 ```
+
+## Docker
+
+The Dockerfile used to build the container is in `docker_build/`, along with the associated `environment.yml`. The image is built for linux/amd64.
+
+The pre-built container (`docker://nkoranda/dapseq:latest`) is pulled automatically by Snakemake. To use a custom build, rebuild from the Dockerfile and update the `container:` directive at the top of the `Snakefile`.

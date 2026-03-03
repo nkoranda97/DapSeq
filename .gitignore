@@ -1,7 +1,3 @@
-# container build
-Dockerfile
-environment.yml
-
 # runtime files
 .cache/
 .java/

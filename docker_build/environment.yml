@@ -1,0 +1,25 @@
+# This environment is used ONLY to build the Docker container (docker build).
+# On HPC, you do NOT activate this env. All tools run inside the container.
+# You only need snakemake + the slurm plugin on the HPC login node:
+#   pip install --user snakemake snakemake-executor-plugin-slurm
+name: dapseq
+channels:
+  - bioconda
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.11
+  - macs3
+  - bwa
+  - samtools
+  - deeptools
+  - meme
+  - fastqc
+  - multiqc
+  - snakemake
+  - trimmomatic
+  - bedtools
+  - biopython
+  - pandas
+  - matplotlib
+  - snakemake-executor-plugin-slurm
