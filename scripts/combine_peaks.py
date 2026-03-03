@@ -18,7 +18,6 @@ Snakemake params:
     min_score     — minimum fold-enrichment score (default 1)
 """
 
-from __future__ import annotations
 
 import logging
 import sys
