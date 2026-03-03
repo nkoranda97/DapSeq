@@ -114,13 +114,13 @@ rule trimmomatic:
         OUT + "/logs/trimmomatic/{sample}.log"
     shell:
         """
-        ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "TruSeq3-PE.fa" | head -1)
+        ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "TruSeq3-PE-2.fa" | head -1)
         trimmomatic PE -phred33 \
           {input.r1} {input.r2} \
           {output.r1} {output.r1_unpaired} \
           {output.r2} {output.r2_unpaired} \
-          ILLUMINACLIP:$ADAPTERS:2:30:10 \
-          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:20 2>{log}
+          ILLUMINACLIP:$ADAPTERS:2:30:10:1:true \
+          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 2>{log}
         """
 
 
@@ -164,6 +164,7 @@ rule multiqc:
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 3: Align with BWA MEM (ALL samples)
+# Might be an updated tool that can replace old BWA MEM
 # ─────────────────────────────────────────────────────────────────────────────
 rule bwa_mem:
     input:
