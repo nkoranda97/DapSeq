@@ -17,3 +17,12 @@ results/
 .python-version
 uv.lock
 pyproject.toml
+
+# local python files
+__pycache__/
+
+# pytest cache
+.pytest_cache
+
+# Claude settings
+.claude/
