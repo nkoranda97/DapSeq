@@ -26,18 +26,47 @@ Claude Opus 4.6 helped a lot with the conversion, I have done my best to keep th
 
 ## Setup
 
-Edit `config/config.yaml` before running, or create a project-specific config anywhere on the filesystem:
+Edit `config/config.yaml` before running, or create a project-specific config anywhere on the filesystem (see the Known bugs note about config merging).
+
+**Required keys**
 
 | Key | Description |
 |---|---|
-| `samples` | Sample names with paths to R1 and R2 fastq files |
-| `input_control` | Name of the input/control sample. Set to `null` to run without a control |
-| `output_dir` | Where all outputs will be written |
+| `samples` | Sample names with paths to R1/R2 fastq files |
+| `input_control` | Control sample name (must match a key in `samples`). `null` to run without a control |
+| `output_dir` | Root output directory |
 | `genome_ref` | Path to reference genome FASTA |
-| `genome_size` | Effective genome size string for MACS2 (e.g. `"1.0e8"`) |
-| `threads` | Threads per job |
+| `genome_size` | Effective genome size for MACS3 — shorthand (`hs`, `mm`, `ce`, `dm`) or a number (`2.7e9`) |
+| `threads` | Threads per job (default: `8`) |
 | `slurm_partition` | SLURM partition |
 | `slurm_account` | SLURM account |
+
+**Tool parameters** (all have defaults matching the original pipeline)
+
+| Key | Default | Description |
+|---|---|---|
+| `bwa.k` | `60` | BWA MEM minimum seed length (`-k`) |
+| `bwa.B` | `7` | BWA MEM mismatch penalty (`-B`) |
+| `bwa.O` | `6` | BWA MEM gap open penalty (`-O`) |
+| `trimmomatic.minlen` | `36` | Discard reads shorter than this after trimming |
+| `macs3.qvalue` | `0.01` | FDR cutoff for peak calling (`-q`) |
+| `macs3.min_fold` | `2` | Min fold-enrichment for shifting model (`-m`) |
+| `macs3.max_fold` | `50` | Max fold-enrichment for shifting model (`-m`) |
+| `gem.k_min` | `6` | GEM min k-mer length (`--k_min`) |
+| `gem.k_max` | `20` | GEM max k-mer length (`--k_max`) |
+| `gem.k_seqs` | `600` | GEM sequences for motif training (`--k_seqs`) |
+| `gem.fold_cutoff` | `1` | GEM IP/control fold-enrichment threshold — keep in sync with `combine_peaks.min_score` |
+| `combine_peaks.window_size` | `80` | bp window centered on each summit for sequence extraction |
+| `combine_peaks.min_score` | `1` | Minimum MACS3 summit score to include a peak |
+| `fimo.thresh` | `1e-5` | FIMO p-value threshold (`--thresh`) |
+| `meme.nmotifs` | `1` | Number of motifs to find (`-nmotifs`) |
+| `meme.minw` | `4` | Minimum motif width (`-minw`) |
+| `meme.maxw` | `12` | Maximum motif width (`-maxw`) |
+| `meme.mod` | `oops` | Site distribution model: `oops`, `zoops`, or `anr` (`-mod`) |
+
+**Per-rule resource overrides**
+
+Each rule has a `resources.<rule_name>.mem_mb` and `resources.<rule_name>.runtime` (minutes) key. Override these to tune SLURM job requests without touching the Snakefile. Rule names match exactly — see the `resources:` section of `config.yaml` for the full list.
 
 ## Requirements
 
