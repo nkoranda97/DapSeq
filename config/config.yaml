@@ -14,18 +14,127 @@ samples:
     r2: null
 
 # Input/control sample name — must match a key in samples above.
-# Remove this line or set to null to run without a control.
+# Set to null to run without a control.
 input_control: null
 
 output_dir: null
 
 # ── Genome ───────────────────────────────────────────────────────────────────
-genome_ref:   null
-genome_size:  null
+genome_ref: null
+
+genome_size: null
 
 # ── Compute ──────────────────────────────────────────────────────────────────
-threads: null # int
+threads: 8
 
 # ── SLURM ────────────────────────────────────────────────────────────────────
 slurm_partition: null
-slurm_account:   null
+slurm_account: null
+
+# ── BWA MEM ──────────────────────────────────────────────────────────────────
+bwa:
+  k: 60
+  B: 7
+  O: 6
+
+# ── Trimmomatic ───────────────────────────────────────────────────────────────
+trimmomatic:
+  minlen: 36
+
+# ── MACS3 ────────────────────────────────────────────────────────────────────
+macs3:
+  qvalue: 0.01
+  min_fold: 2
+  max_fold: 50
+
+# ── GEM ──────────────────────────────────────────────────────────────────────
+gem:
+  k_min: 6
+  k_max: 20
+  k_seqs: 600
+  fold_cutoff: 1
+
+# ── Peak combining ────────────────────────────────────────────────────────────
+combine_peaks:
+  window_size: 80
+  min_score: 1
+
+# ── FIMO ─────────────────────────────────────────────────────────────────────
+fimo:
+  thresh: 1.0e-5
+
+# ── MEME ─────────────────────────────────────────────────────────────────────
+meme:
+  nmotifs: 1
+  minw: 4
+  maxw: 12
+  mod: oops
+
+# ── Per-rule resource overrides ───────────────────────────────────────────────
+resources:
+  bwa_index:
+    mem_mb: 8000
+    runtime: 60
+  split_genome:
+    mem_mb: 8000
+    runtime: 120
+  trimmomatic:
+    mem_mb: 4000
+    runtime: 60
+  fastqc:
+    mem_mb: 2000
+    runtime: 30
+  multiqc:
+    mem_mb: 2000
+    runtime: 30
+  bwa_mem:
+    mem_mb: 16000
+    runtime: 120
+  samtools_filter_sort_dedup:
+    mem_mb: 8000
+    runtime: 60
+  bamcoverage:
+    mem_mb: 8000
+    runtime: 60
+  bamcompare:
+    mem_mb: 8000
+    runtime: 60
+  macs3:
+    mem_mb: 8000
+    runtime: 60
+  gem:
+    mem_mb: 32000
+    runtime: 240
+  combine_peaks:
+    mem_mb: 4000
+    runtime: 30
+  getfasta:
+    mem_mb: 4000
+    runtime: 30
+  dedup_fasta:
+    mem_mb: 4000
+    runtime: 30
+  tandem_filter:
+    mem_mb: 4000
+    runtime: 30
+  meme:
+    mem_mb: 8000
+    runtime: 120
+  fimo:
+    mem_mb: 8000
+    runtime: 60
+  fimo_to_bed:
+    mem_mb: 1000
+    runtime: 10
+  bedtools_intersect:
+    mem_mb: 4000
+    runtime: 30
+  motif_intersect:
+    mem_mb: 4000
+    runtime: 30
+  getfasta_intersection:
+    mem_mb: 4000
+    runtime: 30
+  meme_intersection:
+    mem_mb: 8000
+    runtime: 120

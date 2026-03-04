@@ -56,9 +56,10 @@ rule bwa_index:
         sizes = config["genome_ref"] + ".sizes",
         fai   = config["genome_ref"] + ".fai",
     resources:
-        mem_mb=8000, runtime=60,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["bwa_index"]["mem_mb"],
+        runtime         = config["resources"]["bwa_index"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/bwa_index.log"
     shell:
@@ -79,9 +80,10 @@ rule split_genome:
     output:
         directory(GENOME_SPLIT_DIR)
     resources:
-        mem_mb=8000, runtime=120,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["split_genome"]["mem_mb"],
+        runtime         = config["resources"]["split_genome"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/split_genome.log"
     shell:
@@ -108,9 +110,10 @@ rule trimmomatic:
         r1_unpaired = temp(OUT + "/trimmed/{sample}.R1.unpaired.fastq.gz"),
         r2_unpaired = temp(OUT + "/trimmed/{sample}.R2.unpaired.fastq.gz"),
     resources:
-        mem_mb=4000, runtime=60,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["trimmomatic"]["mem_mb"],
+        runtime         = config["resources"]["trimmomatic"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/trimmomatic/{sample}.log"
     shell:
@@ -121,7 +124,7 @@ rule trimmomatic:
           {output.r1} {output.r1_unpaired} \
           {output.r2} {output.r2_unpaired} \
           ILLUMINACLIP:$ADAPTERS:2:30:10:1:true \
-          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:36 2>{log}
+          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:{config[trimmomatic][minlen]} 2>{log}
         """
 
 
@@ -135,9 +138,10 @@ rule fastqc:
         html = OUT + "/Fastqc/{sample}.{read}_fastqc.html",
         zip  = OUT + "/Fastqc/{sample}.{read}_fastqc.zip",
     resources:
-        mem_mb=2000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["fastqc"]["mem_mb"],
+        runtime         = config["resources"]["fastqc"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/fastqc/{sample}.{read}.log"
     shell:
@@ -154,9 +158,10 @@ rule multiqc:
     output:
         OUT + "/multiqc_report.html"
     resources:
-        mem_mb=2000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["multiqc"]["mem_mb"],
+        runtime         = config["resources"]["multiqc"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/multiqc.log"
     shell:
@@ -177,13 +182,14 @@ rule bwa_mem:
     threads:
         config["threads"]
     resources:
-        mem_mb=16000, runtime=120,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["bwa_mem"]["mem_mb"],
+        runtime         = config["resources"]["bwa_mem"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/bwa_mem/{sample}.log"
     shell:
-        "bwa mem -t {threads} -k 60 -B 7 -O 6 -v 0 {config[genome_ref]} {input.r1} {input.r2} > {output} 2>{log}"
+        "bwa mem -t {threads} -k {config[bwa][k]} -B {config[bwa][B]} -O {config[bwa][O]} -v 0 {config[genome_ref]} {input.r1} {input.r2} > {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -200,9 +206,10 @@ rule samtools_filter_sort_dedup:
     threads:
         config["threads"]
     resources:
-        mem_mb=8000, runtime=60,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["samtools_filter_sort_dedup"]["mem_mb"],
+        runtime         = config["resources"]["samtools_filter_sort_dedup"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/samtools/{sample}.log"
     shell:
@@ -228,9 +235,10 @@ rule bamcoverage:
     threads:
         config["threads"]
     resources:
-        mem_mb=8000, runtime=60,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["bamcoverage"]["mem_mb"],
+        runtime         = config["resources"]["bamcoverage"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/bamcoverage/{sample}.log"
     shell:
@@ -252,9 +260,10 @@ if CONTROL:
         threads:
             config["threads"]
         resources:
-            mem_mb=8000, runtime=60,
-            slurm_partition=config["slurm_partition"],
-            slurm_account=config["slurm_account"],
+            mem_mb          = config["resources"]["bamcompare"]["mem_mb"],
+            runtime         = config["resources"]["bamcompare"]["runtime"],
+            slurm_partition = config["slurm_partition"],
+            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/bamcompare/{sample}.log"
         shell:
@@ -284,9 +293,10 @@ rule macs3:
         ctrl   = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
         outdir = OUT + "/MACS",
     resources:
-        mem_mb=8000, runtime=60,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["macs3"]["mem_mb"],
+        runtime         = config["resources"]["macs3"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/macs3/{sample}.log"
     shell:
@@ -295,7 +305,7 @@ rule macs3:
           -t {input.sample_bam} {params.ctrl} \
           -f BAM --outdir {params.outdir} \
           -g {config[genome_size]} -n {wildcards.sample} \
-          -B -q 0.01 -m 2 50 --verbose=0 2>{log}
+          -B -q {config[macs3][qvalue]} -m {config[macs3][min_fold]} {config[macs3][max_fold]} --verbose=0 2>{log}
         """
 
 
@@ -317,9 +327,10 @@ rule gem:
     threads:
         config["threads"]
     resources:
-        mem_mb=32000, runtime=240,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["gem"]["mem_mb"],
+        runtime         = config["resources"]["gem"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/gem/{sample}.log"
     shell:
@@ -333,7 +344,7 @@ rule gem:
           --expt {input.sample_bam} {params.ctrl} \
           --outBED \
           --out {params.out_prefix} \
-          --k_min 6 --k_max 20 --k_seqs 600 --k_neg_dinu_shuffle 2>{log}
+          --k_min {config[gem][k_min]} --k_max {config[gem][k_max]} --k_seqs {config[gem][k_seqs]} --k_neg_dinu_shuffle 2>{log}
         """
 
 
@@ -349,12 +360,13 @@ rule combine_peaks:
         macs_bed     = OUT + "/compare_bed/{sample}.MACS.bed",
         gem_bed      = OUT + "/compare_bed/{sample}.GEM.bed",
     params:
-        window_size = 80,
-        min_score   = 1,
+        window_size = config["combine_peaks"]["window_size"],
+        min_score   = config["combine_peaks"]["min_score"],
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["combine_peaks"]["mem_mb"],
+        runtime         = config["resources"]["combine_peaks"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/combine_peaks/{sample}.log"
     script:
@@ -371,9 +383,10 @@ rule getfasta:
     output:
         OUT + "/fasta/{sample}.fasta"
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["getfasta"]["mem_mb"],
+        runtime         = config["resources"]["getfasta"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/getfasta/{sample}.log"
     shell:
@@ -389,9 +402,10 @@ rule dedup_fasta:
     output:
         OUT + "/fasta/{sample}.fasta.nodup"
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["dedup_fasta"]["mem_mb"],
+        runtime         = config["resources"]["dedup_fasta"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/dedup_fasta/{sample}.log"
     script:
@@ -410,9 +424,10 @@ rule tandem_filter:
         k     = 6,
         k_max = 4,
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["tandem_filter"]["mem_mb"],
+        runtime         = config["resources"]["tandem_filter"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/tandem_filter/{sample}.log"
     script:
@@ -428,17 +443,22 @@ rule meme:
     output:
         txt  = OUT + "/meme/{sample}/meme.txt",
     params:
-        outdir = OUT + "/meme/{sample}",
+        outdir  = OUT + "/meme/{sample}",
+        nmotifs = config["meme"]["nmotifs"],
+        minw    = config["meme"]["minw"],
+        maxw    = config["meme"]["maxw"],
+        mod     = config["meme"]["mod"],
     threads:
         config["threads"]
     resources:
-        mem_mb=8000, runtime=120,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["meme"]["mem_mb"],
+        runtime         = config["resources"]["meme"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.log"
     shell:
-        "bash scripts/run_meme.sh {input} {params.outdir} {threads} {log} 'filtered FASTA (step 8)'"
+        "bash scripts/run_meme.sh {input} {params.outdir} {threads} {log} 'filtered FASTA (step 8)' {params.nmotifs} {params.minw} {params.maxw} {params.mod}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -454,14 +474,15 @@ rule fimo:
     params:
         outdir = OUT + "/fimo/{sample}",
     resources:
-        mem_mb=8000, runtime=60,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["fimo"]["mem_mb"],
+        runtime         = config["resources"]["fimo"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/fimo/{sample}.log"
     shell:
         """
-        fimo -verbosity 1 --thresh 1e-5 \
+        fimo -verbosity 1 --thresh {config[fimo][thresh]} \
           -oc {params.outdir} \
           {input.meme_txt} {input.genome} 2>{log}
         """
@@ -474,9 +495,10 @@ rule fimo_to_bed:
     output:
         OUT + "/fimo/{sample}/fimo.bed"
     resources:
-        mem_mb=1000, runtime=10,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["fimo_to_bed"]["mem_mb"],
+        runtime         = config["resources"]["fimo_to_bed"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     script:
         "scripts/fimo_to_bed.py"
 
@@ -493,9 +515,10 @@ rule bedtools_intersect:
         gem_peak     = OUT + "/compare_bed/{sample}.GEM_peak.bed",
         compare_peak = OUT + "/compare_bed/{sample}.compare_peak.bed",
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
+        runtime         = config["resources"]["bedtools_intersect"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/bedtools_intersect/{sample}.log"
     shell:
@@ -517,9 +540,10 @@ rule motif_intersect:
     output:
         OUT + "/compare_bed/{sample}.intersection.bed"
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["motif_intersect"]["mem_mb"],
+        runtime         = config["resources"]["motif_intersect"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/motif_intersect/{sample}.log"
     shell:
@@ -539,9 +563,10 @@ rule getfasta_intersection:
     output:
         OUT + "/fasta/{sample}.motif.fasta"
     resources:
-        mem_mb=4000, runtime=30,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["getfasta_intersection"]["mem_mb"],
+        runtime         = config["resources"]["getfasta_intersection"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/getfasta_intersection/{sample}.log"
     shell:
@@ -557,14 +582,19 @@ rule meme_intersection:
     output:
         txt  = OUT + "/meme/{sample}-intersection/meme.txt",
     params:
-        outdir = OUT + "/meme/{sample}-intersection",
+        outdir  = OUT + "/meme/{sample}-intersection",
+        nmotifs = config["meme"]["nmotifs"],
+        minw    = config["meme"]["minw"],
+        maxw    = config["meme"]["maxw"],
+        mod     = config["meme"]["mod"],
     threads:
         config["threads"]
     resources:
-        mem_mb=8000, runtime=120,
-        slurm_partition=config["slurm_partition"],
-        slurm_account=config["slurm_account"],
+        mem_mb          = config["resources"]["meme_intersection"]["mem_mb"],
+        runtime         = config["resources"]["meme_intersection"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme_intersection/{sample}.log"
     shell:
-        "bash scripts/run_meme.sh {input} {params.outdir} {threads} {log} 'intersection FASTA (step 12)'"
+        "bash scripts/run_meme.sh {input} {params.outdir} {threads} {log} 'intersection FASTA (step 12)' {params.nmotifs} {params.minw} {params.maxw} {params.mod}"
