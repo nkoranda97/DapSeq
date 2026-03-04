@@ -8,6 +8,7 @@ multiqc_data/
 Trimmed_output/
 multiqc_report.html
 results/
+human_results/
 
 # local uv
 .python-version
