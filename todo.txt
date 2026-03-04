@@ -1,8 +1,1 @@
-- sample naming
-- more exposed variables (adapter threshold, FIMO threshold, #3 Seq alignment and write sam files
-# https://arxiv.org/abs/1303.3997
-
-#Important parameters for tuning
-# -k Minimum seed length. Matches shorter than INT will be missed.
-# -B Mismatch penalty. The sequence error rate is approximately: {.75 * exp[-log(4) * B/A]}
-# -O Gap open penalty.[6], )
+- Ghostscript in container?
