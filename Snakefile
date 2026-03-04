@@ -438,12 +438,7 @@ rule meme:
     log:
         OUT + "/logs/meme/{sample}.log"
     shell:
-        """
-        meme {input} \
-          -nmotifs 1 -minw 4 -maxw 12 \
-          -dna -mod oops -nostatus \
-          -p {threads} -oc {params.outdir} 2>{log}
-        """
+        "bash scripts/run_meme.sh {input} {params.outdir} {threads} {log} 'filtered FASTA (step 8)'"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -572,9 +567,4 @@ rule meme_intersection:
     log:
         OUT + "/logs/meme_intersection/{sample}.log"
     shell:
-        """
-        meme {input} \
-          -nmotifs 1 -minw 4 -maxw 12 \
-          -dna -mod oops -nostatus \
-          -p {threads} -oc {params.outdir} 2>{log}
-        """
+        "bash scripts/run_meme.sh {input} {params.outdir} {threads} {log} 'intersection FASTA (step 12)'"
