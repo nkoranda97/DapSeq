@@ -343,67 +343,13 @@ def section_multiqc(results: Path) -> str:
     )
 
 
-def section_macs_distributions(results: Path, samples: list[str]) -> str:
-    print("  Building MACS score distributions…")
-    ncols = min(len(samples), 3)
-    nrows = math.ceil(len(samples) / ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 4 * nrows), squeeze=False)
-    axes_flat = axes.ravel()
-    for i, (ax, sample) in enumerate(zip(axes_flat, samples)):
-        f = results / "MACS" / f"{sample}_summits.bed"
-        if f.exists():
-            scores = pd.read_table(f, header=None)[4].dropna()
-            ax.hist(scores, bins=50, edgecolor="black")
-            ax.set_xlabel("Summit Score (-log10 q-value)")
-            ax.set_ylabel("Count")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
-        ax.set_title(sample)
-    for ax in axes_flat[len(samples):]:
-        ax.set_visible(False)
-    fig.tight_layout()
-    enc = fig_to_base64(fig)
-    return (
-        '<section id="macs-dist"><h2>3. Peak Score Distributions</h2>'
-        + img_tag(enc, "max-width:100%;")
-        + "</section>"
-    )
-
-
-def section_gem_distributions(results: Path, samples: list[str]) -> str:
-    print("  Building GEM fold-enrichment distributions…")
-    ncols = min(len(samples), 3)
-    nrows = math.ceil(len(samples) / ncols)
-    fig, axes = plt.subplots(nrows, ncols, figsize=(6 * ncols, 4 * nrows), squeeze=False)
-    axes_flat = axes.ravel()
-    for ax, sample in zip(axes_flat, samples):
-        gem_file = results / "GEM" / sample / f"{sample}.GEM_events.txt"
-        if gem_file.exists():
-            fold = pd.read_table(gem_file)["Fold"].dropna()
-            ax.hist(fold, bins=50, edgecolor="black")
-            ax.set_xlabel("IP/Control Fold Enrichment")
-            ax.set_ylabel("Count")
-        else:
-            ax.text(0.5, 0.5, "No data", ha="center", va="center", transform=ax.transAxes)
-        ax.set_title(sample)
-    for ax in axes_flat[len(samples):]:
-        ax.set_visible(False)
-    fig.tight_layout()
-    enc = fig_to_base64(fig)
-    return (
-        '<section id="gem-dist"><h2>4. GEM Fold-Enrichment Distributions</h2>'
-        + img_tag(enc, "max-width:100%;")
-        + "</section>"
-    )
-
-
 def _venn_figure(results: Path, samples: list[str], venn_set: dict, logo_key_fn, title: str) -> str:
     """Render a grid of logo + venn pairs, return base64 PNG."""
     valid = [s for s in samples if s in venn_set]
     if not valid:
         return "<p class='missing'>No data available.</p>"
     nrows = math.ceil(len(valid) / 2)
-    fig, axes = plt.subplots(nrows, 4, figsize=(20, nrows * 5), squeeze=False)
+    fig, axes = plt.subplots(nrows, 4, figsize=(28, nrows * 8), squeeze=False)
     axes_flat = axes.ravel()
     for ax in axes_flat:
         ax.set_axis_off()
@@ -435,7 +381,7 @@ def section_venn_first(results: Path, samples: list[str], venn_set: dict) -> str
     )
     return (
         '<section id="venn-first">'
-        "<h2>5. Peak Caller &amp; Motif Overlap</h2>"
+        "<h2>3. Peak Caller &amp; Motif Overlap</h2>"
         + content
         + "</section>"
     )
@@ -453,7 +399,7 @@ def section_venn_intersection(results: Path, samples: list[str], venn_set: dict)
     )
     return (
         '<section id="venn-intersect">'
-        "<h2>6. Refined Motifs (Intersection)</h2>"
+        "<h2>4. Refined Motifs (Intersection)</h2>"
         + content
         + "</section>"
     )
@@ -461,7 +407,7 @@ def section_venn_intersection(results: Path, samples: list[str], venn_set: dict)
 
 def section_per_sample(results: Path, samples: list[str]) -> str:
     print("  Embedding per-sample reports…")
-    parts = ['<section id="per-sample"><h2>7. Per-Sample Detail</h2>']
+    parts = ['<section id="per-sample"><h2>5. Per-Sample Detail</h2>']
     for sample in samples:
         anchor = f"sample-{sample.replace(' ', '_')}"
         parts.append(f'<div id="{anchor}" class="sample-block">')
@@ -495,11 +441,9 @@ def build_toc(samples: list[str]) -> str:
     items = [
         ('<a href="#stats">1. Sample Statistics</a>', ""),
         ('<a href="#multiqc">2. QC — MultiQC</a>', ""),
-        ('<a href="#macs-dist">3. MACS Peak Distributions</a>', ""),
-        ('<a href="#gem-dist">4. GEM Fold-Enrichment Distributions</a>', ""),
-        ('<a href="#venn-first">5. Peak Caller &amp; Motif Overlap</a>', ""),
-        ('<a href="#venn-intersect">6. Refined Motifs (Intersection)</a>', ""),
-        ('<a href="#per-sample">7. Per-Sample Detail</a>', ""),
+        ('<a href="#venn-first">3. Peak Caller &amp; Motif Overlap</a>', ""),
+        ('<a href="#venn-intersect">4. Refined Motifs (Intersection)</a>', ""),
+        ('<a href="#per-sample">5. Per-Sample Detail</a>', ""),
     ]
     sub_items = "".join(
         f'<li><a href="#sample-{s.replace(" ", "_")}">{s}</a></li>'
@@ -507,8 +451,8 @@ def build_toc(samples: list[str]) -> str:
     )
     li = "".join(f"<li>{link}</li>" for link, _ in items)
     li = li.replace(
-        "<li><a href=\"#per-sample\">7. Per-Sample Detail</a></li>",
-        f'<li><a href="#per-sample">7. Per-Sample Detail</a><ul>{sub_items}</ul></li>',
+        "<li><a href=\"#per-sample\">5. Per-Sample Detail</a></li>",
+        f'<li><a href="#per-sample">5. Per-Sample Detail</a><ul>{sub_items}</ul></li>',
     )
     return f'<nav id="toc"><h2>Contents</h2><ul>{li}</ul></nav>'
 
@@ -599,8 +543,6 @@ def main():
     sections = [
         section_stats(results, samples),
         section_multiqc(results),
-        section_macs_distributions(results, samples),
-        section_gem_distributions(results, samples),
         section_venn_first(results, samples, venn_set),
         section_venn_intersection(results, samples, venn_set),
         section_per_sample(results, samples),
