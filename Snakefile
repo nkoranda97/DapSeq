@@ -21,7 +21,7 @@ OUT               = config["output_dir"]
 GENOME_SPLIT_DIR = OUT + "/genome_split"
 
 wildcard_constraints:
-    sample = "[^/]+",
+    sample = "[^/.]+",
     read   = "R[12]",
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -54,6 +54,7 @@ rule bwa_index:
         amb   = config["genome_ref"] + ".amb",
         sa    = config["genome_ref"] + ".sa",
         sizes = config["genome_ref"] + ".sizes",
+        fai   = config["genome_ref"] + ".fai",
     resources:
         mem_mb=8000, runtime=60,
         slurm_partition=config["slurm_partition"],
