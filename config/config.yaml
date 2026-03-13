@@ -54,6 +54,10 @@ gem:
   k_seqs: 600
   fold_cutoff: 1
 
+# ── Peak caller ───────────────────────────────────────────────────────────────
+# Options: "both" | "macs3" | "gem"
+peak_caller: "both"
+
 # ── Peak combining ────────────────────────────────────────────────────────────
 combine_peaks:
   window_size: 80
