@@ -9,11 +9,13 @@ Trimmed_output/
 multiqc_report.html
 results/
 human_results/
+mouse_results/
 
 # local uv
 .python-version
 uv.lock
 pyproject.toml
+.vscode
 
 # local python files
 __pycache__/

@@ -104,14 +104,20 @@ def write_bed(peaks: list[Peak], path: str, half_win: int) -> None:
 def main() -> None:
     window_size = snakemake.params.window_size  # noqa: F821
     min_score   = snakemake.params.min_score    # noqa: F821
+    peak_caller = snakemake.params.peak_caller  # noqa: F821
     half_win    = window_size // 2
 
-    macs_peaks = parse_macs_summits(snakemake.input.macs_summits, min_score)  # noqa: F821
-    gem_peaks  = parse_gem_events(snakemake.input.gem_events, min_score)       # noqa: F821
+    macs_peaks, gem_peaks = [], []
 
-    write_bed(macs_peaks,              snakemake.output.macs_bed,     half_win)  # noqa: F821
-    write_bed(gem_peaks,               snakemake.output.gem_bed,      half_win)  # noqa: F821
-    write_bed(macs_peaks + gem_peaks,  snakemake.output.combined_bed, half_win)  # noqa: F821
+    if peak_caller in ("both", "macs3"):
+        macs_peaks = parse_macs_summits(snakemake.input.macs_summits, min_score)  # noqa: F821
+        write_bed(macs_peaks, snakemake.output.macs_bed, half_win)                # noqa: F821
+
+    if peak_caller in ("both", "gem"):
+        gem_peaks = parse_gem_events(snakemake.input.gem_events, min_score)       # noqa: F821
+        write_bed(gem_peaks, snakemake.output.gem_bed, half_win)                  # noqa: F821
+
+    write_bed(macs_peaks + gem_peaks, snakemake.output.combined_bed, half_win)    # noqa: F821
 
 
 if "snakemake" in dir():  # noqa: F821

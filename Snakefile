@@ -20,6 +20,11 @@ TREATMENT_SAMPLES = [s for s in SAMPLES if s != CONTROL]
 OUT               = config["output_dir"]
 GENOME_SPLIT_DIR = OUT + "/genome_split"
 
+PEAK_CALLER = config.get("peak_caller", "both")
+USE_MACS    = PEAK_CALLER in ("both", "macs3")
+USE_GEM     = PEAK_CALLER in ("both", "gem")
+USE_BOTH    = PEAK_CALLER == "both"
+
 wildcard_constraints:
     sample = "[^/.]+",
     read   = "R[12]",
@@ -35,9 +40,9 @@ rule all:
         OUT + "/multiqc_report.html",
         expand(OUT + "/bigWig/{sample}.bw",                      sample=SAMPLES),
         *(expand(OUT + "/bigWig/{sample}.peaks.bw",              sample=TREATMENT_SAMPLES) if CONTROL else []),
-        expand(OUT + "/compare_bed/{sample}.MACS_peak.bed",      sample=TREATMENT_SAMPLES),
-        expand(OUT + "/compare_bed/{sample}.GEM_peak.bed",       sample=TREATMENT_SAMPLES),
-        expand(OUT + "/compare_bed/{sample}.compare_peak.bed",   sample=TREATMENT_SAMPLES),
+        *(expand(OUT + "/compare_bed/{sample}.MACS_peak.bed",    sample=TREATMENT_SAMPLES) if USE_MACS else []),
+        *(expand(OUT + "/compare_bed/{sample}.GEM_peak.bed",     sample=TREATMENT_SAMPLES) if USE_GEM  else []),
+        *(expand(OUT + "/compare_bed/{sample}.compare_peak.bed", sample=TREATMENT_SAMPLES) if USE_BOTH else []),
         expand(OUT + "/meme/{sample}-intersection/meme.txt",      sample=TREATMENT_SAMPLES),
 
 
@@ -353,15 +358,16 @@ rule gem:
 # ─────────────────────────────────────────────────────────────────────────────
 rule combine_peaks:
     input:
-        macs_summits = OUT + "/MACS/{sample}_summits.bed",
-        gem_events   = OUT + "/GEM/{sample}/{sample}.GEM_events.txt",
+        macs_summits = (OUT + "/MACS/{sample}_summits.bed"            if USE_MACS else []),
+        gem_events   = (OUT + "/GEM/{sample}/{sample}.GEM_events.txt" if USE_GEM  else []),
     output:
         combined_bed = OUT + "/combined_bed/{sample}.combined.bed",
-        macs_bed     = OUT + "/compare_bed/{sample}.MACS.bed",
-        gem_bed      = OUT + "/compare_bed/{sample}.GEM.bed",
+        macs_bed     = (OUT + "/compare_bed/{sample}.MACS.bed" if USE_MACS else []),
+        gem_bed      = (OUT + "/compare_bed/{sample}.GEM.bed"  if USE_GEM  else []),
     params:
         window_size = config["combine_peaks"]["window_size"],
         min_score   = config["combine_peaks"]["min_score"],
+        peak_caller = PEAK_CALLER,
     resources:
         mem_mb          = config["resources"]["combine_peaks"]["mem_mb"],
         runtime         = config["resources"]["combine_peaks"]["runtime"],
@@ -505,28 +511,56 @@ rule fimo_to_bed:
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 9.3: Intersect motif sites with peak beds
 # ─────────────────────────────────────────────────────────────────────────────
-rule bedtools_intersect:
-    input:
-        fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
-        macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
-        gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
-    output:
-        macs_peak    = OUT + "/compare_bed/{sample}.MACS_peak.bed",
-        gem_peak     = OUT + "/compare_bed/{sample}.GEM_peak.bed",
-        compare_peak = OUT + "/compare_bed/{sample}.compare_peak.bed",
-    resources:
-        mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
-        runtime         = config["resources"]["bedtools_intersect"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    log:
-        OUT + "/logs/bedtools_intersect/{sample}.log"
-    shell:
-        """
-        bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} > {output.macs_peak} 2>{log}
-        bedtools intersect -wa -a {input.fimo_bed} -b {input.gem_bed}  > {output.gem_peak}  2>>{log}
-        bedtools intersect -wa -a {input.macs_bed} -b {input.gem_bed}  > {output.compare_peak} 2>>{log}
-        """
+if USE_MACS:
+    rule fimo_macs_intersect:
+        input:
+            fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
+            macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
+        output:
+            OUT + "/compare_bed/{sample}.MACS_peak.bed",
+        resources:
+            mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
+            runtime         = config["resources"]["bedtools_intersect"]["runtime"],
+            slurm_partition = config["slurm_partition"],
+            slurm_account   = config["slurm_account"],
+        log:
+            OUT + "/logs/bedtools_intersect/{sample}.MACS.log"
+        shell:
+            "bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} > {output} 2>{log}"
+
+if USE_GEM:
+    rule fimo_gem_intersect:
+        input:
+            fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
+            gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
+        output:
+            OUT + "/compare_bed/{sample}.GEM_peak.bed",
+        resources:
+            mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
+            runtime         = config["resources"]["bedtools_intersect"]["runtime"],
+            slurm_partition = config["slurm_partition"],
+            slurm_account   = config["slurm_account"],
+        log:
+            OUT + "/logs/bedtools_intersect/{sample}.GEM.log"
+        shell:
+            "bedtools intersect -wa -a {input.fimo_bed} -b {input.gem_bed} > {output} 2>{log}"
+
+if USE_BOTH:
+    rule compare_callers_intersect:
+        input:
+            macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
+            gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
+        output:
+            OUT + "/compare_bed/{sample}.compare_peak.bed",
+        resources:
+            mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
+            runtime         = config["resources"]["bedtools_intersect"]["runtime"],
+            slurm_partition = config["slurm_partition"],
+            slurm_account   = config["slurm_account"],
+        log:
+            OUT + "/logs/bedtools_intersect/{sample}.compare.log"
+        shell:
+            "bedtools intersect -wa -a {input.macs_bed} -b {input.gem_bed} > {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -534,9 +568,13 @@ rule bedtools_intersect:
 # ─────────────────────────────────────────────────────────────────────────────
 rule motif_intersect:
     input:
-        fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
-        macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
-        gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
+        fimo_bed  = OUT + "/fimo/{sample}/fimo.bed",
+        peak_beds = (
+            [OUT + "/compare_bed/{sample}.MACS.bed",
+             OUT + "/compare_bed/{sample}.GEM.bed"] if USE_BOTH else
+            [OUT + "/compare_bed/{sample}.MACS.bed"] if USE_MACS else
+            [OUT + "/compare_bed/{sample}.GEM.bed"]
+        ),
     output:
         OUT + "/compare_bed/{sample}.intersection.bed"
     resources:
@@ -548,7 +586,7 @@ rule motif_intersect:
         OUT + "/logs/motif_intersect/{sample}.log"
     shell:
         """
-        bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} {input.gem_bed} 2>{log} \
+        bedtools intersect -wa -a {input.fimo_bed} -b {input.peak_beds} 2>{log} \
           | sort -u > {output}
         """
 
