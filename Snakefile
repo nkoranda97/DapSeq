@@ -243,7 +243,7 @@ rule samtools_filter_sort_dedup:
         OUT + "/logs/samtools/{sample}.log"
     shell:
         """
-        samtools view -@ {threads} -h -F 4 -q 30 -u {input} \
+        samtools view -@ {threads} -h -F 4 -q {config[samtools][mapq]} -u {input} \
           | samtools fixmate -m -@ {threads} - - \
           | samtools sort -@ {threads} -o {params.prefix} - 2>>{log}
         samtools markdup -r -@ {threads} {params.prefix} {output.bam} 2>>{log}
@@ -271,7 +271,7 @@ rule bamcoverage:
     log:
         OUT + "/logs/bamcoverage/{sample}.log"
     shell:
-        "bamCoverage -b {input.bam} --normalizeUsing BPM --extendReads 300 -p {threads} -o {output} 2>{log}"
+        "bamCoverage -b {input.bam} --normalizeUsing {config[bamcoverage][normalize_using]} --extendReads {config[bamcoverage][extend_reads]} -p {threads} -o {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -300,8 +300,8 @@ if CONTROL:
             bamCompare \
               -b1 {input.sample_bam} -b2 {input.control_bam} \
               -o {output} \
-              --binSize 80 --operation ratio \
-              --scaleFactorsMethod SES -n 1000 \
+              --binSize {config[bamcompare][bin_size]} --operation {config[bamcompare][operation]} \
+              --scaleFactorsMethod {config[bamcompare][scale_factors_method]} -n {config[bamcompare][n]} \
               -p {threads} 2>{log}
             """
 
@@ -332,7 +332,7 @@ rule macs3:
         """
         macs3 callpeak \
           -t {input.sample_bam} {params.ctrl} \
-          -f BAM --outdir {params.outdir} \
+          -f {config[macs3][format]} --outdir {params.outdir} \
           -g {config[genome_size]} -n {wildcards.sample} \
           -B -q {config[macs3][qvalue]} -m {config[macs3][min_fold]} {config[macs3][max_fold]} --verbose=0 2>{log}
         """
@@ -365,7 +365,7 @@ rule gem:
     shell:
         """
         mkdir -p {params.out_prefix}
-        java -Xmx16G -jar {GEM_JAR} \
+        java -Xmx{config[gem][xmx]} -jar {GEM_JAR} \
           --t {threads} --f BAM \
           --d {GEM_READ_DIST} \
           --g {input.chrom_sizes} \
@@ -451,8 +451,8 @@ rule tandem_filter:
     output:
         OUT + "/fasta/{sample}.fasta.filtered.fasta"
     params:
-        k     = 6,
-        k_max = 4,
+        k     = config["tandem_filter"]["k"],
+        k_max = config["tandem_filter"]["k_max"],
     resources:
         mem_mb          = config["resources"]["tandem_filter"]["mem_mb"],
         runtime         = config["resources"]["tandem_filter"]["runtime"],

@@ -31,6 +31,10 @@ threads: 8
 slurm_partition: null
 slurm_account: null
 
+# ── Samtools ─────────────────────────────────────────────────────────────────
+samtools:
+  mapq: 30
+
 # ── BWA MEM ──────────────────────────────────────────────────────────────────
 bwa:
   k: 60
@@ -45,11 +49,24 @@ trimmomatic:
   # or an absolute path for a custom file.
   adapters: null
 
+# ── bamCoverage ───────────────────────────────────────────────────────────────
+bamcoverage:
+  normalize_using: BPM
+  extend_reads: 300
+
+# ── bamCompare ────────────────────────────────────────────────────────────────
+bamcompare:
+  bin_size: 80
+  operation: ratio
+  scale_factors_method: SES
+  n: 1000
+
 # ── MACS3 ────────────────────────────────────────────────────────────────────
 macs3:
   qvalue: 0.01
   min_fold: 2
   max_fold: 50
+  format: BAMPE
 
 # ── GEM ──────────────────────────────────────────────────────────────────────
 gem:
@@ -57,6 +74,12 @@ gem:
   k_max: 20
   k_seqs: 600
   fold_cutoff: 1
+  xmx: 16G
+
+# ── Tandem filter ─────────────────────────────────────────────────────────────
+tandem_filter:
+  k: 6
+  k_max: 4
 
 # ── Peak caller ───────────────────────────────────────────────────────────────
 # Options: "both" | "macs3" | "gem"
