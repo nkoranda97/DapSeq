@@ -90,6 +90,26 @@ snakemake --profile profile --configfile /path/to/config/file.yaml
 snakemake --profile profile --configfile /path/to/config/file.yaml -n
 ```
 
+### Checkpoint targets
+
+Three named targets let you stop the pipeline at a natural stage and resume later:
+
+| Target | Stops after |
+|---|---|
+| `mapped` | All samples aligned, sorted, deduped, and indexed (BAM + BAI) |
+| `peaked` | Peak calling and combination complete for all treatment samples |
+| `motifs` | MEME motif discovery and FIMO genome scan complete |
+
+Pass the target name as a positional argument with the usual flags:
+
+```bash
+snakemake mapped  --profile profile --configfile /path/to/config/file.yaml
+snakemake peaked  --profile profile --configfile /path/to/config/file.yaml
+snakemake motifs  --profile profile --configfile /path/to/config/file.yaml
+```
+
+To continue from a checkpoint, just call the next target (or `snakemake` for the full run). Snakemake checks what is already on disk and only runs what is still needed.
+
 If a run fails during execution, you can restart it with the `--rerun-incomplete` flag.
 
 To force a run to restart from the beginning use the `--forceall` flag.

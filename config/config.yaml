@@ -40,6 +40,10 @@ bwa:
 # ── Trimmomatic ───────────────────────────────────────────────────────────────
 trimmomatic:
   minlen: 36
+  # Adapter file for ILLUMINACLIP. null uses the bundled TruSeq3-PE-2.fa.
+  # Use a bare filename (e.g. TruSeq2-PE.fa) for other bundled files,
+  # or an absolute path for a custom file.
+  adapters: null
 
 # ── MACS3 ────────────────────────────────────────────────────────────────────
 macs3:

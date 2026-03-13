@@ -30,6 +30,23 @@ wildcard_constraints:
     read   = "R[12]",
 
 # ─────────────────────────────────────────────────────────────────────────────
+# Checkpoint targets — run snakemake <target> to stop at a natural stage
+# ─────────────────────────────────────────────────────────────────────────────
+rule mapped:
+    input:
+        expand(OUT + "/bam/{sample}.bam",     sample=SAMPLES),
+        expand(OUT + "/bam/{sample}.bam.bai", sample=SAMPLES),
+
+rule peaked:
+    input:
+        expand(OUT + "/combined_bed/{sample}.combined.bed", sample=TREATMENT_SAMPLES),
+
+rule motifs:
+    input:
+        expand(OUT + "/meme/{sample}/meme.txt",  sample=TREATMENT_SAMPLES),
+        expand(OUT + "/fimo/{sample}/fimo.tsv",  sample=TREATMENT_SAMPLES),
+
+# ─────────────────────────────────────────────────────────────────────────────
 # rule all
 # ─────────────────────────────────────────────────────────────────────────────
 rule all:
@@ -114,6 +131,8 @@ rule trimmomatic:
         r2          = OUT + "/trimmed/{sample}.R2.fastq.gz",
         r1_unpaired = temp(OUT + "/trimmed/{sample}.R1.unpaired.fastq.gz"),
         r2_unpaired = temp(OUT + "/trimmed/{sample}.R2.unpaired.fastq.gz"),
+    params:
+        adapters = config["trimmomatic"].get("adapters") or "",
     resources:
         mem_mb          = config["resources"]["trimmomatic"]["mem_mb"],
         runtime         = config["resources"]["trimmomatic"]["runtime"],
@@ -123,7 +142,12 @@ rule trimmomatic:
         OUT + "/logs/trimmomatic/{sample}.log"
     shell:
         """
-        ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "TruSeq3-PE-2.fa" | head -1)
+        ADAPTERS={params.adapters:q}
+        if [ -z "$ADAPTERS" ]; then
+          ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "TruSeq3-PE-2.fa" | head -1)
+        elif [[ "$ADAPTERS" != /* ]]; then
+          ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "$ADAPTERS" | head -1)
+        fi
         trimmomatic PE -phred33 \
           {input.r1} {input.r2} \
           {output.r1} {output.r1_unpaired} \
