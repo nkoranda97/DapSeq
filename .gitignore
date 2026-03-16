@@ -16,6 +16,7 @@ mouse_results/
 uv.lock
 pyproject.toml
 .vscode
+.history
 
 # local python files
 __pycache__/

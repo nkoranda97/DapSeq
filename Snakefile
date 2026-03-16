@@ -25,6 +25,9 @@ USE_MACS    = PEAK_CALLER in ("both", "macs3")
 USE_GEM     = PEAK_CALLER in ("both", "gem")
 USE_BOTH    = PEAK_CALLER == "both"
 
+SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
+PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
+
 wildcard_constraints:
     sample = "[^/.]+",
     read   = "R[12]",
@@ -52,8 +55,8 @@ rule motifs:
 rule all:
     input:
         config["genome_ref"] + ".sizes",
-        expand(OUT + "/Fastqc/{sample}.{read}_fastqc.html",
-               sample=SAMPLES, read=["R1", "R2"]),
+        expand(OUT + "/Fastqc/{sample}.R1_fastqc.html", sample=SAMPLES),
+        expand(OUT + "/Fastqc/{sample}.R2_fastqc.html", sample=PE_SAMPLES),
         OUT + "/multiqc_report.html",
         expand(OUT + "/bigWig/{sample}.bw",                      sample=SAMPLES),
         *(expand(OUT + "/bigWig/{sample}.peaks.bw",              sample=TREATMENT_SAMPLES) if CONTROL else []),
@@ -120,9 +123,42 @@ rule split_genome:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 1: Trim paired-end reads (ALL samples)
+# Step 1: Trim reads — SE and PE variants
 # ─────────────────────────────────────────────────────────────────────────────
-rule trimmomatic:
+rule trimmomatic_se:
+    wildcard_constraints:
+        sample = "|".join(SE_SAMPLES) if SE_SAMPLES else "(?!)",
+    input:
+        r1 = lambda wc: config["samples"][wc.sample]["r1"],
+    output:
+        r1 = OUT + "/trimmed/{sample}.R1.fastq.gz",
+    params:
+        adapters = config["trimmomatic"].get("adapters") or "",
+    resources:
+        mem_mb          = config["resources"]["trimmomatic"]["mem_mb"],
+        runtime         = config["resources"]["trimmomatic"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/trimmomatic/{sample}.log"
+    shell:
+        """
+        ADAPTERS={params.adapters:q}
+        if [ -z "$ADAPTERS" ]; then
+          ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "TruSeq3-SE.fa" | head -1)
+        elif [[ "$ADAPTERS" != /* ]]; then
+          ADAPTERS=$(find /opt/conda/envs/dapseq/share -name "$ADAPTERS" | head -1)
+        fi
+        trimmomatic SE -phred33 \
+          {input.r1} {output.r1} \
+          ILLUMINACLIP:$ADAPTERS:2:30:10 \
+          LEADING:3 TRAILING:3 SLIDINGWINDOW:4:15 MINLEN:{config[trimmomatic][minlen]} 2>{log}
+        """
+
+
+rule trimmomatic_pe:
+    wildcard_constraints:
+        sample = "|".join(PE_SAMPLES) if PE_SAMPLES else "(?!)",
     input:
         r1 = lambda wc: config["samples"][wc.sample]["r1"],
         r2 = lambda wc: config["samples"][wc.sample]["r2"],
@@ -182,8 +218,8 @@ rule fastqc:
 # ─────────────────────────────────────────────────────────────────────────────
 rule multiqc:
     input:
-        expand(OUT + "/Fastqc/{sample}.{read}_fastqc.zip",
-               sample=SAMPLES, read=["R1", "R2"])
+        expand(OUT + "/Fastqc/{sample}.R1_fastqc.zip", sample=SAMPLES),
+        expand(OUT + "/Fastqc/{sample}.R2_fastqc.zip", sample=PE_SAMPLES),
     output:
         OUT + "/multiqc_report.html"
     resources:
@@ -204,10 +240,12 @@ rule multiqc:
 rule bwa_mem:
     input:
         r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
-        r2  = OUT + "/trimmed/{sample}.R2.fastq.gz",
+        r2  = lambda wc: [] if wc.sample in SE_SAMPLES else [OUT + f"/trimmed/{wc.sample}.R2.fastq.gz"],
         idx = config["genome_ref"] + ".sizes",
     output:
         temp(OUT + "/sam/{sample}.sam")
+    params:
+        r2_arg = lambda wc: "" if wc.sample in SE_SAMPLES else OUT + f"/trimmed/{wc.sample}.R2.fastq.gz",
     threads:
         config["threads"]
     resources:
@@ -218,7 +256,7 @@ rule bwa_mem:
     log:
         OUT + "/logs/bwa_mem/{sample}.log"
     shell:
-        "bwa mem -t {threads} -k {config[bwa][k]} -B {config[bwa][B]} -O {config[bwa][O]} -v 0 {config[genome_ref]} {input.r1} {input.r2} > {output} 2>{log}"
+        "bwa mem -t {threads} -k {config[bwa][k]} -B {config[bwa][B]} -O {config[bwa][O]} -v 0 {config[genome_ref]} {input.r1} {params.r2_arg} > {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -232,6 +270,7 @@ rule samtools_filter_sort_dedup:
         bai = OUT + "/bam/{sample}.bam.bai",
     params:
         prefix = OUT + "/bam/{sample}.tmp.bam",
+        is_se  = lambda wc: "true" if wc.sample in SE_SAMPLES else "false",
     threads:
         config["threads"]
     resources:
@@ -243,9 +282,14 @@ rule samtools_filter_sort_dedup:
         OUT + "/logs/samtools/{sample}.log"
     shell:
         """
-        samtools view -@ {threads} -h -F 4 -q {config[samtools][mapq]} -u {input} \
-          | samtools fixmate -m -@ {threads} - - \
-          | samtools sort -@ {threads} -o {params.prefix} - 2>>{log}
+        if [ "{params.is_se}" = "true" ]; then
+          samtools view -@ {threads} -h -F 4 -q {config[samtools][mapq]} -u {input} \
+            | samtools sort -@ {threads} -o {params.prefix} - 2>>{log}
+        else
+          samtools view -@ {threads} -h -F 4 -q {config[samtools][mapq]} -u {input} \
+            | samtools fixmate -m -@ {threads} - - \
+            | samtools sort -@ {threads} -o {params.prefix} - 2>>{log}
+        fi
         samtools markdup -r -@ {threads} {params.prefix} {output.bam} 2>>{log}
         samtools index {output.bam} 2>>{log}
         rm -f {params.prefix}
