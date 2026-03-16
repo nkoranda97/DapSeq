@@ -33,6 +33,22 @@ wildcard_constraints:
     read   = "R[12]",
 
 # ─────────────────────────────────────────────────────────────────────────────
+# rule all
+# ─────────────────────────────────────────────────────────────────────────────
+rule all:
+    input:
+        config["genome_ref"] + ".sizes",
+        expand(OUT + "/Fastqc/{sample}.R1_fastqc.html", sample=SAMPLES),
+        expand(OUT + "/Fastqc/{sample}.R2_fastqc.html", sample=PE_SAMPLES),
+        OUT + "/multiqc_report.html",
+        expand(OUT + "/bigWig/{sample}.bw",                      sample=SAMPLES),
+        *(expand(OUT + "/bigWig/{sample}.peaks.bw",              sample=TREATMENT_SAMPLES) if CONTROL else []),
+        *(expand(OUT + "/compare_bed/{sample}.MACS_peak.bed",    sample=TREATMENT_SAMPLES) if USE_MACS else []),
+        *(expand(OUT + "/compare_bed/{sample}.GEM_peak.bed",     sample=TREATMENT_SAMPLES) if USE_GEM  else []),
+        *(expand(OUT + "/compare_bed/{sample}.compare_peak.bed", sample=TREATMENT_SAMPLES) if USE_BOTH else []),
+        expand(OUT + "/meme/{sample}-intersection/meme.txt",      sample=TREATMENT_SAMPLES),
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Checkpoint targets — run snakemake <target> to stop at a natural stage
 # ─────────────────────────────────────────────────────────────────────────────
 rule mapped:
@@ -48,22 +64,6 @@ rule motifs:
     input:
         expand(OUT + "/meme/{sample}/meme.txt",  sample=TREATMENT_SAMPLES),
         expand(OUT + "/fimo/{sample}/fimo.tsv",  sample=TREATMENT_SAMPLES),
-
-# ─────────────────────────────────────────────────────────────────────────────
-# rule all
-# ─────────────────────────────────────────────────────────────────────────────
-rule all:
-    input:
-        config["genome_ref"] + ".sizes",
-        expand(OUT + "/Fastqc/{sample}.R1_fastqc.html", sample=SAMPLES),
-        expand(OUT + "/Fastqc/{sample}.R2_fastqc.html", sample=PE_SAMPLES),
-        OUT + "/multiqc_report.html",
-        expand(OUT + "/bigWig/{sample}.bw",                      sample=SAMPLES),
-        *(expand(OUT + "/bigWig/{sample}.peaks.bw",              sample=TREATMENT_SAMPLES) if CONTROL else []),
-        *(expand(OUT + "/compare_bed/{sample}.MACS_peak.bed",    sample=TREATMENT_SAMPLES) if USE_MACS else []),
-        *(expand(OUT + "/compare_bed/{sample}.GEM_peak.bed",     sample=TREATMENT_SAMPLES) if USE_GEM  else []),
-        *(expand(OUT + "/compare_bed/{sample}.compare_peak.bed", sample=TREATMENT_SAMPLES) if USE_BOTH else []),
-        expand(OUT + "/meme/{sample}-intersection/meme.txt",      sample=TREATMENT_SAMPLES),
 
 
 # ─────────────────────────────────────────────────────────────────────────────
