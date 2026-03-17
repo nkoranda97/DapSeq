@@ -69,27 +69,28 @@ rule motifs:
 # ─────────────────────────────────────────────────────────────────────────────
 # Step 0: Index reference genome
 # ─────────────────────────────────────────────────────────────────────────────
-rule bwa_index:
+rule bowtie2_index:
     input:
         config["genome_ref"]
     output:
-        bwt   = config["genome_ref"] + ".bwt",
-        pac   = config["genome_ref"] + ".pac",
-        ann   = config["genome_ref"] + ".ann",
-        amb   = config["genome_ref"] + ".amb",
-        sa    = config["genome_ref"] + ".sa",
+        bt2_1 = config["genome_ref"] + ".1.bt2",
+        bt2_2 = config["genome_ref"] + ".2.bt2",
+        bt2_3 = config["genome_ref"] + ".3.bt2",
+        bt2_4 = config["genome_ref"] + ".4.bt2",
+        bt2_r1 = config["genome_ref"] + ".rev.1.bt2",
+        bt2_r2 = config["genome_ref"] + ".rev.2.bt2",
         sizes = config["genome_ref"] + ".sizes",
         fai   = config["genome_ref"] + ".fai",
     resources:
-        mem_mb          = config["resources"]["bwa_index"]["mem_mb"],
-        runtime         = config["resources"]["bwa_index"]["runtime"],
+        mem_mb          = config["resources"]["bowtie2_index"]["mem_mb"],
+        runtime         = config["resources"]["bowtie2_index"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/bwa_index.log"
+        OUT + "/logs/bowtie2_index.log"
     shell:
         """
-        bwa index -a bwtsw {input} 2>{log}
+        bowtie2-build {input} {input} 2>{log}
         samtools faidx {input} 2>>{log}
         cut -f1,2 {input}.fai > {output.sizes}
         """
@@ -234,29 +235,31 @@ rule multiqc:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 3: Align with BWA MEM (ALL samples)
-# Might be an updated tool that can replace old BWA MEM
+# Step 3: Align with bowtie2 (ALL samples)
 # ─────────────────────────────────────────────────────────────────────────────
-rule bwa_mem:
+rule bowtie2:
     input:
         r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
         r2  = lambda wc: [] if wc.sample in SE_SAMPLES else [OUT + f"/trimmed/{wc.sample}.R2.fastq.gz"],
-        idx = config["genome_ref"] + ".sizes",
+        idx = config["genome_ref"] + ".1.bt2",
     output:
         temp(OUT + "/sam/{sample}.sam")
     params:
-        r2_arg = lambda wc: "" if wc.sample in SE_SAMPLES else OUT + f"/trimmed/{wc.sample}.R2.fastq.gz",
+        idx    = config["genome_ref"],
+        r2_arg = lambda wc: "" if wc.sample in SE_SAMPLES else "-2 " + OUT + f"/trimmed/{wc.sample}.R2.fastq.gz",
+        pe_flag = lambda wc: "-U" if wc.sample in SE_SAMPLES else "-1",
+        extra   = config["bowtie2"].get("extra", ""),
     threads:
         config["threads"]
     resources:
-        mem_mb          = config["resources"]["bwa_mem"]["mem_mb"],
-        runtime         = config["resources"]["bwa_mem"]["runtime"],
+        mem_mb          = config["resources"]["bowtie2"]["mem_mb"],
+        runtime         = config["resources"]["bowtie2"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/bwa_mem/{sample}.log"
+        OUT + "/logs/bowtie2/{sample}.log"
     shell:
-        "bwa mem -t {threads} -k {config[bwa][k]} -B {config[bwa][B]} -O {config[bwa][O]} -v 0 {config[genome_ref]} {input.r1} {params.r2_arg} > {output} 2>{log}"
+        "bowtie2 -p {threads} {params.extra} -x {params.idx} {params.pe_flag} {input.r1} {params.r2_arg} -S {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

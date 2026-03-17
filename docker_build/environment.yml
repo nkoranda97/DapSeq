@@ -11,6 +11,8 @@ dependencies:
   - python=3.11
   - macs3
   - bwa
+  - bowtie2
+  - minimap2
   - samtools
   - deeptools
   - meme

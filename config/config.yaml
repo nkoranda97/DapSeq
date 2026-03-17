@@ -35,11 +35,9 @@ slurm_account: null
 samtools:
   mapq: 30
 
-# ── BWA MEM ──────────────────────────────────────────────────────────────────
-bwa:
-  k: 60
-  B: 7
-  O: 6
+# ── bowtie2 ──────────────────────────────────────────────────────────────────
+bowtie2:
+  extra: ""          # optional flags, e.g. "--no-mixed --no-discordant"
 
 # ── Trimmomatic ───────────────────────────────────────────────────────────────
 trimmomatic:
@@ -103,7 +101,7 @@ meme:
 
 # ── Per-rule resource overrides ───────────────────────────────────────────────
 resources:
-  bwa_index:
+  bowtie2_index:
     mem_mb: 8000
     runtime: 60
   split_genome:
@@ -118,7 +116,7 @@ resources:
   multiqc:
     mem_mb: 2000
     runtime: 30
-  bwa_mem:
+  bowtie2:
     mem_mb: 16000
     runtime: 120
   samtools_filter_sort_dedup:
