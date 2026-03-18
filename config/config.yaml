@@ -35,9 +35,19 @@ slurm_account: null
 samtools:
   mapq: 30
 
+# ── Aligner ──────────────────────────────────────────────────────────────────
+# Options: "bowtie2" | "bwa"
+aligner: "bowtie2"
+
 # ── bowtie2 ──────────────────────────────────────────────────────────────────
 bowtie2:
   extra: ""          # optional flags, e.g. "--no-mixed --no-discordant"
+
+# ── bwa ──────────────────────────────────────────────────────────────────────
+bwa:
+  k: 60
+  B: 7
+  O: 6
 
 # ── Trimmomatic ───────────────────────────────────────────────────────────────
 trimmomatic:
@@ -104,6 +114,12 @@ resources:
   bowtie2_index:
     mem_mb: 8000
     runtime: 60
+  bwa_index:
+    mem_mb: 8000
+    runtime: 60
+  bwa_mem:
+    mem_mb: 16000
+    runtime: 120
   split_genome:
     mem_mb: 8000
     runtime: 120

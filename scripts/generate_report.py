@@ -152,12 +152,64 @@ def parse_trimmomatic(results: Path, sample: str):
     if not log.exists():
         return None, None
     text = log.read_text()
+    # PE format
     m_raw = re.search(r"Input Read Pairs: (\d+)", text)
     m_clean = re.search(r"Both Surviving: (\d+)", text)
-    return (
-        int(m_raw.group(1)) if m_raw else None,
-        int(m_clean.group(1)) if m_clean else None,
-    )
+    if m_raw and m_clean:
+        return int(m_raw.group(1)), int(m_clean.group(1))
+    # SE format
+    m = re.search(r"Input Reads: (\d+) Surviving: (\d+)", text)
+    if m:
+        return int(m.group(1)), int(m.group(2))
+    return None, None
+
+
+def parse_bowtie2_log(results: Path, sample: str):
+    """Returns (total_reads, unique_aligned, overall_rate_pct) from bowtie2 log."""
+    log = results / "logs" / "bowtie2" / f"{sample}.log"
+    if not log.exists():
+        return None, None, None
+    text = log.read_text()
+    # Total reads (first number on "reads; of these:" line)
+    m_total = re.search(r"^(\d+) reads; of these:", text, re.MULTILINE)
+    # SE: "aligned exactly 1 time" — PE: "aligned concordantly exactly 1 time"
+    m_unique = re.search(r"(\d+) \(\d+\.\d+%\) aligned (?:concordantly )?exactly 1 time", text)
+    # Overall rate
+    m_rate = re.search(r"([\d.]+)% overall alignment rate", text)
+    total = int(m_total.group(1)) if m_total else None
+    unique = int(m_unique.group(1)) if m_unique else None
+    rate = float(m_rate.group(1)) if m_rate else None
+    return total, unique, rate
+
+
+def parse_bwa_log(results: Path, sample: str):
+    """Returns (total_reads, unique_aligned, overall_rate_pct) from bwa mem log.
+    BWA mem doesn't report alignment rate; returns None for those fields."""
+    log = results / "logs" / "bwa" / f"{sample}.log"
+    if not log.exists():
+        return None, None, None
+    text = log.read_text()
+    m_total = re.search(r"\[M::mem_process_seqs\] Processed (\d+) reads", text)
+    total = int(m_total.group(1)) if m_total else None
+    return total, None, None
+
+
+def detect_aligner(results: Path, sample: str) -> str | None:
+    """Detect which aligner was used by checking which log directory has a file."""
+    for aligner in ("bowtie2", "bwa"):
+        if (results / "logs" / aligner / f"{sample}.log").exists():
+            return aligner
+    return None
+
+
+def parse_alignment_log(results: Path, sample: str):
+    """Dispatch to the correct aligner log parser based on auto-detection."""
+    aligner = detect_aligner(results, sample)
+    if aligner == "bowtie2":
+        return parse_bowtie2_log(results, sample)
+    if aligner == "bwa":
+        return parse_bwa_log(results, sample)
+    return None, None, None
 
 
 def get_alignment_stats(results: Path, sample: str):
@@ -203,30 +255,26 @@ def build_stats_df(results: Path, samples: list[str]) -> pd.DataFrame:
     rows = []
     for sample in samples:
         gem_file = results / "GEM" / sample / f"{sample}.GEM_events.txt"
-        raw_pairs, clean_pairs = parse_trimmomatic(results, sample)
-        mapped, unique_pairs = get_alignment_stats(results, sample)
+        raw_reads, _ = parse_trimmomatic(results, sample)
+        clean_reads, unique_aligned, mapping_pct = parse_alignment_log(results, sample)
+        mapped, _ = get_alignment_stats(results, sample)
         macs_peaks, min5fold, max_score = get_peak_stats(results, sample)
         gem_count = (
             max(0, sum(1 for _ in open(gem_file)) - 1) if gem_file.exists() else None
         )
         peak_reads, frip = get_frip(results, sample, mapped)
-        mapping_pct = (
-            round(100 * mapped / (clean_pairs * 2), 2)
-            if mapped and clean_pairs
-            else None
-        )
         rows.append({
-            "sample":              sample,
-            "raw_pairs":           raw_pairs,
-            "clean_pairs":         clean_pairs,
-            "mapping_ratio%":      mapping_pct,
-            "unique_mapped_pairs": unique_pairs,
-            "MACS_peaks":          macs_peaks,
-            "min5fold_peaks":      min5fold,
-            "max_peak_score":      max_score,
-            "GEM_peaks":           gem_count,
-            "peak_reads":          peak_reads,
-            "FRiP%":               frip,
+            "sample":          sample,
+            "raw_reads":       raw_reads,
+            "clean_reads":     clean_reads,
+            "mapping_ratio%":  mapping_pct,
+            "unique_aligned":  unique_aligned,
+            "MACS_peaks":      macs_peaks,
+            "min5fold_peaks":  min5fold,
+            "max_peak_score":  max_score,
+            "GEM_peaks":       gem_count,
+            "peak_reads":      peak_reads,
+            "FRiP%":           frip,
         })
     return pd.DataFrame(rows)
 
@@ -268,7 +316,7 @@ def section_stats(results: Path, samples: list[str]) -> str:
     df = build_stats_df(results, samples)
 
     int_cols = [
-        "raw_pairs", "clean_pairs", "unique_mapped_pairs",
+        "raw_reads", "clean_reads", "unique_aligned",
         "MACS_peaks", "min5fold_peaks", "GEM_peaks", "peak_reads",
     ]
 
