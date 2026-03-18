@@ -11,6 +11,9 @@ results/
 human_results/
 mouse_results/
 .DS_Store
+arab_results_bowtie2_macs_only/
+arab_config.yaml
+arab_results_bowtie2/
 
 # local uv
 .python-version
