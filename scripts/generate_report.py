@@ -251,31 +251,62 @@ def get_frip(results: Path, sample: str, mapped_reads):
     return reads_in_peaks, round(100 * reads_in_peaks / mapped_reads, 2)
 
 
-def build_stats_df(results: Path, samples: list[str]) -> pd.DataFrame:
+def detect_peak_caller(results: Path) -> str:
+    """Infer peak_caller mode from which output directories are populated."""
+    has_macs = any((results / "MACS").glob("*_summits.bed")) if (results / "MACS").is_dir() else False
+    has_gem  = (results / "GEM").is_dir() and any((results / "GEM").iterdir())
+    if has_macs and has_gem:
+        return "both"
+    if has_macs:
+        return "macs3"
+    if has_gem:
+        return "gem"
+    return "macs3"  # fallback
+
+
+def discover_samples(results: Path, peak_caller: str, exclude: list[str]) -> list[str]:
+    """Return sorted treatment sample names based on available peak output."""
+    if peak_caller in ("both", "macs3"):
+        names = sorted(
+            p.stem.replace("_summits", "")
+            for p in (results / "MACS").glob("*_summits.bed")
+        )
+    else:
+        names = sorted(p.name for p in (results / "GEM").iterdir() if p.is_dir())
+    return [s for s in names if s not in exclude]
+
+
+def build_stats_df(results: Path, samples: list[str], peak_caller: str) -> pd.DataFrame:
+    use_macs = peak_caller in ("both", "macs3")
+    use_gem  = peak_caller in ("both", "gem")
     rows = []
     for sample in samples:
-        gem_file = results / "GEM" / sample / f"{sample}.GEM_events.txt"
         raw_reads, _ = parse_trimmomatic(results, sample)
         clean_reads, unique_aligned, mapping_pct = parse_alignment_log(results, sample)
         mapped, _ = get_alignment_stats(results, sample)
-        macs_peaks, min5fold, max_score = get_peak_stats(results, sample)
-        gem_count = (
-            max(0, sum(1 for _ in open(gem_file)) - 1) if gem_file.exists() else None
-        )
-        peak_reads, frip = get_frip(results, sample, mapped)
-        rows.append({
-            "sample":          sample,
-            "raw_reads":       raw_reads,
-            "clean_reads":     clean_reads,
-            "mapping_ratio%":  mapping_pct,
-            "unique_aligned":  unique_aligned,
-            "MACS_peaks":      macs_peaks,
-            "min5fold_peaks":  min5fold,
-            "max_peak_score":  max_score,
-            "GEM_peaks":       gem_count,
-            "peak_reads":      peak_reads,
-            "FRiP%":           frip,
-        })
+        row = {
+            "sample":         sample,
+            "raw_reads":      raw_reads,
+            "clean_reads":    clean_reads,
+            "mapping_ratio%": mapping_pct,
+            "unique_aligned": unique_aligned,
+        }
+        if use_macs:
+            macs_peaks, min5fold, max_score = get_peak_stats(results, sample)
+            peak_reads, frip = get_frip(results, sample, mapped)
+            row.update({
+                "MACS_peaks":     macs_peaks,
+                "min5fold_peaks": min5fold,
+                "max_peak_score": max_score,
+                "peak_reads":     peak_reads,
+                "FRiP%":          frip,
+            })
+        if use_gem:
+            gem_file = results / "GEM" / sample / f"{sample}.GEM_events.txt"
+            row["GEM_peaks"] = (
+                max(0, sum(1 for _ in open(gem_file)) - 1) if gem_file.exists() else None
+            )
+        rows.append(row)
     return pd.DataFrame(rows)
 
 
@@ -311,9 +342,9 @@ def compute_venn_sets(results: Path, samples: list[str]) -> dict:
 
 # ── Section builders ──────────────────────────────────────────────────────────
 
-def section_stats(results: Path, samples: list[str]) -> str:
+def section_stats(results: Path, samples: list[str], peak_caller: str) -> str:
     print("  Building sample statistics table…")
-    df = build_stats_df(results, samples)
+    df = build_stats_df(results, samples, peak_caller)
 
     int_cols = [
         "raw_reads", "clean_reads", "unique_aligned",
@@ -420,7 +451,7 @@ def _venn_figure(results: Path, samples: list[str], venn_set: dict, logo_key_fn,
     return img_tag(fig_to_base64(fig), "max-width:100%;")
 
 
-def section_venn_first(results: Path, samples: list[str], venn_set: dict) -> str:
+def section_venn_first(results: Path, samples: list[str], venn_set: dict, section_num: int) -> str:
     print("  Building first-round Venn diagrams…")
     content = _venn_figure(
         results, samples, venn_set,
@@ -429,15 +460,14 @@ def section_venn_first(results: Path, samples: list[str], venn_set: dict) -> str
     )
     return (
         '<section id="venn-first">'
-        "<h2>3. Peak Caller &amp; Motif Overlap</h2>"
+        f"<h2>{section_num}. Peak Caller &amp; Motif Overlap</h2>"
         + content
         + "</section>"
     )
 
 
-def section_venn_intersection(results: Path, samples: list[str], venn_set: dict) -> str:
+def section_venn_intersection(results: Path, samples: list[str], venn_set: dict, section_num: int) -> str:
     print("  Building intersection Venn diagrams…")
-    # Convert EPS logos for intersection meme dirs
     for sample in samples:
         ensure_logo_png(results / "meme" / f"{sample}-intersection" / "logo1.eps")
     content = _venn_figure(
@@ -447,15 +477,16 @@ def section_venn_intersection(results: Path, samples: list[str], venn_set: dict)
     )
     return (
         '<section id="venn-intersect">'
-        "<h2>4. Refined Motifs (Intersection)</h2>"
+        f"<h2>{section_num}. Refined Motifs (Intersection)</h2>"
         + content
         + "</section>"
     )
 
 
-def section_per_sample(results: Path, samples: list[str]) -> str:
+def section_per_sample(results: Path, samples: list[str], peak_caller: str, section_num: int) -> str:
     print("  Embedding per-sample reports…")
-    parts = ['<section id="per-sample"><h2>5. Per-Sample Detail</h2>']
+    use_gem = peak_caller in ("both", "gem")
+    parts = [f'<section id="per-sample"><h2>{section_num}. Per-Sample Detail</h2>']
     for sample in samples:
         anchor = f"sample-{sample.replace(' ', '_')}"
         parts.append(f'<div id="{anchor}" class="sample-block">')
@@ -467,16 +498,17 @@ def section_per_sample(results: Path, samples: list[str]) -> str:
         parts.append("<h4>FIMO Motif Scan</h4>")
         parts.append(blob_iframe(results / "fimo" / sample / "fimo.html", f"fimo-{anchor}"))
 
-        parts.append("<h4>GEM Results</h4>")
-        gem_html = gem_self_contained(results, sample)
-        if gem_html:
-            enc = base64.b64encode(gem_html.encode()).decode()
-            parts.append(
-                f'<iframe src="data:text/html;base64,{enc}" '
-                f'width="100%" height="700px" style="border:none;"></iframe>'
-            )
-        else:
-            parts.append('<p class="missing">GEM results not found.</p>')
+        if use_gem:
+            parts.append("<h4>GEM Results</h4>")
+            gem_html = gem_self_contained(results, sample)
+            if gem_html:
+                enc = base64.b64encode(gem_html.encode()).decode()
+                parts.append(
+                    f'<iframe src="data:text/html;base64,{enc}" '
+                    f'width="100%" height="700px" style="border:none;"></iframe>'
+                )
+            else:
+                parts.append('<p class="missing">GEM results not found.</p>')
 
         parts.append("</div>")
     parts.append("</section>")
@@ -485,23 +517,20 @@ def section_per_sample(results: Path, samples: list[str]) -> str:
 
 # ── TOC ───────────────────────────────────────────────────────────────────────
 
-def build_toc(samples: list[str]) -> str:
-    items = [
-        ('<a href="#stats">1. Sample Statistics</a>', ""),
-        ('<a href="#multiqc">2. QC — MultiQC</a>', ""),
-        ('<a href="#venn-first">3. Peak Caller &amp; Motif Overlap</a>', ""),
-        ('<a href="#venn-intersect">4. Refined Motifs (Intersection)</a>', ""),
-        ('<a href="#per-sample">5. Per-Sample Detail</a>', ""),
-    ]
+def build_toc(samples: list[str], peak_caller: str) -> str:
+    n = 1
+    items = []
+    items.append(f'<a href="#stats">{n}. Sample Statistics</a>'); n += 1
+    items.append(f'<a href="#multiqc">{n}. QC — MultiQC</a>'); n += 1
+    if peak_caller == "both":
+        items.append(f'<a href="#venn-first">{n}. Peak Caller &amp; Motif Overlap</a>'); n += 1
+        items.append(f'<a href="#venn-intersect">{n}. Refined Motifs (Intersection)</a>'); n += 1
     sub_items = "".join(
         f'<li><a href="#sample-{s.replace(" ", "_")}">{s}</a></li>'
         for s in samples
     )
-    li = "".join(f"<li>{link}</li>" for link, _ in items)
-    li = li.replace(
-        "<li><a href=\"#per-sample\">5. Per-Sample Detail</a></li>",
-        f'<li><a href="#per-sample">5. Per-Sample Detail</a><ul>{sub_items}</ul></li>',
-    )
+    items.append(f'<a href="#per-sample">{n}. Per-Sample Detail</a><ul>{sub_items}</ul>')
+    li = "".join(f"<li>{link}</li>" for link in items)
     return f'<nav id="toc"><h2>Contents</h2><ul>{li}</ul></nav>'
 
 
@@ -573,30 +602,32 @@ def main():
     if not results.is_dir():
         raise SystemExit(f"ERROR: results directory not found: {results}")
 
-    # Discover samples
-    all_samples = sorted(
-        p.stem.replace("_summits", "")
-        for p in (results / "MACS").glob("*_summits.bed")
-    )
-    exclude = [args.control, "TF1", "TF2"]
-    samples = [s for s in all_samples if s not in exclude]
+    peak_caller = detect_peak_caller(results)
+    print(f"Detected peak caller mode: {peak_caller}")
+
+    exclude = [args.control] if args.control else []
+    samples = discover_samples(results, peak_caller, exclude)
     print(f"Found {len(samples)} treatment samples: {samples}")
 
     if not samples:
         raise SystemExit("ERROR: No treatment samples found — check --results and --control.")
 
     print("Building report sections…")
-    venn_set = compute_venn_sets(results, samples)
 
-    sections = [
-        section_stats(results, samples),
-        section_multiqc(results),
-        section_venn_first(results, samples, venn_set),
-        section_venn_intersection(results, samples, venn_set),
-        section_per_sample(results, samples),
-    ]
+    n = 1
+    sections = []
 
-    toc = build_toc(samples)
+    sections.append(section_stats(results, samples, peak_caller)); n += 1
+    sections.append(section_multiqc(results)); n += 1
+
+    if peak_caller == "both":
+        venn_set = compute_venn_sets(results, samples)
+        sections.append(section_venn_first(results, samples, venn_set, n)); n += 1
+        sections.append(section_venn_intersection(results, samples, venn_set, n)); n += 1
+
+    sections.append(section_per_sample(results, samples, peak_caller, n))
+
+    toc = build_toc(samples, peak_caller)
     html = assemble_html(toc, sections, datetime.now().strftime("%Y-%m-%d %H:%M"))
 
     out = Path(args.output)
