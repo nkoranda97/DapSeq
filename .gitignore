@@ -10,6 +10,7 @@ multiqc_report.html
 results/
 human_results/
 mouse_results/
+.DS_Store
 
 # local uv
 .python-version
