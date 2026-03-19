@@ -314,7 +314,7 @@ elif ALIGNER == "bwa":
         log:
             OUT + "/logs/bwa/{sample}.log"
         shell:
-            "bwa mem -t {threads} -k {params.k} -B {params.B} -O {params.O} -v 0 {config[genome_ref]} {input.r1} {params.r2_arg} > {output} 2>{log}"
+            "bwa mem -t {threads} -k {params.k} -B {params.B} -O {params.O} -v 2 {config[genome_ref]} {input.r1} {params.r2_arg} > {output} 2>{log}"
 
 
 # ─────────────────────────────────────────────────────────────────────────────

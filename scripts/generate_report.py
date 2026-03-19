@@ -281,9 +281,16 @@ def build_stats_df(results: Path, samples: list[str], peak_caller: str) -> pd.Da
     use_gem  = peak_caller in ("both", "gem")
     rows = []
     for sample in samples:
-        raw_reads, _ = parse_trimmomatic(results, sample)
-        clean_reads, unique_aligned, mapping_pct = parse_alignment_log(results, sample)
-        mapped, _ = get_alignment_stats(results, sample)
+        raw_reads, trim_clean_reads = parse_trimmomatic(results, sample)
+        aligner_total, unique_aligned, mapping_pct = parse_alignment_log(results, sample)
+        clean_reads = aligner_total if aligner_total is not None else trim_clean_reads
+        mapped, mapped_pairs = get_alignment_stats(results, sample)
+        # bwa -v 0 logs lack alignment stats — fall back to BAM flagstat for unique_aligned.
+        # mapping_pct stays None for bwa: the filtered BAM gives a post-MAPQ+dedup
+        # retention rate (~40%), not the pre-filter alignment rate. Use -v 2 in the
+        # Snakefile bwa_mem rule so future runs capture the real alignment rate.
+        if unique_aligned is None:
+            unique_aligned = mapped_pairs
         row = {
             "sample":         sample,
             "raw_reads":      raw_reads,
