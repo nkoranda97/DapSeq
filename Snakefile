@@ -344,22 +344,22 @@ rule alignment_stats:
     shell:
         """
         exec 2>{log}
-        TOTAL=$(samtools view -c -F 2308 {input})
-        MAPPED=$(samtools view -c -F 2312 {input})
+        TOTAL=$(samtools view -c -F 2304 {input})
+        MAPPED=$(samtools view -c -F 2308 {input})
         UNMAPPED=$(samtools view -c -f 4 -F 2304 {input})
         if [ "$TOTAL" -gt 0 ]; then
           MAPPING_RATE=$(awk "BEGIN {{printf \\"%.2f\\", 100.0 * $MAPPED / $TOTAL}}")
         else
           MAPPING_RATE=0.00
         fi
-        UNIQUE=$(samtools view -c -F 2312 -q {params.mapq} {input})
+        UNIQUE=$(samtools view -c -F 2308 -q {params.mapq} {input})
         MULTI=$((MAPPED - UNIQUE))
         if [ "$TOTAL" -gt 0 ]; then
           MULTI_RATE=$(awk "BEGIN {{printf \\"%.2f\\", 100.0 * $MULTI / $TOTAL}}")
         else
           MULTI_RATE=0.00
         fi
-        SOFT=$(samtools view -F 2312 {input} | awk '$6 ~ /S/' | wc -l)
+        SOFT=$(samtools view -F 2308 {input} | awk '$6 ~ /S/' | wc -l)
 
         printf "total_reads\t%d\n"          "$TOTAL"        >  {output}
         printf "mapped_reads\t%d\n"         "$MAPPED"       >> {output}

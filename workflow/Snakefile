@@ -1,0 +1,24 @@
+from snakemake.utils import min_version
+min_version("8.0")
+
+configfile: "config/config.yaml"
+
+container: "docker://nkoranda/dapseq:latest"
+
+include: "rules/common.smk"
+include: "rules/ref.smk"
+include: "rules/trim.smk"
+include: "rules/qc.smk"
+include: "rules/align.smk"
+include: "rules/filter.smk"
+include: "rules/peaks.smk"
+include: "rules/motifs.smk"
+include: "rules/stats.smk"
+
+
+rule all:
+    input:
+        rules.mapped.input,
+        rules.peaked.input,
+        rules.motifs_done.input,
+        rules.qc_done.input,
