@@ -183,3 +183,21 @@ resources:
   meme_intersection:
     mem_mb: 8000
     runtime: 120
+  alignment_stats:
+    mem_mb: 4000
+    runtime: 30
+  filtered_stats:
+    mem_mb: 4000
+    runtime: 30
+  frip:
+    mem_mb: 4000
+    runtime: 30
+  frip_macs:
+    mem_mb: 4000
+    runtime: 30
+  frip_gem:
+    mem_mb: 4000
+    runtime: 30
+  qc_summary:
+    mem_mb: 2000
+    runtime: 10
