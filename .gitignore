@@ -9,9 +9,6 @@ tiny_test/output
 
 
 # local files
-.python-version
-uv.lock
-pyproject.toml
 .venv/
 .vscode
 .history

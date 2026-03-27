@@ -1,5 +1,6 @@
 # Local execution profile (macOS / no SLURM / no Singularity)
 executor: local
+logger: rich
 cores: 4
 configfile:
   - config/config.yaml

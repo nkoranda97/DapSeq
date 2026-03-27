@@ -1,0 +1,11 @@
+[project]
+name = "dap-seq-pipeline"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13.12"
+dependencies = [
+    "pytest>=9.0.2",
+    "snakemake>=9.18.2",
+    "snakemake-logger-plugin-rich>=0.4.1",
+]

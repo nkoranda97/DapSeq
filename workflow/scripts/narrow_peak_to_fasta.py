@@ -92,6 +92,8 @@ def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimoc
 
 
 if "snakemake" in dir():
+    import sys
+    sys.stderr = open(snakemake.log[0], "w")  # noqa: F821
     narrow_peak_to_fasta(
         snakemake.input.narrowpeak,    # noqa: F821
         snakemake.input.genome,        # noqa: F821

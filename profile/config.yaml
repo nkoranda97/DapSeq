@@ -8,6 +8,7 @@
 # ─────────────────────────────────────────────────────────────────────────────
 
 executor: slurm
+logger: rich
 
 # jobscript runs before every SLURM job — loads Singularity module
 jobscript: "profile/slurm-jobscript.sh"
