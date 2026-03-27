@@ -4,6 +4,8 @@ rule fastqc:
     output:
         html = OUT + "/Fastqc/{sample}.{read}_fastqc.html",
         zip  = OUT + "/Fastqc/{sample}.{read}_fastqc.zip",
+    params:
+        extra = config.get("fastqc", {}).get("extra", ""),
     resources:
         mem_mb          = config["resources"]["fastqc"]["mem_mb"],
         runtime         = config["resources"]["fastqc"]["runtime"],
@@ -12,7 +14,7 @@ rule fastqc:
     log:
         OUT + "/logs/fastqc/{sample}.{read}.log"
     shell:
-        "fastqc {input} --outdir={OUT}/Fastqc/ 2>{log}"
+        "fastqc {params.extra} {input} --outdir={OUT}/Fastqc/ 2>{log}"
 
 
 rule multiqc:
@@ -21,6 +23,8 @@ rule multiqc:
         expand(OUT + "/Fastqc/{sample}.R2_fastqc.zip", sample=PE_SAMPLES),
     output:
         OUT + "/multiqc_report.html"
+    params:
+        extra = config.get("multiqc", {}).get("extra", ""),
     resources:
         mem_mb          = config["resources"]["multiqc"]["mem_mb"],
         runtime         = config["resources"]["multiqc"]["runtime"],
@@ -29,4 +33,4 @@ rule multiqc:
     log:
         OUT + "/logs/multiqc.log"
     shell:
-        "multiqc {OUT}/Fastqc/ -o {OUT}/ 2>{log}"
+        "multiqc {params.extra} {OUT}/Fastqc/ -o {OUT}/ 2>{log}"

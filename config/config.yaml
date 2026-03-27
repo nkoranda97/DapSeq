@@ -24,6 +24,9 @@ genome_ref: null
 
 genome_size: null
 
+# Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
+gene_annotation: null
+
 # ── Compute ──────────────────────────────────────────────────────────────────
 threads: 8
 
@@ -33,34 +36,24 @@ slurm_account: null
 
 # ── Samtools ─────────────────────────────────────────────────────────────────
 samtools:
-  mapq: 30
-
-# ── Aligner ──────────────────────────────────────────────────────────────────
-# Options: "bowtie2" | "bwa"
-aligner: "bowtie2"
+  mapq: 10
+  extra_merge: ""   # optional extra flags for samtools merge
 
 # ── bowtie2 ──────────────────────────────────────────────────────────────────
 bowtie2:
-  extra: ""          # optional flags, e.g. "--no-mixed --no-discordant"
+  extra: ""          # optional flags passed to bowtie2 align
+  extra_build: ""    # optional flags passed to bowtie2-build
 
-# ── bwa ──────────────────────────────────────────────────────────────────────
-bwa:
-  k: 60
-  B: 7
-  O: 6
-
-# ── Trimmomatic ───────────────────────────────────────────────────────────────
-trimmomatic:
-  minlen: 36
-  # Adapter file for ILLUMINACLIP. null uses the bundled TruSeq3-PE-2.fa.
-  # Use a bare filename (e.g. TruSeq2-PE.fa) for other bundled files,
-  # or an absolute path for a custom file.
+# ── bbduk / reformat (trim + subsample) ──────────────────────────────────────
+bbduk:
+  # Adapter file for bbduk ref=. null uses BBTools built-in adapters.
+  # Use an absolute path for a custom file.
   adapters: null
-
-# ── bamCoverage ───────────────────────────────────────────────────────────────
-bamcoverage:
-  normalize_using: BPM
-  extend_reads: 300
+  # Subsample to at most this many fragments per sample. null = no subsampling.
+  max_frags: null
+  # Memory for bbduk/reformat in GB (1 GB is reserved for the OS).
+  mem_gb: 8
+  extra: ""          # optional extra flags passed to bbduk.sh
 
 # ── bamCompare ────────────────────────────────────────────────────────────────
 bamcompare:
@@ -68,64 +61,49 @@ bamcompare:
   operation: ratio
   scale_factors_method: SES
   n: 1000
+  extra: ""          # optional extra flags passed to bamCompare
 
 # ── MACS3 ────────────────────────────────────────────────────────────────────
 macs3:
-  qvalue: 0.01
-  min_fold: 2
-  max_fold: 50
   format: BAMPE
-
-# ── GEM ──────────────────────────────────────────────────────────────────────
-gem:
-  k_min: 6
-  k_max: 20
-  k_seqs: 600
-  fold_cutoff: 1
-  xmx: 16G
-
-# ── Tandem filter ─────────────────────────────────────────────────────────────
-tandem_filter:
-  k: 6
-  k_max: 4
-
-# ── Peak caller ───────────────────────────────────────────────────────────────
-# Options: "both" | "macs3" | "gem"
-peak_caller: "both"
-
-# ── Peak combining ────────────────────────────────────────────────────────────
-combine_peaks:
-  window_size: 80
-  min_score: 1
+  extra: ""
+  min_foldch: 2.0
 
 # ── FIMO ─────────────────────────────────────────────────────────────────────
 fimo:
   thresh: 1.0e-5
+  extra: ""          # optional extra flags passed to fimo
 
 # ── MEME ─────────────────────────────────────────────────────────────────────
 meme:
-  nmotifs: 1
-  minw: 4
-  maxw: 12
-  mod: oops
+  nmotifs: 2
+  minw: 8
+  maxw: 32
+  mod: anr
+  maxpeaks: 100
+  summit_extend: 30
+  extra: ""          # optional extra flags passed to meme
+
+# ── FastQC ───────────────────────────────────────────────────────────────────
+fastqc:
+  extra: ""          # optional extra flags passed to fastqc
+
+# ── MultiQC ──────────────────────────────────────────────────────────────────
+multiqc:
+  extra: ""          # optional extra flags passed to multiqc
+
+# ── HOMER annotatePeaks ───────────────────────────────────────────────────────
+homer:
+  extra: ""          # optional extra flags passed to annotatePeaks.pl
 
 # ── Per-rule resource overrides ───────────────────────────────────────────────
 resources:
   bowtie2_index:
     mem_mb: 8000
     runtime: 60
-  bwa_index:
-    mem_mb: 8000
-    runtime: 60
-  bwa_mem:
+  trim_align:
     mem_mb: 16000
     runtime: 120
-  split_genome:
-    mem_mb: 8000
-    runtime: 120
-  trimmomatic:
-    mem_mb: 4000
-    runtime: 60
   fastqc:
     mem_mb: 2000
     runtime: 30
@@ -135,7 +113,7 @@ resources:
   bowtie2:
     mem_mb: 16000
     runtime: 120
-  samtools_filter_sort_dedup:
+  samtools_filter_sort:
     mem_mb: 8000
     runtime: 60
   bamcoverage:
@@ -147,19 +125,10 @@ resources:
   macs3:
     mem_mb: 8000
     runtime: 60
-  gem:
-    mem_mb: 32000
-    runtime: 240
-  combine_peaks:
-    mem_mb: 4000
-    runtime: 30
-  getfasta:
-    mem_mb: 4000
-    runtime: 30
-  dedup_fasta:
-    mem_mb: 4000
-    runtime: 30
-  tandem_filter:
+  filter_peaks:
+    mem_mb: 1000
+    runtime: 10
+  narrow_peak_to_fasta:
     mem_mb: 4000
     runtime: 30
   meme:
@@ -168,36 +137,21 @@ resources:
   fimo:
     mem_mb: 8000
     runtime: 60
-  fimo_to_bed:
-    mem_mb: 1000
-    runtime: 10
-  bedtools_intersect:
-    mem_mb: 4000
-    runtime: 30
-  motif_intersect:
-    mem_mb: 4000
-    runtime: 30
-  getfasta_intersection:
-    mem_mb: 4000
-    runtime: 30
-  meme_intersection:
-    mem_mb: 8000
-    runtime: 120
   alignment_stats:
     mem_mb: 4000
     runtime: 30
   filtered_stats:
     mem_mb: 4000
     runtime: 30
-  frip:
-    mem_mb: 4000
-    runtime: 30
   frip_macs:
-    mem_mb: 4000
-    runtime: 30
-  frip_gem:
     mem_mb: 4000
     runtime: 30
   qc_summary:
     mem_mb: 2000
     runtime: 10
+  merge_control:
+    mem_mb: 8000
+    runtime: 60
+  homer_annotate:
+    mem_mb: 4000
+    runtime: 30

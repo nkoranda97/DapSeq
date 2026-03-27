@@ -8,12 +8,13 @@ container: "docker://nkoranda/dapseq:latest"
 include: "rules/common.smk"
 include: "rules/ref.smk"
 include: "rules/trim.smk"
-include: "rules/qc.smk"
 include: "rules/align.smk"
+include: "rules/qc.smk"
 include: "rules/filter.smk"
 include: "rules/peaks.smk"
 include: "rules/motifs.smk"
 include: "rules/stats.smk"
+include: "rules/annotation.smk"
 
 
 rule all:

@@ -1,0 +1,9 @@
+# Local execution profile (macOS / no SLURM / no Singularity)
+executor: local
+cores: 4
+configfile:
+  - config/config.yaml
+  - config/config_test.yaml
+default-resources:
+  mem_mb: 4000
+  runtime: 120

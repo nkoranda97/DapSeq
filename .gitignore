@@ -2,31 +2,19 @@
 .cache/
 .java/
 .snakemake/
-.venv/
-logs/
-multiqc_data/
-Trimmed_output/
-multiqc_report.html
-results/
-human_results/
-mouse_results/
-.DS_Store
-arab_results_bowtie2_macs_only/
-arab_config.yaml
-arab_results_bowtie2/
 
-# local uv
+# test results
+results/
+tiny_test/output
+
+
+# local files
 .python-version
 uv.lock
 pyproject.toml
+.venv/
 .vscode
 .history
-
-# local python files
 __pycache__/
-
-# pytest cache
 .pytest_cache
-
-# Claude settings
 .claude/

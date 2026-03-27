@@ -1,66 +1,58 @@
-rule getfasta:
+rule narrow_peak_to_fasta_summits:
     input:
-        bed    = OUT + "/combined_bed/{sample}.combined.bed",
-        genome = config["genome_ref"],
+        narrowpeak = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+        genome     = config["genome_ref"],
     output:
-        OUT + "/fasta/{sample}.fasta"
-    resources:
-        mem_mb          = config["resources"]["getfasta"]["mem_mb"],
-        runtime         = config["resources"]["getfasta"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    log:
-        OUT + "/logs/getfasta/{sample}.log"
-    shell:
-        "bedtools getfasta -fo {output} -fi {input.genome} -bed {input.bed} 2>{log}"
-
-
-rule dedup_fasta:
-    input:
-        OUT + "/fasta/{sample}.fasta"
-    output:
-        OUT + "/fasta/{sample}.fasta.nodup"
-    resources:
-        mem_mb          = config["resources"]["dedup_fasta"]["mem_mb"],
-        runtime         = config["resources"]["dedup_fasta"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    log:
-        OUT + "/logs/dedup_fasta/{sample}.log"
-    script:
-        "../scripts/dedup_fasta.py"
-
-
-rule tandem_filter:
-    input:
-        OUT + "/fasta/{sample}.fasta.nodup"
-    output:
-        OUT + "/fasta/{sample}.fasta.filtered.fasta"
+        OUT + "/fasta/{sample}.summits.fasta",
     params:
-        k     = config["tandem_filter"]["k"],
-        k_max = config["tandem_filter"]["k_max"],
+        maxpeaks   = config["meme"]["maxpeaks"],
+        extend_bp  = config["meme"]["summit_extend"],
+        fimocoords = True,
     resources:
-        mem_mb          = config["resources"]["tandem_filter"]["mem_mb"],
-        runtime         = config["resources"]["tandem_filter"]["runtime"],
+        mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
+        runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/tandem_filter/{sample}.log"
+        OUT + "/logs/narrow_peak_to_fasta/{sample}.summits.log"
     script:
-        "../scripts/tandem_filter.py"
+        "../scripts/narrow_peak_to_fasta.py"
 
 
-rule meme:
+rule narrow_peak_to_fasta_peaks:
     input:
-        OUT + "/fasta/{sample}.fasta.filtered.fasta"
+        narrowpeak = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+        genome     = config["genome_ref"],
     output:
-        txt = OUT + "/meme/{sample}/meme.txt",
+        OUT + "/fasta/{sample}.peaks.fasta",
     params:
-        outdir  = OUT + "/meme/{sample}",
+        maxpeaks   = config["meme"]["maxpeaks"],
+        extend_bp  = "all",
+        fimocoords = True,
+    resources:
+        mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
+        runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/narrow_peak_to_fasta/{sample}.peaks.log"
+    script:
+        "../scripts/narrow_peak_to_fasta.py"
+
+
+rule meme_summits:
+    input:
+        OUT + "/fasta/{sample}.summits.fasta",
+    output:
+        txt = OUT + "/meme/{sample}/summits/meme.txt",
+        xml = OUT + "/meme/{sample}/summits/meme.xml",
+    params:
+        outdir  = OUT + "/meme/{sample}/summits",
         nmotifs = config["meme"]["nmotifs"],
         minw    = config["meme"]["minw"],
         maxw    = config["meme"]["maxw"],
         mod     = config["meme"]["mod"],
+        extra   = config["meme"].get("extra", ""),
     threads:
         config["threads"]
     resources:
@@ -69,162 +61,108 @@ rule meme:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/meme/{sample}.log"
+        OUT + "/logs/meme/{sample}.summits.log"
     shell:
-        "bash {SCRIPTS}/run_meme.sh {input} {params.outdir} {threads} {log} 'filtered FASTA (step 8)' {params.nmotifs} {params.minw} {params.maxw} {params.mod}"
+        """
+        if [ ! -s {input} ]; then
+            touch {output.txt} {output.xml}
+        else
+            meme {input} -oc {params.outdir} \
+              -dna -revcomp \
+              -mod {params.mod} -nmotifs {params.nmotifs} \
+              -minw {params.minw} -maxw {params.maxw} \
+              -maxsize 10000000 -p {threads} -nostatus {params.extra} 2>{log}
+        fi
+        """
 
 
-rule fimo:
+rule meme_peaks:
     input:
-        meme_txt = OUT + "/meme/{sample}/meme.txt",
-        genome   = config["genome_ref"],
+        OUT + "/fasta/{sample}.peaks.fasta",
     output:
-        tsv = OUT + "/fimo/{sample}/fimo.tsv",
-        gff = OUT + "/fimo/{sample}/fimo.gff",
+        txt = OUT + "/meme/{sample}/peaks/meme.txt",
+        xml = OUT + "/meme/{sample}/peaks/meme.xml",
     params:
-        outdir = OUT + "/fimo/{sample}",
+        outdir  = OUT + "/meme/{sample}/peaks",
+        nmotifs = config["meme"]["nmotifs"],
+        minw    = config["meme"]["minw"],
+        maxw    = config["meme"]["maxw"],
+        mod     = config["meme"]["mod"],
+        extra   = config["meme"].get("extra", ""),
+    threads:
+        config["threads"]
+    resources:
+        mem_mb          = config["resources"]["meme"]["mem_mb"],
+        runtime         = config["resources"]["meme"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/meme/{sample}.peaks.log"
+    shell:
+        """
+        if [ ! -s {input} ]; then
+            touch {output.txt} {output.xml}
+        else
+            meme {input} -oc {params.outdir} \
+              -dna -revcomp \
+              -mod {params.mod} -nmotifs {params.nmotifs} \
+              -minw {params.minw} -maxw {params.maxw} \
+              -maxsize 10000000 -p {threads} -nostatus {params.extra} 2>{log}
+        fi
+        """
+
+
+rule fimo_summits:
+    input:
+        meme_xml = OUT + "/meme/{sample}/summits/meme.xml",
+        fasta    = OUT + "/fasta/{sample}.summits.fasta",
+    output:
+        tsv = OUT + "/fimo/{sample}/summits/fimo.tsv",
+    params:
+        outdir = OUT + "/fimo/{sample}/summits",
+        extra  = config["fimo"].get("extra", ""),
     resources:
         mem_mb          = config["resources"]["fimo"]["mem_mb"],
         runtime         = config["resources"]["fimo"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/fimo/{sample}.log"
+        OUT + "/logs/fimo/{sample}.summits.log"
     shell:
         """
-        fimo -verbosity 1 --thresh {config[fimo][thresh]} \
-          -oc {params.outdir} \
-          {input.meme_txt} {input.genome} 2>{log}
+        if [ ! -s {input.meme_xml} ]; then
+            mkdir -p {params.outdir} && touch {output.tsv}
+        else
+            fimo --parse-genomic-coord --thresh {config[fimo][thresh]} \
+              {params.extra} -oc {params.outdir} \
+              {input.meme_xml} {input.fasta} 2>{log}
+        fi
         """
 
 
-rule fimo_to_bed:
+rule fimo_peaks:
     input:
-        OUT + "/fimo/{sample}/fimo.tsv"
+        meme_xml = OUT + "/meme/{sample}/peaks/meme.xml",
+        fasta    = OUT + "/fasta/{sample}.peaks.fasta",
     output:
-        OUT + "/fimo/{sample}/fimo.bed"
-    resources:
-        mem_mb          = config["resources"]["fimo_to_bed"]["mem_mb"],
-        runtime         = config["resources"]["fimo_to_bed"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    script:
-        "../scripts/fimo_to_bed.py"
-
-
-if USE_MACS:
-    rule fimo_macs_intersect:
-        input:
-            fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
-            macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
-        output:
-            OUT + "/compare_bed/{sample}.MACS_peak.bed",
-        resources:
-            mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
-            runtime         = config["resources"]["bedtools_intersect"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
-        log:
-            OUT + "/logs/bedtools_intersect/{sample}.MACS.log"
-        shell:
-            "bedtools intersect -wa -a {input.fimo_bed} -b {input.macs_bed} > {output} 2>{log}"
-
-if USE_GEM:
-    rule fimo_gem_intersect:
-        input:
-            fimo_bed = OUT + "/fimo/{sample}/fimo.bed",
-            gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
-        output:
-            OUT + "/compare_bed/{sample}.GEM_peak.bed",
-        resources:
-            mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
-            runtime         = config["resources"]["bedtools_intersect"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
-        log:
-            OUT + "/logs/bedtools_intersect/{sample}.GEM.log"
-        shell:
-            "bedtools intersect -wa -a {input.fimo_bed} -b {input.gem_bed} > {output} 2>{log}"
-
-if USE_BOTH:
-    rule compare_callers_intersect:
-        input:
-            macs_bed = OUT + "/compare_bed/{sample}.MACS.bed",
-            gem_bed  = OUT + "/compare_bed/{sample}.GEM.bed",
-        output:
-            OUT + "/compare_bed/{sample}.compare_peak.bed",
-        resources:
-            mem_mb          = config["resources"]["bedtools_intersect"]["mem_mb"],
-            runtime         = config["resources"]["bedtools_intersect"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
-        log:
-            OUT + "/logs/bedtools_intersect/{sample}.compare.log"
-        shell:
-            "bedtools intersect -wa -a {input.macs_bed} -b {input.gem_bed} > {output} 2>{log}"
-
-
-rule motif_intersect:
-    input:
-        fimo_bed  = OUT + "/fimo/{sample}/fimo.bed",
-        peak_beds = (
-            [OUT + "/compare_bed/{sample}.MACS.bed",
-             OUT + "/compare_bed/{sample}.GEM.bed"] if USE_BOTH else
-            [OUT + "/compare_bed/{sample}.MACS.bed"] if USE_MACS else
-            [OUT + "/compare_bed/{sample}.GEM.bed"]
-        ),
-    output:
-        OUT + "/compare_bed/{sample}.intersection.bed"
-    resources:
-        mem_mb          = config["resources"]["motif_intersect"]["mem_mb"],
-        runtime         = config["resources"]["motif_intersect"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    log:
-        OUT + "/logs/motif_intersect/{sample}.log"
-    shell:
-        """
-        bedtools intersect -wa -a {input.fimo_bed} -b {input.peak_beds} 2>{log} \
-          | sort -u > {output}
-        """
-
-
-rule getfasta_intersection:
-    input:
-        bed    = OUT + "/compare_bed/{sample}.intersection.bed",
-        genome = config["genome_ref"],
-    output:
-        OUT + "/fasta/{sample}.motif.fasta"
-    resources:
-        mem_mb          = config["resources"]["getfasta_intersection"]["mem_mb"],
-        runtime         = config["resources"]["getfasta_intersection"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    log:
-        OUT + "/logs/getfasta_intersection/{sample}.log"
-    shell:
-        "bedtools getfasta -fo {output} -fi {input.genome} -bed {input.bed} 2>{log}"
-
-
-rule meme_intersection:
-    input:
-        OUT + "/fasta/{sample}.motif.fasta"
-    output:
-        txt = OUT + "/meme/{sample}-intersection/meme.txt",
+        tsv = OUT + "/fimo/{sample}/peaks/fimo.tsv",
     params:
-        outdir  = OUT + "/meme/{sample}-intersection",
-        nmotifs = config["meme"]["nmotifs"],
-        minw    = config["meme"]["minw"],
-        maxw    = config["meme"]["maxw"],
-        mod     = config["meme"]["mod"],
-    threads:
-        config["threads"]
+        outdir = OUT + "/fimo/{sample}/peaks",
+        extra  = config["fimo"].get("extra", ""),
     resources:
-        mem_mb          = config["resources"]["meme_intersection"]["mem_mb"],
-        runtime         = config["resources"]["meme_intersection"]["runtime"],
+        mem_mb          = config["resources"]["fimo"]["mem_mb"],
+        runtime         = config["resources"]["fimo"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/meme_intersection/{sample}.log"
+        OUT + "/logs/fimo/{sample}.peaks.log"
     shell:
-        "bash {SCRIPTS}/run_meme.sh {input} {params.outdir} {threads} {log} 'intersection FASTA (step 12)' {params.nmotifs} {params.minw} {params.maxw} {params.mod}"
+        """
+        if [ ! -s {input.meme_xml} ]; then
+            mkdir -p {params.outdir} && touch {output.tsv}
+        else
+            fimo --parse-genomic-coord --thresh {config[fimo][thresh]} \
+              {params.extra} -oc {params.outdir} \
+              {input.meme_xml} {input.fasta} 2>{log}
+        fi
+        """

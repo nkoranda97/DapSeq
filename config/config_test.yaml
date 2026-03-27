@@ -1,0 +1,59 @@
+samples:
+  exp:
+    r1:
+      - /Users/nick/Projects/Dap-Seq-pipeline/tiny_test/exp.fastq.gz
+      - /Users/nick/Projects/Dap-Seq-pipeline/tiny_test/control.fastq.gz
+    r2: null
+  input_DNA:
+    r1: /Users/nick/Projects/Dap-Seq-pipeline/tiny_test/control.fastq.gz
+    r2: null
+
+input_control: input_DNA
+
+output_dir: /Users/nick/Projects/Dap-Seq-pipeline/tiny_test/output
+
+genome_ref: /Users/nick/Projects/Dap-Seq-pipeline/tiny_test/control.fasta
+
+genome_size: 5120
+
+threads: 4
+
+# ── Samtools ─────────────────────────────────────────────────────────────────
+samtools:
+  mapq: 20
+
+# ── bowtie2 ──────────────────────────────────────────────────────────────────
+bowtie2:
+  extra: ""          # optional flags, e.g. "--no-mixed --no-discordant"
+
+# ── bbduk / reformat (trim + subsample) ──────────────────────────────────────
+bbduk:
+  adapters: null
+  max_frags: null
+  mem_gb: 2
+
+# ── bamCompare ────────────────────────────────────────────────────────────────
+bamcompare:
+  bin_size: 80
+  operation: ratio
+  scale_factors_method: SES
+  n: 1000
+
+# ── MACS3 ────────────────────────────────────────────────────────────────────
+macs3:
+  format: BAM
+  extra: "--keep-dup all --nomodel --extsize 150"
+  min_foldch: 2.0
+
+# ── FIMO ─────────────────────────────────────────────────────────────────────
+fimo:
+  thresh: 1.0e-5
+
+# ── MEME ─────────────────────────────────────────────────────────────────────
+meme:
+  nmotifs: 2
+  minw: 8
+  maxw: 32
+  mod: anr
+  maxpeaks: 100
+  summit_extend: 30
