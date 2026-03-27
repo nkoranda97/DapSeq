@@ -13,7 +13,7 @@ dependencies:
   - fastqc
   - multiqc
   - snakemake=9.16.3
-  - bbtools
+  - bbmap
   - homer
   - bedtools
   - biopython
