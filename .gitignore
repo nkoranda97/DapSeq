@@ -6,7 +6,9 @@
 # test results
 results/
 tiny_test/output
-
+dap_arabidopis_data/
+human_config.yaml
+config.yaml
 
 # local files
 .venv/
