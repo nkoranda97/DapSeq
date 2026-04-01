@@ -17,3 +17,6 @@ config.yaml
 __pycache__/
 .pytest_cache
 .claude/
+# pixi environments
+.pixi/*
+!.pixi/config.toml
