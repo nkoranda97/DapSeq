@@ -1,10 +1,7 @@
-FROM condaforge/mambaforge:latest
+FROM ghcr.io/prefix-dev/pixi:latest
 
-RUN conda config --set remote_max_retries 10 \
- && conda config --set remote_backoff_factor 5 \
- && conda config --set remote_connect_timeout_secs 60 \
- && conda config --set remote_read_timeout_secs 120
+WORKDIR /app
+COPY pixi.toml .
+RUN pixi install && pixi clean cache -y
 
-COPY environment.yml .
-RUN mamba env create -f environment.yml && mamba clean -afy
-ENV PATH=/opt/conda/envs/dapseq/bin:$PATH
+ENV PATH=/app/.pixi/envs/default/bin:$PATH

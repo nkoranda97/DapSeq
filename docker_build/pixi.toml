@@ -1,0 +1,21 @@
+[workspace]
+channels = ["conda-forge", "bioconda"]
+name = "dapseq"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[dependencies]
+python = ">3.12"
+macs3 = "*"
+bowtie2 = "*"
+samtools = "*"
+deeptools = "*"
+meme = "*"
+fastqc = "*"
+multiqc = "*"
+snakemake = ">=9.19.0,<10"
+bbmap = "*"
+homer = "*"
+bedtools = "*"
+biopython = "*"
+pandas = "*"
