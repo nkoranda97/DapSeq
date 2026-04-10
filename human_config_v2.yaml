@@ -1,0 +1,217 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DAP-seq pipeline configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+samples:
+  # ── 2026 run (20260313, TF names from pinky_runs.csv) ─────────────────────
+  TEAD1_a:
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-47_S47_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-47_S47_L008_R2_001.fastq.gz
+
+  amp_TEAD1_b:
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-55_S55_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-55_S55_L008_R2_001.fastq.gz
+
+  amp_NFIL3_b:
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-54_S54_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-54_S54_L008_R2_001.fastq.gz
+
+  MKRN03_b:
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-52_S52_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-52_S52_L008_R2_001.fastq.gz
+
+  # ── 202512_UChicago_DAP ────────────────────────────────────────────────────
+  MYNN:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MYNN_S27_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MYNN_S27_L004_R2_001.fastq.gz
+
+  ampMECP02:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MECP02_S30_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MECP02_S30_L004_R2_001.fastq.gz
+
+  MECP02:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-DAP-MECP02_S31_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-DAP-MECP02_S31_L004_R2_001.fastq.gz
+
+  TP53:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TP53_S22_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TP53_S22_L004_R2_001.fastq.gz
+
+  TGIF2:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TGIF2LX_S12_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TGIF2LX_S12_L004_R2_001.fastq.gz
+
+  TFAP2A:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TFAP2A_S20_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TFAP2A_S20_L004_R2_001.fastq.gz
+
+  NFIL03:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-NFIL03_S24_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-NFIL03_S24_L004_R2_001.fastq.gz
+
+  MKRN03_a:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MKRN03_S13_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MKRN03_S13_L004_R2_001.fastq.gz
+
+  CXXC1:
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-CXXC01_S14_L004_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-CXXC01_S14_L004_R2_001.fastq.gz
+
+  # ── 202512_2_Uchicago_DAP_human_brachy_clogmia ────────────────────────────
+  RFX02:
+    r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-RFX02_S38_L001_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-RFX02_S38_L001_R2_001.fastq.gz
+
+  NFATC03:
+    r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-NFATC03_S40_L001_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-NFATC03_S40_L001_R2_001.fastq.gz
+
+  TEAD01:
+    r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TEAD01_S48_L001_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TEAD01_S48_L001_R2_001.fastq.gz
+
+  # ── Control (unchanged) ───────────────────────────────────────────────────
+  control:
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-42_S42_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-42_S42_L008_R2_001.fastq.gz
+# Input/control sample name — must match a key in samples above.
+# Set to null to run without a control.
+
+input_control: control
+output_dir: /project/zhuzhuzhang/nick/DapSeq/results/human/TEAD1_v2
+
+# ── Genome ───────────────────────────────────────────────────────────────────
+genome_ref: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.dna.primary_assembly.fa 
+genome_size: "3000000000" 
+
+# Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
+gene_annotation: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.113.gtf
+
+# ── Compute ──────────────────────────────────────────────────────────────────
+threads: 8
+
+# ── SLURM ────────────────────────────────────────────────────────────────────
+slurm_partition: "caslake"
+slurm_account:   "pi-zhuzhuzhang"
+
+# ── Samtools ─────────────────────────────────────────────────────────────────
+samtools:
+  mapq: 10
+  extra_merge: ""   # optional extra flags for samtools merge
+
+# ── bowtie2 ──────────────────────────────────────────────────────────────────
+bowtie2:
+  extra: ""          # optional flags passed to bowtie2 align
+  extra_build: ""    # optional flags passed to bowtie2-build
+
+# ── bbduk / reformat (trim + subsample) ──────────────────────────────────────
+bbduk:
+  # Adapter file for bbduk ref=. null uses BBTools built-in adapters.
+  # Use an absolute path for a custom file.
+  adapters: null
+  # Subsample to at most this many fragments per sample. null = no subsampling.
+  max_frags: null
+  # Memory for bbduk/reformat in GB (1 GB is reserved for the OS).
+  mem_gb: 8
+  extra: ""          # optional extra flags passed to bbduk.sh
+
+# ── bamCompare ────────────────────────────────────────────────────────────────
+bamcompare:
+  bin_size: 80
+  operation: ratio
+  scale_factors_method: SES
+  n: 1000
+  extra: ""          # optional extra flags passed to bamCompare
+
+# ── MACS3 ────────────────────────────────────────────────────────────────────
+macs3:
+  format: BAM
+  extra: ""
+  min_foldch: 2.0
+
+# ── FIMO ─────────────────────────────────────────────────────────────────────
+fimo:
+  thresh: 1.0e-5
+  extra: ""          # optional extra flags passed to fimo
+
+# ── MEME ─────────────────────────────────────────────────────────────────────
+meme:
+  nmotifs: 2
+  minw: 8
+  maxw: 32
+  mod: anr
+  maxpeaks: 500
+  summit_extend: 30
+  extra: ""          # optional extra flags passed to meme
+
+# ── FastQC ───────────────────────────────────────────────────────────────────
+fastqc:
+  extra: ""          # optional extra flags passed to fastqc
+
+# ── MultiQC ──────────────────────────────────────────────────────────────────
+multiqc:
+  extra: ""          # optional extra flags passed to multiqc
+
+# ── HOMER annotatePeaks ───────────────────────────────────────────────────────
+homer:
+  extra: ""          # optional extra flags passed to annotatePeaks.pl
+
+# ── Per-rule resource overrides ───────────────────────────────────────────────
+resources:
+  bowtie2_index:
+    mem_mb: 8000
+    runtime: 120
+  trim_align:
+    mem_mb: 16000
+    runtime: 120
+  fastqc:
+    mem_mb: 2000
+    runtime: 30
+  multiqc:
+    mem_mb: 2000
+    runtime: 30
+  bowtie2:
+    mem_mb: 16000
+    runtime: 120
+  samtools_filter_sort:
+    mem_mb: 16000
+    runtime: 60
+  bamcoverage:
+    mem_mb: 16000
+    runtime: 60
+  bamcompare:
+    mem_mb: 16000
+    runtime: 60
+  macs3:
+    mem_mb: 16000
+    runtime: 60
+  filter_peaks:
+    mem_mb: 16000
+    runtime: 60
+  narrow_peak_to_fasta:
+    mem_mb: 16000
+    runtime: 60
+  meme:
+    mem_mb: 16000
+    runtime: 120
+  fimo:
+    mem_mb: 16000
+    runtime: 60
+  alignment_stats:
+    mem_mb: 4000
+    runtime: 30
+  filtered_stats:
+    mem_mb: 4000
+    runtime: 30
+  frip_macs:
+    mem_mb: 16000
+    runtime: 30
+  qc_summary:
+    mem_mb: 2000
+    runtime: 10
+  merge_control:
+    mem_mb: 8000
+    runtime: 60
+  homer_annotate:
+    mem_mb: 4000
+    runtime: 30
