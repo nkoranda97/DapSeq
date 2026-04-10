@@ -149,6 +149,9 @@ resources:
   qc_summary:
     mem_mb: 2000
     runtime: 10
+  update_db:
+    mem_mb: 1000
+    runtime: 5
   merge_control:
     mem_mb: 8000
     runtime: 60

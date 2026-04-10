@@ -20,3 +20,4 @@ __pycache__/
 # pixi environments
 .pixi/*
 !.pixi/config.toml
+*.sif
