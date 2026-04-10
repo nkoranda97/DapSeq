@@ -3,7 +3,7 @@ min_version("8.0")
 
 configfile: "config/config.yaml"
 
-container: "docker://nkoranda/dapseq:latest"
+container: "apptainer_build/dapseq.sif"
 
 include: "rules/common.smk"
 include: "rules/ref.smk"
@@ -15,6 +15,7 @@ include: "rules/peaks.smk"
 include: "rules/motifs.smk"
 include: "rules/stats.smk"
 include: "rules/annotation.smk"
+include: "rules/db.smk"
 
 
 rule all:
@@ -23,3 +24,4 @@ rule all:
         rules.peaked.input,
         rules.motifs_done.input,
         rules.qc_done.input,
+        rules.update_db.output.flag,

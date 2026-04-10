@@ -44,8 +44,9 @@ rule meme_summits:
     input:
         OUT + "/fasta/{sample}.summits.fasta",
     output:
-        txt = OUT + "/meme/{sample}/summits/meme.txt",
-        xml = OUT + "/meme/{sample}/summits/meme.xml",
+        txt  = OUT + "/meme/{sample}/summits/meme.txt",
+        xml  = OUT + "/meme/{sample}/summits/meme.xml",
+        logo = OUT + "/meme/{sample}/summits/logo1.png",
     params:
         outdir  = OUT + "/meme/{sample}/summits",
         nmotifs = config["meme"]["nmotifs"],
@@ -65,13 +66,19 @@ rule meme_summits:
     shell:
         """
         if [ ! -s {input} ]; then
-            touch {output.txt} {output.xml}
+            touch {output.txt} {output.xml} {output.logo}
         else
             meme {input} -oc {params.outdir} \
               -dna -revcomp \
               -mod {params.mod} -nmotifs {params.nmotifs} \
               -minw {params.minw} -maxw {params.maxw} \
               -maxsize 10000000 -p {threads} -nostatus {params.extra} 2>{log}
+            if [ -f {params.outdir}/logo1.eps ]; then
+                gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 \
+                   -sOutputFile={output.logo} {params.outdir}/logo1.eps 2>>{log}
+            else
+                touch {output.logo}
+            fi
         fi
         """
 

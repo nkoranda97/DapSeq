@@ -57,17 +57,17 @@ rule frip_macs:
 
 rule qc_summary:
     input:
-        trim_logs    = expand(OUT + "/logs/bbduk/{sample}.trim.log",          sample=SAMPLES),
-        total_frags  = expand(OUT + "/stats/{sample}.total_frags.txt",         sample=SAMPLES),
-        align_rates  = expand(OUT + "/stats/{sample}.align_rate.txt",          sample=SAMPLES),
-        filt_stats   = expand(OUT + "/stats/{sample}.filtered_stats.txt",      sample=SAMPLES),
-        frip_macs    = expand(OUT + "/stats/{sample}.frip_macs.txt",           sample=TREATMENT_SAMPLES),
-        narrowpeaks  = expand(OUT + "/MACS/{sample}_peaks.narrowPeak",         sample=TREATMENT_SAMPLES),
-        meme_txts    = expand(OUT + "/meme/{sample}/summits/meme.txt",          sample=TREATMENT_SAMPLES),
+        trim_logs    = expand(OUT + "/logs/bbduk/{sample}.trim.log",               sample=TREATMENT_SAMPLES),
+        total_frags  = expand(OUT + "/stats/{sample}.total_frags.txt",             sample=TREATMENT_SAMPLES),
+        align_rates  = expand(OUT + "/stats/{sample}.align_rate.txt",              sample=TREATMENT_SAMPLES),
+        filt_stats   = expand(OUT + "/stats/{sample}.filtered_stats.txt",          sample=TREATMENT_SAMPLES),
+        frip_macs    = expand(OUT + "/stats/{sample}.frip_macs.txt",               sample=TREATMENT_SAMPLES),
+        narrowpeaks  = expand(OUT + "/MACS/{sample}_peaks.narrowPeak",             sample=TREATMENT_SAMPLES),
+        logo_pngs    = expand(OUT + "/meme/{sample}/summits/logo1.png",            sample=TREATMENT_SAMPLES),
     output:
-        OUT + "/stats/qc_summary.tsv"
+        tsv  = OUT + "/stats/qc_summary.tsv",
+        html = OUT + "/stats/qc_summary.html",
     params:
-        samples           = SAMPLES,
         treatment_samples = TREATMENT_SAMPLES,
         trim_log_dir      = OUT + "/logs/bbduk",
         macs_dir          = OUT + "/MACS",
