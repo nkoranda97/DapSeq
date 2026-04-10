@@ -11,6 +11,6 @@
  module load apptainer
  apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
 
- # run pipeline
- uv run snakemake --profile profile --configfile /path/to/configfile --use-apptainer
+ # run pipeline (profiles/default/ loads automatically)
+ uv run snakemake --configfile /path/to/configfile
  ```
