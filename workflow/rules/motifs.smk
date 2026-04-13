@@ -53,6 +53,7 @@ rule meme_summits:
         minw    = config["meme"]["minw"],
         maxw    = config["meme"]["maxw"],
         mod     = config["meme"]["mod"],
+        maxsize = config["meme"].get("maxsize", 10000000),
         extra   = config["meme"].get("extra", ""),
     threads:
         config["threads"]
@@ -72,7 +73,7 @@ rule meme_summits:
               -dna -revcomp \
               -mod {params.mod} -nmotifs {params.nmotifs} \
               -minw {params.minw} -maxw {params.maxw} \
-              -maxsize 10000000 -p {threads} -nostatus {params.extra} 2>{log}
+              -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} 2>{log}
             if [ -f {params.outdir}/logo1.eps ]; then
                 gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 \
                    -sOutputFile={output.logo} {params.outdir}/logo1.eps 2>>{log}
@@ -95,6 +96,7 @@ rule meme_peaks:
         minw    = config["meme"]["minw"],
         maxw    = config["meme"]["maxw"],
         mod     = config["meme"]["mod"],
+        maxsize = config["meme"].get("maxsize", 10000000),
         extra   = config["meme"].get("extra", ""),
     threads:
         config["threads"]
@@ -114,7 +116,7 @@ rule meme_peaks:
               -dna -revcomp \
               -mod {params.mod} -nmotifs {params.nmotifs} \
               -minw {params.minw} -maxw {params.maxw} \
-              -maxsize 10000000 -p {threads} -nostatus {params.extra} 2>{log}
+              -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} 2>{log}
         fi
         """
 

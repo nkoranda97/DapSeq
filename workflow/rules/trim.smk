@@ -12,6 +12,13 @@ rule trim_se:
         adapters  = config["bbduk"].get("adapters") or "adapters",
         mem_gb    = config["bbduk"].get("mem_gb", 8),
         extra     = config["bbduk"].get("extra", ""),
+        k         = config["bbduk"].get("k", 21),
+        mink      = config["bbduk"].get("mink", 11),
+        ktrim     = config["bbduk"].get("ktrim", "r"),
+        qtrim     = config["bbduk"].get("qtrim", "r"),
+        trimq     = config["bbduk"].get("trimq", 6),
+        maq       = config["bbduk"].get("maq", 10),
+        ow        = config["bbduk"].get("ow", "t"),
     threads:
         config["threads"]
     resources:
@@ -60,7 +67,8 @@ rule trim_se:
           int=f \
           in=stdin.fq out={output.r1} \
           ref={params.adapters} \
-          k=21 mink=11 ktrim=r qtrim=r trimq=6 maq=10 ow=t \
+          k={params.k} mink={params.mink} ktrim={params.ktrim} qtrim={params.qtrim} \
+          trimq={params.trimq} maq={params.maq} ow={params.ow} \
           {params.extra} \
           2>{log.trim}
 
@@ -85,6 +93,13 @@ rule trim_pe:
         adapters  = config["bbduk"].get("adapters") or "adapters",
         mem_gb    = config["bbduk"].get("mem_gb", 8),
         extra     = config["bbduk"].get("extra", ""),
+        k         = config["bbduk"].get("k", 21),
+        mink      = config["bbduk"].get("mink", 11),
+        ktrim     = config["bbduk"].get("ktrim", "r"),
+        qtrim     = config["bbduk"].get("qtrim", "r"),
+        trimq     = config["bbduk"].get("trimq", 6),
+        maq       = config["bbduk"].get("maq", 10),
+        ow        = config["bbduk"].get("ow", "t"),
     threads:
         config["threads"]
     resources:
@@ -129,7 +144,7 @@ rule trim_pe:
           int=t \
           in=stdin.fq out1={output.r1} out2={output.r2} \
           ref={params.adapters} \
-          k=21 mink=11 ktrim=r tbo tpe qtrim=r trimq=6 maq=10 ow=t \
+          k={params.k} mink={params.mink} ktrim={params.ktrim} tbo tpe qtrim={params.qtrim} trimq={params.trimq} maq={params.maq} ow={params.ow} \
           {params.extra} \
           2>{log.trim}
 

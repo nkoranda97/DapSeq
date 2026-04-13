@@ -10,9 +10,13 @@ rule align_se:
         bw         = OUT + "/bigWig/{sample}.bw",
         align_rate = OUT + "/stats/{sample}.align_rate.txt",
     params:
-        idx   = config["genome_ref"],
-        mapq  = config["samtools"]["mapq"],
-        extra = config["bowtie2"].get("extra", ""),
+        idx             = config["genome_ref"],
+        mapq            = config["samtools"]["mapq"],
+        extra           = config["bowtie2"].get("extra", ""),
+        bw_normalize    = config["bamcoverage"].get("normalize_using", "RPGC"),
+        bw_bin_size     = config["bamcoverage"].get("bin_size", 1),
+        bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
+        bw_extra        = config["bamcoverage"].get("extra", ""),
     threads:
         config["threads"]
     resources:
@@ -40,9 +44,10 @@ rule align_se:
           | awk -v FS="% " '{{print $1}}' > {output.align_rate}
 
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
-          --normalizeUsing RPGC \
+          --normalizeUsing {params.bw_normalize} \
           --effectiveGenomeSize {config[genome_size]} \
-          --binSize 1 --ignoreDuplicates \
+          --binSize {params.bw_bin_size} {params.bw_ignore_dups} \
+          {params.bw_extra} \
           2>{log.bamcoverage}
         """
 
@@ -61,9 +66,15 @@ rule align_pe:
         align_rate       = OUT + "/stats/{sample}.align_rate.txt",
         median_frag_size = OUT + "/stats/{sample}.median_frag_size.txt",
     params:
-        idx   = config["genome_ref"],
-        mapq  = config["samtools"]["mapq"],
-        extra = config["bowtie2"].get("extra", ""),
+        idx             = config["genome_ref"],
+        mapq            = config["samtools"]["mapq"],
+        extra           = config["bowtie2"].get("extra", ""),
+        bw_normalize    = config["bamcoverage"].get("normalize_using", "RPGC"),
+        bw_bin_size     = config["bamcoverage"].get("bin_size", 1),
+        bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
+        bw_max_frag     = config["bamcoverage"].get("max_fragment_length", 600),
+        bw_extend_reads = "--extendReads" if config["bamcoverage"].get("extend_reads", True) else "",
+        bw_extra        = config["bamcoverage"].get("extra", ""),
     threads:
         config["threads"]
     resources:
@@ -95,8 +106,10 @@ rule align_pe:
           | grep Median: | awk 'NR==1 {{print $2}}' > {output.median_frag_size}
 
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
-          --normalizeUsing RPGC \
+          --normalizeUsing {params.bw_normalize} \
           --effectiveGenomeSize {config[genome_size]} \
-          --binSize 1 --ignoreDuplicates --maxFragmentLength 600 --extendReads \
+          --binSize {params.bw_bin_size} {params.bw_ignore_dups} \
+          --maxFragmentLength {params.bw_max_frag} {params.bw_extend_reads} \
+          {params.bw_extra} \
           2>{log.bamcoverage}
         """

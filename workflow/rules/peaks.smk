@@ -6,9 +6,10 @@ rule macs3:
         summits    = OUT + "/MACS/{sample}_summits.bed",
         narrowpeak = OUT + "/MACS/{sample}_peaks.narrowPeak",
     params:
-        ctrl   = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
-        outdir = OUT + "/MACS",
-        extra  = config["macs3"].get("extra", ""),
+        ctrl     = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
+        outdir   = OUT + "/MACS",
+        keep_dup = config["macs3"].get("keep_dup", 1),
+        extra    = config["macs3"].get("extra", ""),
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],
@@ -22,7 +23,7 @@ rule macs3:
           -t {input.sample_bam} {params.ctrl} \
           -f {config[macs3][format]} --outdir {params.outdir} \
           -g {config[genome_size]} -n {wildcards.sample} \
-          --call-summits --keep-dup 1 {params.extra} --verbose=0 2>{log}
+          --call-summits --keep-dup {params.keep_dup} {params.extra} --verbose=0 2>{log}
         """
 
 
