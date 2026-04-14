@@ -78,7 +78,7 @@ samples:
 # Set to null to run without a control.
 
 input_control: control
-output_dir: /project/zhuzhuzhang/nick/DapSeq/results/human/TEAD1_v2
+output_dir: /project/zhuzhuzhang/nick/DapSeq/results/human/pinky
 
 # ── Genome ───────────────────────────────────────────────────────────────────
 genome_ref: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.dna.primary_assembly.fa 
@@ -94,75 +94,78 @@ threads: 8
 slurm_partition: "caslake"
 slurm_account:   "pi-zhuzhuzhang"
 
-# ── Samtools ─────────────────────────────────────────────────────────────────
+bbduk:
+  adapters: null
+  max_frags: null
+  mem_gb: 8
+  k: 21
+  mink: 11
+  ktrim: r       # r=right, l=left, lr=both
+  qtrim: r       # r=right, l=left, lr=both, w=window
+  trimq: 6
+  maq: 10
+  ow: t          # t=overwrite, f=fail if output exists
+  extra: ""
+
+fastqc:
+  extra: ""
+
+bowtie2:
+  extra: ""
+  extra_build: ""
+
 samtools:
   mapq: 10
-  extra_merge: ""   # optional extra flags for samtools merge
+  extra_merge: ""
 
-# ── bowtie2 ──────────────────────────────────────────────────────────────────
-bowtie2:
-  extra: ""          # optional flags passed to bowtie2 align
-  extra_build: ""    # optional flags passed to bowtie2-build
+bamcoverage:
+  normalize_using: RPGC
+  bin_size: 1
+  ignore_duplicates: true
+  max_fragment_length: 600  # PE only
+  extend_reads: true        # PE only
+  extra: ""
 
-# ── bbduk / reformat (trim + subsample) ──────────────────────────────────────
-bbduk:
-  # Adapter file for bbduk ref=. null uses BBTools built-in adapters.
-  # Use an absolute path for a custom file.
-  adapters: null
-  # Subsample to at most this many fragments per sample. null = no subsampling.
-  max_frags: null
-  # Memory for bbduk/reformat in GB (1 GB is reserved for the OS).
-  mem_gb: 8
-  extra: ""          # optional extra flags passed to bbduk.sh
-
-# ── bamCompare ────────────────────────────────────────────────────────────────
 bamcompare:
   bin_size: 80
   operation: ratio
   scale_factors_method: SES
   n: 1000
-  extra: ""          # optional extra flags passed to bamCompare
-
-# ── MACS3 ────────────────────────────────────────────────────────────────────
-macs3:
-  format: BAM
   extra: ""
+
+macs3:
+  format: BAMPE
   min_foldch: 2.0
+  keep_dup: 1
+  extra: ""
 
-# ── FIMO ─────────────────────────────────────────────────────────────────────
-fimo:
-  thresh: 1.0e-5
-  extra: ""          # optional extra flags passed to fimo
-
-# ── MEME ─────────────────────────────────────────────────────────────────────
 meme:
   nmotifs: 2
   minw: 8
   maxw: 32
   mod: anr
-  maxpeaks: 500
+  maxpeaks: 100
+  maxsize: 10000000
   summit_extend: 30
-  extra: ""          # optional extra flags passed to meme
+  extra: ""
 
-# ── FastQC ───────────────────────────────────────────────────────────────────
-fastqc:
-  extra: ""          # optional extra flags passed to fastqc
+fimo:
+  thresh: 1.0e-5
+  extra: ""
 
-# ── MultiQC ──────────────────────────────────────────────────────────────────
-multiqc:
-  extra: ""          # optional extra flags passed to multiqc
-
-# ── HOMER annotatePeaks ───────────────────────────────────────────────────────
 homer:
-  extra: ""          # optional extra flags passed to annotatePeaks.pl
+  extra: ""
+
+multiqc:
+  extra: ""
 
 # ── Per-rule resource overrides ───────────────────────────────────────────────
 resources:
   bowtie2_index:
-    mem_mb: 8000
+    mem_mb: 32000
     runtime: 120
   trim_align:
-    mem_mb: 16000
+    mem_mb: 32000
     runtime: 120
   fastqc:
     mem_mb: 2000
@@ -171,47 +174,47 @@ resources:
     mem_mb: 2000
     runtime: 30
   bowtie2:
-    mem_mb: 16000
+    mem_mb: 32000
     runtime: 120
   samtools_filter_sort:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   bamcoverage:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   bamcompare:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   macs3:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   filter_peaks:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   narrow_peak_to_fasta:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   meme:
-    mem_mb: 16000
+    mem_mb: 32000
     runtime: 120
   fimo:
-    mem_mb: 16000
-    runtime: 60
+    mem_mb: 32000
+    runtime: 120
   alignment_stats:
-    mem_mb: 4000
-    runtime: 30
+    mem_mb: 8000
+    runtime: 120
   filtered_stats:
-    mem_mb: 4000
+    mem_mb: 8000
     runtime: 30
   frip_macs:
-    mem_mb: 16000
-    runtime: 30
+    mem_mb: 32000
+    runtime: 120
   qc_summary:
-    mem_mb: 2000
-    runtime: 10
-  merge_control:
     mem_mb: 8000
-    runtime: 60
+    runtime: 120
+  merge_control:
+    mem_mb: 32000
+    runtime: 120
   homer_annotate:
-    mem_mb: 4000
-    runtime: 30
+    mem_mb: 32000
+    runtime: 120
