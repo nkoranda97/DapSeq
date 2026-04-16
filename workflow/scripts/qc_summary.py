@@ -67,9 +67,20 @@ def logo_to_base64(png_path):
     """Return base64-encoded PNG data URI, or None if file is empty/missing."""
     if not os.path.exists(png_path) or os.path.getsize(png_path) == 0:
         return None
-    with open(png_path, "rb") as fh:
-        data = fh.read()
-    return base64.b64encode(data).decode("ascii")
+    from PIL import Image, ImageChops
+    import io
+    img = Image.open(png_path).convert("RGB")
+    bg = Image.new("RGB", img.size, (255, 255, 255))
+    bbox = ImageChops.difference(img, bg).getbbox()
+    if bbox:
+        pad = 6
+        w, h = img.size
+        bbox = (max(0, bbox[0] - pad), max(0, bbox[1] - pad),
+                min(w, bbox[2] + pad), min(h, bbox[3] + pad))
+        img = img.crop(bbox)
+    buf = io.BytesIO()
+    img.save(buf, format="PNG")
+    return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
 COLS = [

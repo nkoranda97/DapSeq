@@ -75,19 +75,8 @@ rule meme_summits:
               -minw {params.minw} -maxw {params.maxw} \
               -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} 2>{log}
             if [ -f {params.outdir}/logo1.eps ]; then
-                read LLX LLY W H < <(gs -dNOPAUSE -dBATCH -sDEVICE=bbox \
-                    {params.outdir}/logo1.eps 2>&1 \
-                    | awk '/%%HiResBoundingBox:/{{ \
-                        llx=int($2)-4; lly=int($3)-4; \
-                        urx=int($4)+4; ury=int($5)+4; \
-                        if(llx<0)llx=0; if(lly<0)lly=0; \
-                        print llx, lly, urx-llx, ury-lly; exit }}')
                 gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 \
-                   -dDEVICEWIDTHPOINTS=$W -dDEVICEHEIGHTPOINTS=$H \
-                   -dFIXEDMEDIA \
-                   -c "<</PageOffset [-$LLX -$LLY]>> setpagedevice" \
-                   -f {params.outdir}/logo1.eps \
-                   -sOutputFile={output.logo} 2>>{log}
+                   -sOutputFile={output.logo} {params.outdir}/logo1.eps 2>>{log}
             else
                 touch {output.logo}
             fi
