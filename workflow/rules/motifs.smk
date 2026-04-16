@@ -75,7 +75,7 @@ rule meme_summits:
               -minw {params.minw} -maxw {params.maxw} \
               -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} 2>{log}
             if [ -f {params.outdir}/logo1.eps ]; then
-                gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 \
+                gs -dNOPAUSE -dBATCH -sDEVICE=png16m -dEPSCrop -r150 \
                    -sOutputFile={output.logo} {params.outdir}/logo1.eps 2>>{log}
             else
                 touch {output.logo}

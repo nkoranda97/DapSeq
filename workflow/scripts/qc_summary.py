@@ -69,24 +69,6 @@ def logo_to_base64(png_path):
         return None
     with open(png_path, "rb") as fh:
         data = fh.read()
-    try:
-        import io
-        from PIL import Image, ImageChops
-        img = Image.open(io.BytesIO(data)).convert("RGBA")
-        bg = Image.new("RGBA", img.size, (255, 255, 255, 255))
-        diff = ImageChops.difference(img, bg)
-        bbox = diff.getbbox()
-        if bbox:
-            pad = 4
-            w, h = img.size
-            bbox = (max(0, bbox[0] - pad), max(0, bbox[1] - pad),
-                    min(w, bbox[2] + pad), min(h, bbox[3] + pad))
-            img = img.crop(bbox)
-        buf = io.BytesIO()
-        img.save(buf, format="PNG")
-        data = buf.getvalue()
-    except ImportError:
-        pass
     return base64.b64encode(data).decode("ascii")
 
 
