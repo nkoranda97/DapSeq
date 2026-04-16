@@ -166,7 +166,7 @@ resources:
     runtime: 120
   trim_align:
     mem_mb: 32000
-    runtime: 120
+    runtime: 480
   fastqc:
     mem_mb: 2000
     runtime: 30
