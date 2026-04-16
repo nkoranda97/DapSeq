@@ -69,6 +69,24 @@ def logo_to_base64(png_path):
         return None
     with open(png_path, "rb") as fh:
         data = fh.read()
+    try:
+        import io
+        from PIL import Image, ImageChops
+        img = Image.open(io.BytesIO(data)).convert("RGBA")
+        bg = Image.new("RGBA", img.size, (255, 255, 255, 255))
+        diff = ImageChops.difference(img, bg)
+        bbox = diff.getbbox()
+        if bbox:
+            pad = 4
+            w, h = img.size
+            bbox = (max(0, bbox[0] - pad), max(0, bbox[1] - pad),
+                    min(w, bbox[2] + pad), min(h, bbox[3] + pad))
+            img = img.crop(bbox)
+        buf = io.BytesIO()
+        img.save(buf, format="PNG")
+        data = buf.getvalue()
+    except ImportError:
+        pass
     return base64.b64encode(data).decode("ascii")
 
 
@@ -131,10 +149,24 @@ _HTML_STYLE = """
   td { padding: 6px 10px; border-bottom: 1px solid #ddd; vertical-align: middle; }
   tr:nth-child(even) { background: #f7f7f7; }
   tr:hover { background: #eaf4fb; }
-  img.motif { max-height: 60px; }
+  img.motif { max-width: 280px; max-height: 100px; height: auto; display: block; }
   .na { color: #aaa; font-style: italic; }
 </style>
 """
+
+_INT_COLS = {"total_frags", "clean_reads", "filtered_reads",
+             "peak#", "min5fold peak#", "peak reads#"}
+_PCT_COLS = {"align_rate%", "FRiP_score"}
+
+
+def _fmt_html(col, val):
+    if val == "NA":
+        return "NA"
+    if col in _INT_COLS:
+        return f"{int(val):,}"
+    if col in _PCT_COLS:
+        return f"{val}%"
+    return str(val)
 
 _HTML_COLS = COLS + ["top motif"]
 
@@ -160,7 +192,7 @@ def write_html(rows, logo_b64_map, out_path):
         for col in COLS:
             val = row.get(col, "NA")
             css = ' class="na"' if val == "NA" else ""
-            lines.append(f"  <td{css}>{val}</td>")
+            lines.append(f"  <td{css}>{_fmt_html(col, val)}</td>")
         # Motif logo column
         b64 = logo_b64_map.get(row["sample"])
         if b64:
