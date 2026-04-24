@@ -17,6 +17,7 @@ rule align_se:
         bw_bin_size     = config["bamcoverage"].get("bin_size", 1),
         bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
         bw_extra        = config["bamcoverage"].get("extra", ""),
+        bw_tempdir      = OUT + "/temp",
     threads:
         config["threads"]
     resources:
@@ -43,6 +44,8 @@ rule align_se:
         grep "overall alignment rate" {log.align} \
           | awk -v FS="% " '{{print $1}}' > {output.align_rate}
 
+        mkdir -p {params.bw_tempdir}
+        export TMPDIR={params.bw_tempdir}
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
           --normalizeUsing {params.bw_normalize} \
           --effectiveGenomeSize {config[genome_size]} \
@@ -75,6 +78,7 @@ rule align_pe:
         bw_max_frag     = config["bamcoverage"].get("max_fragment_length", 600),
         bw_extend_reads = "--extendReads" if config["bamcoverage"].get("extend_reads", True) else "",
         bw_extra        = config["bamcoverage"].get("extra", ""),
+        bw_tempdir      = OUT + "/temp",
     threads:
         config["threads"]
     resources:
@@ -105,6 +109,8 @@ rule align_pe:
         bamPEFragmentSize -b {output.bam} \
           | grep Median: | awk 'NR==1 {{print $2}}' > {output.median_frag_size}
 
+        mkdir -p {params.bw_tempdir}
+        export TMPDIR={params.bw_tempdir}
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
           --normalizeUsing {params.bw_normalize} \
           --effectiveGenomeSize {config[genome_size]} \

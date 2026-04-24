@@ -5,7 +5,7 @@
 samples:
   # ── 2026 run (20260313, TF names from pinky_runs.csv) ─────────────────────
   CXXC1:
-    r1: /project/gzy8899/data/202512_Uchicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-CXXC01_S14_L004_R1_001.fastq.gz
+    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-CXXC01_S14_L004_R1_001.fastq.gz
     r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-CXXC01_S14_L004_R2_001.fastq.gz
 
   MECP2:
@@ -13,16 +13,12 @@ samples:
     r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-DAP-MECP02_S31_L004_R2_001.fastq.gz
 
   MKRN03-1:
-    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MKRN03_S13_L004_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MKRN03_S13_L004_R2_001.fastq.gz
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-36_S36_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-36_S36_L008_R2_001.fastq.gz
 
   MKRN03-2:
     r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-52_S52_L008_R1_001.fastq.gz
     r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-52_S52_L008_R2_001.fastq.gz
-
-  MKRN3-3*:
-    r1: /project/gzy8899/data/202508_NW_sequencing_pool2PL-15_S4_L002_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202508_NW_sequencing_pool2PL-15_S4_L002_R2_001.fastq.gz
 
   MYNN:
     r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-MYNN_S27_L004_R1_001.fastq.gz
@@ -37,8 +33,8 @@ samples:
     r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-54_S54_L008_R2_001.fastq.gz
 
   NFIL03-2:
-    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-NFIL03_S24_L004_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-NFIL03_S24_L004_R2_001.fastq.gz
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-37_S37_L008_R1_001.fastq.gz
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-37_S37_L008_R2_001.fastq.gz
 
   RFX02:
     r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-RFX02_S38_L001_R1_001.fastq.gz
@@ -53,24 +49,20 @@ samples:
     r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-55_S55_L008_R2_001.fastq.gz
 
   TEAD1-3:
-    r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TEAD01_S48_L001_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TEAD01_S48_L001_R2_001.fastq.gz
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-40_S40_L008_R1_001.fastq.gz 
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-40_S40_L008_R2_001.fastq.gz 
 
   TFAP2A:
-    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TFAP2A_S20_L004_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TFAP2A_S20_L004_R2_001.fastq.gz
+    r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-38_S38_L008_R1_001.fastq.gz 
+    r2: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-38_S38_L008_R2_001.fastq.gz
 
   TGIF2:
-    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TGIF2LX_S12_L004_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TGIF2LX_S12_L004_R2_001.fastq.gz
-
-  TGIF2LX*:
-    r1: /project/gzy8899/data/202508_NW_sequencing_pool2PL-14_S3_L002_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202508_NW_sequencing_pool2PL-14_S3_L002_R2_001.fastq.gz
+    r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TGIF02a_S42_L001_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TGIF02a_S42_L001_R2_001.fastq.gz
 
   TP53:
-    r1: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TP53_S22_L004_R1_001.fastq.gz
-    r2: /project/gzy8899/data/202512_UChicago_DAP/RO-GY-2s-pl2-PL-Human-ampDAP-TP53_S22_L004_R2_001.fastq.gz
+    r1: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TP53_S35_L001_R1_001.fastq.gz
+    r2: /project/gzy8899/data/202512_2_Uchicago_DAP_human_brachy_clogmia/RO-XY-1s-AMP-DAP-Human-TP53_S35_L001_R2_001.fastq.gz 
 
   control:
     r1: /project/gzy8899/data/20260313_LH00315_0565_A23FM2TLT3_ROM-XY-PL-1s/RO-XY-1s-RO-XY-42_S42_L008_R1_001.fastq.gz
@@ -79,7 +71,7 @@ samples:
 # Set to null to run without a control.
 
 input_control: control
-output_dir: /project/zhuzhuzhang/nick/DapSeq/results/human/pinky_v2
+output_dir: /project/zhuzhuzhang/nick/DapSeq/results/human/pinky_motifs
 
 # ── Genome ───────────────────────────────────────────────────────────────────
 genome_ref: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.dna.primary_assembly.fa
@@ -89,7 +81,7 @@ genome_size: "3000000000"
 gene_annotation: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.113.gtf
 
 # ── Compute ──────────────────────────────────────────────────────────────────
-threads: 8
+threads: 16
 
 # ── SLURM ────────────────────────────────────────────────────────────────────
 slurm_partition: "caslake"

@@ -10,6 +10,7 @@ rule macs3:
         outdir   = OUT + "/MACS",
         keep_dup = config["macs3"].get("keep_dup", 1),
         extra    = config["macs3"].get("extra", ""),
+        tmpdir   = OUT + "/temp",
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],
@@ -19,6 +20,8 @@ rule macs3:
         OUT + "/logs/macs3/{sample}.log"
     shell:
         """
+        mkdir -p {params.tmpdir}
+        export TMPDIR={params.tmpdir}
         macs3 callpeak \
           -t {input.sample_bam} {params.ctrl} \
           -f {config[macs3][format]} --outdir {params.outdir} \
