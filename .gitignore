@@ -1,0 +1,24 @@
+# runtime files
+.cache/
+.java/
+.snakemake/
+
+# test results
+results/
+tiny_test/output
+dap_arabidopis_data/
+human_config.yaml
+config.yaml
+pipeline_db.csv
+
+# local files
+.venv/
+.vscode
+.history
+__pycache__/
+.pytest_cache
+.claude/
+# pixi environments
+.pixi/*
+!.pixi/config.toml
+*.sif

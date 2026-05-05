@@ -1,0 +1,7 @@
+# 0-order Markov frequencies from file control.fasta
+# seqs: 1    min: 5120    max: 5120    avg: 5120.0    sum: 5120    alph: DNA
+# order 0
+A 1.682e-01
+C 3.318e-01
+G 3.318e-01
+T 1.682e-01

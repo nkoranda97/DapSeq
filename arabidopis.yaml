@@ -1,0 +1,156 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DAP-seq pipeline configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+samples:
+  # ── 2026 run (20260313, TF names from pinky_runs.csv) ─────────────────────
+  BIM2:
+    r1: /project/zhuzhuzhang/nick/DapSeq/dap_arabidopis_data/BIM2_1.fastq.gz
+    r2: /project/zhuzhuzhang/nick/DapSeq/dap_arabidopis_data/BIM2_2.fastq.gz
+  control:
+    r1: /project/zhuzhuzhang/nick/DapSeq/dap_arabidopis_data/control_SRR2926069_1.fastq.gz
+    r1: /project/zhuzhuzhang/nick/DapSeq/dap_arabidopis_data/control_SRR2926069_2.fastq.gz
+# Input/control sample name — must match a key in samples above.
+# Set to null to run without a control.
+
+input_control: control
+output_dir: /project/zhuzhuzhang/nick/DapSeq/results/a_thanlina_test
+
+# ── Genome ───────────────────────────────────────────────────────────────────
+genome_ref: /project/gzy8899/references/Arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.dna.toplevel.fa
+genome_size: 133725193
+
+# Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
+gene_annotation: /project/gzy8899/references/Arabidopsis_thaliana/Arabidopsis_thaliana.TAIR10.57.gtf
+
+# ── Compute ──────────────────────────────────────────────────────────────────
+threads: 8
+
+# ── SLURM ────────────────────────────────────────────────────────────────────
+slurm_partition: "caslake"
+slurm_account: "pi-zhuzhuzhang"
+
+bbduk:
+  adapters: null
+  max_frags: null
+  mem_gb: 8
+  k: 21
+  mink: 11
+  ktrim: r # r=right, l=left, lr=both
+  qtrim: r # r=right, l=left, lr=both, w=window
+  trimq: 6
+  maq: 10
+  ow: t # t=overwrite, f=fail if output exists
+  extra: ""
+
+fastqc:
+  extra: ""
+
+bowtie2:
+  extra: ""
+  extra_build: ""
+
+samtools:
+  mapq: 10
+  extra_merge: ""
+
+bamcoverage:
+  normalize_using: RPGC
+  bin_size: 1
+  ignore_duplicates: true
+  max_fragment_length: 600 # PE only
+  extend_reads: true # PE only
+  extra: ""
+
+bamcompare:
+  bin_size: 80
+  operation: ratio
+  scale_factors_method: SES
+  n: 1000
+  extra: ""
+
+macs3:
+  format: BAMPE
+  min_foldch: 2.0
+  keep_dup: 1
+  extra: ""
+
+meme:
+  nmotifs: 2
+  minw: 8
+  maxw: 32
+  mod: anr
+  maxpeaks: 100
+  maxsize: 10000000
+  summit_extend: 30
+  extra: ""
+
+fimo:
+  thresh: 1.0e-5
+  extra: ""
+
+homer:
+  extra: ""
+
+multiqc:
+  extra: ""
+
+# ── Per-rule resource overrides ───────────────────────────────────────────────
+resources:
+  bowtie2_index:
+    mem_mb: 32000
+    runtime: 120
+  trim_align:
+    mem_mb: 32000
+    runtime: 480
+  fastqc:
+    mem_mb: 2000
+    runtime: 30
+  multiqc:
+    mem_mb: 2000
+    runtime: 30
+  bowtie2:
+    mem_mb: 32000
+    runtime: 120
+  samtools_filter_sort:
+    mem_mb: 32000
+    runtime: 120
+  bamcoverage:
+    mem_mb: 32000
+    runtime: 120
+  bamcompare:
+    mem_mb: 32000
+    runtime: 120
+  macs3:
+    mem_mb: 32000
+    runtime: 120
+  filter_peaks:
+    mem_mb: 32000
+    runtime: 120
+  narrow_peak_to_fasta:
+    mem_mb: 32000
+    runtime: 120
+  meme:
+    mem_mb: 32000
+    runtime: 120
+  fimo:
+    mem_mb: 32000
+    runtime: 120
+  alignment_stats:
+    mem_mb: 8000
+    runtime: 120
+  filtered_stats:
+    mem_mb: 8000
+    runtime: 30
+  frip_macs:
+    mem_mb: 32000
+    runtime: 120
+  qc_summary:
+    mem_mb: 8000
+    runtime: 120
+  merge_control:
+    mem_mb: 32000
+    runtime: 120
+  homer_annotate:
+    mem_mb: 32000
+    runtime: 120

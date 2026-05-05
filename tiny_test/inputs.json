@@ -1,0 +1,26 @@
+{
+  "jgi_dap_leo.find_motifs": true,
+  "jgi_dap_leo.amplified": 30,
+  "jgi_dap_leo.adapters": "/project/zhuzhuzhang/nick/dap_pipeline_new/pipeline/adapters.fa",
+  "jgi_dap_leo.genes_gff": "/project/zhuzhuzhang/nick/dap_pipeline_new/example_workflow/control_reduced_genes.gff",
+  "jgi_dap_leo.genome_fasta": "/project/zhuzhuzhang/nick/dap_pipeline_new/example_workflow/control.fasta",
+  "jgi_dap_leo.ctl_library_names": [
+    "Control_TF_DNA_N_aromaticivorans_DSM_12444_DAPi709B08-ORGi5070-96P084"
+  ],
+  "jgi_dap_leo.expt_library_names": [
+    "SARO_RS00810_N_aromaticivorans_DSM_12444_DAPi709D01-ORGi5070-96P084"
+  ],
+  "jgi_dap_leo.library_names_to_fastq_files_map": {
+    "Control_TF_DNA_N_aromaticivorans_DSM_12444_DAPi709B08-ORGi5070-96P084": [
+      "/project/zhuzhuzhang/nick/dap_pipeline_new/example_workflow/control.fastq.gz"
+    ],
+    "SARO_RS00810_N_aromaticivorans_DSM_12444_DAPi709D01-ORGi5070-96P084": [
+      "/project/zhuzhuzhang/nick/dap_pipeline_new/example_workflow/exp.fastq.gz",
+      "/project/zhuzhuzhang/nick/dap_pipeline_new/example_workflow/control.fastq.gz"
+    ]
+  },
+  "jgi_dap_leo.trim_threads": 1,
+  "jgi_dap_leo.merge_threads": 1,
+  "jgi_dap_leo.process_sample_threads": 1,
+  "jgi_dap_leo.stage_to_tmp": true
+}

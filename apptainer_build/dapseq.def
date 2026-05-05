@@ -1,0 +1,11 @@
+Bootstrap: docker
+From: ghcr.io/prefix-dev/pixi:latest
+
+%files
+    apptainer_build/pixi.toml /app/pixi.toml
+
+%post
+    cd /app && pixi install && pixi clean cache -y
+
+%environment
+    export PATH=/app/.pixi/envs/default/bin:$PATH

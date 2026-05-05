@@ -1,0 +1,17 @@
+[workspace]
+channels = ["conda-forge", "bioconda"]
+name = "DapSeq"
+platforms = ["linux-64"]
+version = "0.1.0"
+
+[tasks]
+
+[dependencies]
+snakemake = ">=9.19.0,<10"
+snakemake-executor-plugin-slurm = ">=2.6.0,<3"
+pillow = ">=10.0.0"
+snakemake-logger-plugin-snkmt = ">=0.1.6,<0.2"
+pip = ">=26.0.1,<27"
+
+[pypi-dependencies]
+snakemake-logger-plugin-rich = ">=0.4.1, <0.5"
