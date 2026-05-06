@@ -10,6 +10,7 @@ dap_arabidopis_data/
 human_config.yaml
 config.yaml
 pipeline_db.csv
+yamls/
 
 # local files
 .venv/
