@@ -55,7 +55,7 @@ rule frip_macs:
         """
 
 
-rule qc_summary:
+rule report:
     input:
         trim_logs    = expand(OUT + "/logs/bbduk/{sample}.trim.log",               sample=TREATMENT_SAMPLES),
         total_frags  = expand(OUT + "/stats/{sample}.total_frags.txt",             sample=TREATMENT_SAMPLES),
@@ -65,8 +65,8 @@ rule qc_summary:
         narrowpeaks  = expand(OUT + "/MACS/{sample}_peaks.narrowPeak",             sample=TREATMENT_SAMPLES),
         logo_pngs    = expand(OUT + "/meme/{sample}/summits/logo1.png",            sample=TREATMENT_SAMPLES),
     output:
-        tsv  = OUT + "/stats/qc_summary.tsv",
-        html = OUT + "/stats/qc_summary.html",
+        tsv  = OUT + "/stats/report.tsv",
+        html = OUT + "/stats/report.html",
     params:
         treatment_samples = TREATMENT_SAMPLES,
         trim_log_dir      = OUT + "/logs/bbduk",
@@ -74,11 +74,11 @@ rule qc_summary:
         meme_dir          = OUT + "/meme",
         stats_dir         = OUT + "/stats",
     resources:
-        mem_mb          = config["resources"]["qc_summary"]["mem_mb"],
-        runtime         = config["resources"]["qc_summary"]["runtime"],
+        mem_mb          = config["resources"]["report"]["mem_mb"],
+        runtime         = config["resources"]["report"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/qc_summary.log"
+        OUT + "/logs/report.log"
     script:
-        "../scripts/qc_summary.py"
+        "../scripts/report.py"

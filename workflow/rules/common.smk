@@ -61,7 +61,7 @@ rule motifs_done:
 
 rule qc_done:
     input:
-        OUT + "/stats/qc_summary.tsv",
+        OUT + "/stats/report.tsv",
         OUT + "/multiqc_report.html",
 
 

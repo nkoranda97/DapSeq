@@ -1,0 +1,167 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DAP-seq pipeline configuration
+# ─────────────────────────────────────────────────────────────────────────────
+
+# rename sample_name to name sample will be identified as
+# Use full paths to the raw data for r1 and r2
+# If SE, leave r2 as null
+# add as many samples as you'd like
+
+samples:
+  sample_1_name:
+    r1: null
+    r2: null
+
+  control:
+    r1: null
+    r2: null
+
+# Input/control sample name — must match a key in samples above.
+# Set to null to run without a control.
+input_control: control
+
+# please put output folder in a directory outside of the pipeline folder
+output_dir: /project/zhuzhuzhang/nick/DapSeq/results/
+
+# ── Genome ───────────────────────────────────────────────────────────────────
+# full path to fasta file
+genome_ref: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.dna.primary_assembly.fa
+
+# "1e5" notation also accepted
+genome_size: "3000000000"
+
+# Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
+# full path to gtf
+gene_annotation: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.113.gtf
+
+# ── Compute ──────────────────────────────────────────────────────────────────
+threads: 16
+
+# ── SLURM ────────────────────────────────────────────────────────────────────
+slurm_partition: "caslake"
+slurm_account: "pi-zhuzhuzhang"
+
+bbduk:
+  adapters: null
+  max_frags: null
+  mem_gb: 8
+  k: 21
+  mink: 11
+  ktrim: r # r=right, l=left, lr=both
+  qtrim: r # r=right, l=left, lr=both, w=window
+  trimq: 6
+  maq: 10
+  ow: t # t=overwrite, f=fail if output exists
+  extra: ""
+
+fastqc:
+  extra: ""
+
+bowtie2:
+  extra: ""
+  extra_build: ""
+
+samtools:
+  mapq: 10
+  extra_merge: ""
+
+bamcoverage:
+  normalize_using: RPGC
+  bin_size: 1
+  ignore_duplicates: true
+  max_fragment_length: 600 # PE only
+  extend_reads: true # PE only
+  extra: ""
+
+bamcompare:
+  bin_size: 80
+  operation: ratio
+  scale_factors_method: SES
+  n: 1000
+  extra: ""
+
+macs3:
+  format: BAMPE
+  min_foldch: 2.0
+  keep_dup: 1
+  extra: ""
+
+meme:
+  nmotifs: 2
+  minw: 8
+  maxw: 32
+  mod: anr
+  maxpeaks: 100
+  maxsize: 10000000
+  summit_extend: 30
+  extra: ""
+
+fimo:
+  thresh: 1.0e-5
+  extra: ""
+
+homer:
+  extra: ""
+
+multiqc:
+  extra: ""
+
+# ── Per-rule resource overrides ───────────────────────────────────────────────
+resources:
+  bowtie2_index:
+    mem_mb: 32000
+    runtime: 120
+  trim_align:
+    mem_mb: 32000
+    runtime: 480
+  fastqc:
+    mem_mb: 2000
+    runtime: 30
+  multiqc:
+    mem_mb: 2000
+    runtime: 30
+  bowtie2:
+    mem_mb: 32000
+    runtime: 120
+  samtools_filter_sort:
+    mem_mb: 32000
+    runtime: 120
+  bamcoverage:
+    mem_mb: 32000
+    runtime: 120
+  bamcompare:
+    mem_mb: 32000
+    runtime: 120
+  macs3:
+    mem_mb: 32000
+    runtime: 120
+  filter_peaks:
+    mem_mb: 32000
+    runtime: 120
+  narrow_peak_to_fasta:
+    mem_mb: 32000
+    runtime: 120
+  meme:
+    mem_mb: 32000
+    runtime: 120
+  fimo:
+    mem_mb: 32000
+    runtime: 120
+  alignment_stats:
+    mem_mb: 8000
+    runtime: 120
+  filtered_stats:
+    mem_mb: 8000
+    runtime: 30
+  frip_macs:
+    mem_mb: 32000
+    runtime: 120
+  report:
+    mem_mb: 8000
+    runtime: 120
+  merge_control:
+    mem_mb: 32000
+    runtime: 120
+  homer_annotate:
+    mem_mb: 32000
+    runtime: 120

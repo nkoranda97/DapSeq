@@ -1,10 +1,10 @@
 rule update_db:
     input:
-        qc_summary = OUT + "/stats/qc_summary.tsv",
+        report = OUT + "/stats/report.tsv",
     output:
         flag = OUT + "/stats/db_updated.flag",
     params:
-        db_path          = os.path.join(os.path.dirname(workflow.basedir), "pipeline_db.csv"),
+        db_path          = os.path.join(os.path.dirname(workflow.basedir), "pipeline_db.db"),
         output_dir       = OUT,
         samples_cfg      = config["samples"],
         input_control    = config.get("input_control"),

@@ -10,12 +10,32 @@ We are using `Pixi` for environment management. Install with:
 curl -fsSL https://pixi.sh/install.sh | sh
 ```
 
-From the pipeline project directory run:
+### Running the pipeline
+
+Because multiple users share this installation, always pass `--directory` pointing to your own output directory. Snakemake stores its working state (`.snakemake/`) in the directory you specify — without this flag it defaults to the pipeline root, which is shared, and a second user trying to run simultaneously will be locked out.
 
 ```sh
 module load apptainer
-pixi run snakemake --configfile /path/to/configfile.yaml
+pixi run snakemake \
+    --snakefile /path/to/pipeline/workflow/Snakefile \
+    --configfile /path/to/your/configfile.yaml \
+    --directory /your/output/dir
 ```
+
+`--directory` must match `output_dir` in your config file.
+
+### One-time reference index setup (admin)
+
+The Bowtie2 index must be built once per genome reference before any user runs the pipeline. Once built, Snakemake skips the indexing step automatically for all subsequent runs.
+
+```sh
+pixi run snakemake bowtie2_index \
+    --snakefile /path/to/pipeline/workflow/Snakefile \
+    --configfile /path/to/admin/configfile.yaml \
+    --directory /tmp/index_build
+```
+
+Run this for each new genome reference. Do not run the pipeline without a pre-built index — two simultaneous first-time runs will race to write the same index files.
 
 ## Default Configuration
 

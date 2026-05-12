@@ -165,14 +165,14 @@ _HTML_COLS = COLS + ["top motif"]
 
 
 def write_html(rows, logo_b64_map, out_path):
-    """Write a self-contained HTML summary table with embedded motif logos."""
+    """Write a self-contained HTML report table with embedded motif logos."""
     lines = [
         "<!DOCTYPE html>",
         "<html><head><meta charset='utf-8'>",
-        "<title>DAP-seq QC Summary</title>",
+        "<title>DAP-seq Report</title>",
         _HTML_STYLE,
         "</head><body>",
-        "<h2>DAP-seq QC Summary</h2>",
+        "<h2>DAP-seq Report</h2>",
         "<table>",
         "<thead><tr>",
     ]

@@ -1,10 +1,10 @@
 """
-Standalone script to regenerate qc_summary.tsv and qc_summary.html from an
+Standalone script to regenerate report.tsv and report.html from an
 existing results directory.
 
 Usage:
-    uv run python workflow/scripts/make_report.py --results-dir results/my_run
-    uv run python workflow/scripts/make_report.py --results-dir results/my_run --output my_report.tsv
+    pixi run python workflow/scripts/make_report.py --results-dir results/my_run
+    pixi run python workflow/scripts/make_report.py --results-dir results/my_run --output my_report.tsv
 
 Sample discovery:
     - Treatment samples: MACS/{sample}_peaks_filt.narrowPeak (those that have a narrowPeak file)
@@ -16,9 +16,8 @@ import glob
 import os
 import sys
 
-# Reuse helpers from qc_summary.py
 sys.path.insert(0, os.path.dirname(__file__))
-from qc_summary import COLS, build_row, logo_to_base64, write_html
+from report import COLS, build_row, logo_to_base64, write_html
 
 
 def discover_treatment_samples(results_dir):
@@ -32,13 +31,13 @@ def discover_treatment_samples(results_dir):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Regenerate qc_summary from existing results.")
+    parser = argparse.ArgumentParser(description="Regenerate report from existing results.")
     parser.add_argument("--results-dir", required=True, help="Path to pipeline results directory")
-    parser.add_argument("--output", help="Output TSV path (default: <results-dir>/stats/qc_summary.tsv)")
+    parser.add_argument("--output", help="Output TSV path (default: <results-dir>/stats/report.tsv)")
     args = parser.parse_args()
 
     results_dir = args.results_dir
-    tsv_path  = args.output or os.path.join(results_dir, "stats", "qc_summary.tsv")
+    tsv_path  = args.output or os.path.join(results_dir, "stats", "report.tsv")
     html_path = tsv_path.replace(".tsv", ".html")
 
     treatment_samples = discover_treatment_samples(results_dir)
