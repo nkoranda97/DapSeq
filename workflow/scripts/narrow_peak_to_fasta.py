@@ -16,7 +16,7 @@ Snakemake params:
     snakemake.params.fimocoords — bool; write chr:start-end headers for FIMO
 """
 
-from os import path
+import sys
 
 import pandas as pd
 from Bio import SeqIO
@@ -81,6 +81,17 @@ def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimoc
                     "Check that chromosome naming matches between peaks and genome "
                     "(e.g. 'chr1' vs '1')."
                 )
+
+            start_bp = max(0, start_bp)
+            stop_bp = min(len(chr_record), stop_bp)
+            if stop_bp <= start_bp:
+                print(
+                    f"Skipping invalid interval for {peak_name}: "
+                    f"{peak_chr}:{start_bp + 1}-{stop_bp}",
+                    file=sys.stderr,
+                )
+                continue
+
             SEQ = get_peak_seq(start=start_bp, stop=stop_bp, record=chr_record)
 
             if fimocoords:
@@ -92,7 +103,6 @@ def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimoc
 
 
 if "snakemake" in dir():
-    import sys
     sys.stderr = open(snakemake.log[0], "w")  # noqa: F821
     narrow_peak_to_fasta(
         snakemake.input.narrowpeak,    # noqa: F821
