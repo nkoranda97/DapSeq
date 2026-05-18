@@ -1,0 +1,18 @@
+executor: slurm
+
+# jobscript runs before every SLURM job — loads Apptainer module
+jobscript: "profiles/default/slurm-jobscript.sh"
+
+# Maximum number of jobs submitted to SLURM at once
+jobs: 100
+
+# Run every rule inside the container declared in the Snakefile
+use-apptainer: true
+
+# Bind HPC project directory into the container
+apptainer-args: "--bind /project/zhuzhuzhang,/project/gzy8899"
+
+# Default SLURM resources used when a rule does not specify its own
+default-resources:
+  mem_mb: 8000
+  runtime: 120          # minutes
