@@ -95,6 +95,13 @@ meme:
   maxsize: 10000000
   summit_extend: 30
   extra: ""
+  # Optional: customize base colors in sequence logos.
+  # Use hex codes with or without '#'. Omit or leave blank to use MEME defaults.
+  # base_colors:
+  #   A: "#008000"
+  #   C: "#0000FF"
+  #   G: "#FFB300"
+  #   T: "#FF0000"
 
 fimo:
   thresh: 1.0e-5

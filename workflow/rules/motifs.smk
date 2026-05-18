@@ -48,13 +48,14 @@ rule meme_summits:
         xml  = OUT + "/meme/{sample}/summits/meme.xml",
         logo = OUT + "/meme/{sample}/summits/logo1.png",
     params:
-        outdir  = OUT + "/meme/{sample}/summits",
-        nmotifs = config["meme"]["nmotifs"],
-        minw    = config["meme"]["minw"],
-        maxw    = config["meme"]["maxw"],
-        mod     = config["meme"]["mod"],
-        maxsize = config["meme"].get("maxsize", 10000000),
-        extra   = config["meme"].get("extra", ""),
+        outdir      = OUT + "/meme/{sample}/summits",
+        nmotifs     = config["meme"]["nmotifs"],
+        minw        = config["meme"]["minw"],
+        maxw        = config["meme"]["maxw"],
+        mod         = config["meme"]["mod"],
+        maxsize     = config["meme"].get("maxsize", 10000000),
+        extra       = config["meme"].get("extra", ""),
+        base_colors = config["meme"].get("base_colors") or {},
     threads:
         config["threads"]
     resources:
@@ -64,24 +65,45 @@ rule meme_summits:
         slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.summits.log"
-    shell:
-        """
-        if [ ! -s {input} ]; then
-            touch {output.txt} {output.xml} {output.logo}
-        else
-            meme {input} -oc {params.outdir} \
-              -dna -revcomp \
-              -mod {params.mod} -nmotifs {params.nmotifs} \
-              -minw {params.minw} -maxw {params.maxw} \
-              -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} 2>{log}
-            if [ -f {params.outdir}/logo1.eps ]; then
-                gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 \
-                   -sOutputFile={output.logo} {params.outdir}/logo1.eps 2>>{log}
-            else
-                touch {output.logo}
-            fi
-        fi
-        """
+    run:
+        import os
+
+        if not (os.path.exists(str(input[0])) and os.path.getsize(str(input[0])) > 0):
+            for f in [output.txt, output.xml, output.logo]:
+                open(str(f), "w").close()
+        else:
+            active = {k: v for k, v in params.base_colors.items() if v}
+            if active:
+                defaults = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
+                def _hex(k):
+                    return active.get(k, defaults[k]).lstrip("#")
+                alph_file = os.path.join(params.outdir, "custom_alph.txt")
+                os.makedirs(params.outdir, exist_ok=True)
+                with open(alph_file, "w") as fh:
+                    fh.write('ALPHABET "DNA"\n')
+                    fh.write(f'A ADENINE {_hex("A")} ~ T THYMINE {_hex("T")}\n')
+                    fh.write(f'C CYTOSINE {_hex("C")} ~ G GUANINE {_hex("G")}\n')
+                    fh.write("END ALPHABET\n")
+                alph_arg = f"-alph {alph_file}"
+            else:
+                alph_arg = "-dna"
+
+            shell(
+                f"meme {input[0]} -oc {params.outdir} "
+                f"{alph_arg} -revcomp "
+                f"-mod {params.mod} -nmotifs {params.nmotifs} "
+                f"-minw {params.minw} -maxw {params.maxw} "
+                f"-maxsize {params.maxsize} -p {threads} -nostatus {params.extra} "
+                f"2>{log}"
+            )
+            if os.path.isfile(os.path.join(params.outdir, "logo1.eps")):
+                shell(
+                    f"gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 "
+                    f"-sOutputFile={output.logo} {params.outdir}/logo1.eps "
+                    f"2>>{log}"
+                )
+            else:
+                open(str(output.logo), "w").close()
 
 
 rule meme_peaks:
