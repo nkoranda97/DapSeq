@@ -2,8 +2,12 @@
 Append per-sample pipeline run metadata to a shared SQLite database.
 
 Called via Snakemake's script: directive; uses the snakemake object for I/O.
-Each run writes one row per sample. Re-running the same output_dir replaces
-its rows (idempotent).
+Each run writes one row per sample to two tables:
+  - pipeline_runs  : QC metrics and parameters
+  - run_metadata   : file paths and provenance (author, dates, all I/O paths)
+
+Both tables are joined via (output_dir, sample). Re-running the same
+output_dir replaces its rows in both tables (idempotent).
 
 Concurrency note: SQLite uses fcntl POSIX record locks internally, which work
 on Lustre/GPFS via NLM. The 60-second timeout serialises the rare case of two
@@ -49,6 +53,45 @@ COLS = [
     "FRiP_score",
 ]
 
+META_COLS = [
+    # join keys
+    "output_dir",
+    "sample",
+    # provenance
+    "author",
+    "run_date",
+    # reference paths (from config)
+    "genome_ref",
+    "gene_annotation",
+    # raw input paths
+    "r1",
+    "r2",
+    # generated paths — trimming
+    "trimmed_r1",
+    "trimmed_r2",
+    # generated paths — alignment
+    "bam",
+    "bigwig",
+    # generated paths — peaks (treatment only)
+    "peaks_narrowpeak",
+    "peaks_filt_narrowpeak",
+    "summits_bed",
+    # generated paths — fasta (treatment only)
+    "summits_fasta",
+    "peaks_fasta",
+    # generated paths — meme (treatment only)
+    "meme_summits_dir",
+    "meme_peaks_dir",
+    # generated paths — fimo (treatment only)
+    "fimo_summits_tsv",
+    "fimo_peaks_tsv",
+    # generated paths — homer (treatment only, if gene_annotation set)
+    "homer_annotations",
+    # generated paths — report
+    "report_tsv",
+    "report_html",
+]
+
 _col_defs  = ", ".join(f'"{c}" TEXT' for c in COLS)
 _col_names = ", ".join(f'"{c}"' for c in COLS)
 _col_ph    = ", ".join("?" * len(COLS))
@@ -58,6 +101,16 @@ _CREATE = (
     f"(id INTEGER PRIMARY KEY AUTOINCREMENT, {_col_defs})"
 )
 _INSERT = f'INSERT INTO pipeline_runs ({_col_names}) VALUES ({_col_ph})'
+
+_meta_col_defs  = ", ".join(f'"{c}" TEXT' for c in META_COLS)
+_meta_col_names = ", ".join(f'"{c}"' for c in META_COLS)
+_meta_col_ph    = ", ".join("?" * len(META_COLS))
+
+_CREATE_META = (
+    f"CREATE TABLE IF NOT EXISTS run_metadata "
+    f"(id INTEGER PRIMARY KEY AUTOINCREMENT, {_meta_col_defs})"
+)
+_INSERT_META = f'INSERT INTO run_metadata ({_meta_col_names}) VALUES ({_meta_col_ph})'
 
 
 def read_report(path):
@@ -99,6 +152,61 @@ def write_rows(db_path, output_dir, rows):
     con.close()
 
 
+def write_meta_rows(db_path, output_dir, rows):
+    """Write rows (list of tuples ordered by META_COLS) to run_metadata.
+
+    Same idempotency and concurrency guarantees as write_rows().
+    """
+    con = sqlite3.connect(str(db_path), timeout=60)
+    con.execute("PRAGMA journal_mode=DELETE")
+    con.execute(_CREATE_META)
+    with con:
+        con.execute("DELETE FROM run_metadata WHERE output_dir = ?", (output_dir,))
+        con.executemany(_INSERT_META, rows)
+    con.close()
+
+
+def _build_meta_paths(output_dir, sample, is_treatment):
+    """Return dict of generated file paths for one sample.
+
+    Treatment-only steps (peaks, MEME, FIMO, HOMER) are empty strings
+    for control samples since those rules are not run on controls.
+    trimmed_r2 is recorded as a path string even for SE samples — the file
+    may not exist, but the expected path is stored for reference.
+    """
+    o = output_dir.rstrip("/")
+    paths = {
+        "trimmed_r1": f"{o}/trimmed/{sample}.R1.fastq.gz",
+        "trimmed_r2": f"{o}/trimmed/{sample}.R2.fastq.gz",
+        "bam":        f"{o}/bam/{sample}.bam",
+        "bigwig":     f"{o}/bigWig/{sample}.bw",
+    }
+    if is_treatment:
+        paths.update({
+            "peaks_narrowpeak":      f"{o}/MACS/{sample}_peaks.narrowPeak",
+            "peaks_filt_narrowpeak": f"{o}/MACS/{sample}_peaks_filt.narrowPeak",
+            "summits_bed":           f"{o}/MACS/{sample}_summits.bed",
+            "summits_fasta":         f"{o}/fasta/{sample}.summits.fasta",
+            "peaks_fasta":           f"{o}/fasta/{sample}.peaks.fasta",
+            "meme_summits_dir":      f"{o}/meme/{sample}/summits",
+            "meme_peaks_dir":        f"{o}/meme/{sample}/peaks",
+            "fimo_summits_tsv":      f"{o}/fimo/{sample}/summits/fimo.tsv",
+            "fimo_peaks_tsv":        f"{o}/fimo/{sample}/peaks/fimo.tsv",
+            "homer_annotations":     f"{o}/annotations/{sample}.peak_annotations.txt",
+        })
+    else:
+        paths.update({k: "" for k in [
+            "peaks_narrowpeak", "peaks_filt_narrowpeak", "summits_bed",
+            "summits_fasta", "peaks_fasta",
+            "meme_summits_dir", "meme_peaks_dir",
+            "fimo_summits_tsv", "fimo_peaks_tsv",
+            "homer_annotations",
+        ]})
+    paths["report_tsv"]  = f"{o}/stats/report.tsv"
+    paths["report_html"] = f"{o}/stats/report.html"
+    return paths
+
+
 def main():
     sm = snakemake  # noqa: F821 — injected by Snakemake
 
@@ -107,6 +215,8 @@ def main():
     samples_cfg      = sm.params.samples_cfg
     treatment_set    = set(sm.params.treatment_samples)
     run_date         = datetime.now().isoformat(timespec="seconds")
+    author           = sm.params.author
+    gene_annotation  = sm.params.gene_annotation or ""
 
     qc_stats = read_report(sm.input.report)
 
@@ -129,17 +239,20 @@ def main():
     }
 
     new_rows = []
+    meta_rows = []
     for sample, scfg in samples_cfg.items():
         r1 = get_r1(scfg)
         if r1 is None:
             continue
+
+        is_treatment = sample in treatment_set
 
         stats = qc_stats.get(sample, {})
         row = dict(shared)
         row["sample"]       = sample
         row["r1"]           = r1
         row["r2"]           = get_r2(scfg) or ""
-        row["is_treatment"] = sample in treatment_set
+        row["is_treatment"] = is_treatment
 
         row["total_frags"]    = stats.get("total_frags", "NA")
         row["clean_reads"]    = stats.get("clean_reads", "NA")
@@ -153,7 +266,22 @@ def main():
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 
+        generated = _build_meta_paths(output_dir, sample, is_treatment)
+        meta = {
+            "output_dir":      output_dir,
+            "sample":          sample,
+            "author":          author,
+            "run_date":        run_date,
+            "genome_ref":      sm.params.genome_ref,
+            "gene_annotation": gene_annotation,
+            "r1":              r1,
+            "r2":              get_r2(scfg) or "",
+        }
+        meta.update(generated)
+        meta_rows.append(tuple(meta.get(c, "") for c in META_COLS))
+
     write_rows(db_path, output_dir, new_rows)
+    write_meta_rows(db_path, output_dir, meta_rows)
 
     Path(sm.output.flag).touch()
 

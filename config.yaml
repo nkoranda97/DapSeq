@@ -2,6 +2,11 @@
 # DAP-seq pipeline configuration
 # ─────────────────────────────────────────────────────────────────────────────
 
+# ─────────────────────────────────────────────────────────────────────────────
+# REQUIRED: Your name. Stored in the database with every run for attribution.
+# ─────────────────────────────────────────────────────────────────────────────
+author: "Your Name"
+
 # rename sample_name to name sample will be identified as
 # Use full paths to the raw data for r1 and r2
 # If SE, leave r2 as null
@@ -172,3 +177,6 @@ resources:
   homer_annotate:
     mem_mb: 32000
     runtime: 120
+  update_db:
+    mem_mb: 2000
+    runtime: 30

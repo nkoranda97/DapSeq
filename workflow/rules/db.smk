@@ -21,6 +21,8 @@ rule update_db:
         meme_maxpeaks    = config["meme"]["maxpeaks"],
         fimo_thresh      = config["fimo"]["thresh"],
         treatment_samples = TREATMENT_SAMPLES,
+        author           = config.get("author", ""),
+        gene_annotation  = config.get("gene_annotation") or "",
     resources:
         mem_mb          = config["resources"]["update_db"]["mem_mb"],
         runtime         = config["resources"]["update_db"]["runtime"],
