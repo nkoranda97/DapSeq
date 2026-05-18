@@ -148,3 +148,6 @@ resources:
   homer_annotate:
     mem_mb: 4000
     runtime: 30
+  report:
+    mem_mb: 8000
+    runtime: 30
