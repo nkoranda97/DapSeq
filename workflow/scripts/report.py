@@ -163,13 +163,61 @@ _HTML_STYLE = """
 <style>
   body { font-family: sans-serif; font-size: 13px; margin: 20px; }
   table { border-collapse: collapse; width: 100%; }
-  th { background: #2c3e50; color: white; padding: 8px 10px; text-align: left; }
+  th { background: #2c3e50; color: white; padding: 8px 10px; text-align: left; cursor: pointer; user-select: none; }
+  th.no-sort { cursor: default; }
+  th.sort-asc::after  { content: " \25b2"; font-size: 10px; }
+  th.sort-desc::after { content: " \25bc"; font-size: 10px; }
   td { padding: 6px 10px; border-bottom: 1px solid #ddd; vertical-align: middle; }
   tr:nth-child(even) { background: #f7f7f7; }
   tr:hover { background: #eaf4fb; }
   img.motif { max-width: 280px; max-height: 100px; height: auto; display: block; }
   .na { color: #aaa; font-style: italic; }
 </style>
+"""
+
+_HTML_SCRIPT = """
+<script>
+(function () {
+  var table = document.querySelector('table');
+  var headers = table.querySelectorAll('thead th');
+  var tbody = table.querySelector('tbody');
+  var sortCol = -1;
+  var sortAsc = true;
+
+  headers.forEach(function (th, idx) {
+    if (th.classList.contains('no-sort')) return;
+    th.addEventListener('click', function () {
+      var isNumeric = th.dataset.colType === 'numeric';
+      if (sortCol === idx) {
+        sortAsc = !sortAsc;
+      } else {
+        sortCol = idx;
+        sortAsc = true;
+      }
+      headers.forEach(function (h) { h.classList.remove('sort-asc', 'sort-desc'); });
+      th.classList.add(sortAsc ? 'sort-asc' : 'sort-desc');
+
+      var rows = Array.from(tbody.querySelectorAll('tr'));
+      rows.sort(function (a, b) {
+        var av = a.cells[idx] ? a.cells[idx].textContent.trim() : '';
+        var bv = b.cells[idx] ? b.cells[idx].textContent.trim() : '';
+        var aNa = av === 'NA';
+        var bNa = bv === 'NA';
+        if (aNa && bNa) return 0;
+        if (aNa) return 1;
+        if (bNa) return -1;
+        if (isNumeric) {
+          var an = parseFloat(av.replace(/,/g, '').replace('%', ''));
+          var bn = parseFloat(bv.replace(/,/g, '').replace('%', ''));
+          return sortAsc ? an - bn : bn - an;
+        }
+        return sortAsc ? av.localeCompare(bv) : bv.localeCompare(av);
+      });
+      rows.forEach(function (r) { tbody.appendChild(r); });
+    });
+  });
+})();
+</script>
 """
 
 
@@ -197,7 +245,12 @@ def write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, out_pa
         "<thead><tr>",
     ]
     for col in html_cols:
-        lines.append(f"  <th>{col}</th>")
+        if col in ("top motif", "top motif RC"):
+            lines.append(f'  <th class="no-sort">{col}</th>')
+        elif col == "sample":
+            lines.append(f'  <th data-col-type="text">{col}</th>')
+        else:
+            lines.append(f'  <th data-col-type="numeric">{col}</th>')
     lines.append("</tr></thead><tbody>")
 
     for row in rows:
@@ -218,7 +271,7 @@ def write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, out_pa
             lines.append('  <td class="na">NA</td>')
         lines.append("</tr>")
 
-    lines += ["</tbody></table>", "</body></html>"]
+    lines += ["</tbody></table>", _HTML_SCRIPT, "</body></html>"]
 
     with open(out_path, "w") as fh:
         fh.write("\n".join(lines) + "\n")
