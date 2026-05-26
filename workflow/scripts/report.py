@@ -161,10 +161,10 @@ def _fmt_html(col, val):
         return f"{val}%"
     return str(val)
 
-_HTML_COLS = COLS + ["top motif"]
+_HTML_COLS = COLS + ["top motif", "top motif RC"]
 
 
-def write_html(rows, logo_b64_map, out_path):
+def write_html(rows, logo_b64_map, logo_rc_b64_map, out_path):
     """Write a self-contained HTML report table with embedded motif logos."""
     lines = [
         "<!DOCTYPE html>",
@@ -190,6 +190,12 @@ def write_html(rows, logo_b64_map, out_path):
         b64 = logo_b64_map.get(row["sample"])
         if b64:
             lines.append(f'  <td><img class="motif" src="data:image/png;base64,{b64}" alt="motif logo"/></td>')
+        else:
+            lines.append('  <td class="na">NA</td>')
+        # RC motif logo column
+        b64_rc = logo_rc_b64_map.get(row["sample"])
+        if b64_rc:
+            lines.append(f'  <td><img class="motif" src="data:image/png;base64,{b64_rc}" alt="motif RC logo"/></td>')
         else:
             lines.append('  <td class="na">NA</td>')
         lines.append("</tr>")
@@ -225,7 +231,11 @@ def main():
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo1.png"))
         for s in treatment_samples
     }
-    write_html(rows, logo_b64_map, sm.output.html)
+    logo_rc_b64_map = {
+        s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo_rc1.png"))
+        for s in treatment_samples
+    }
+    write_html(rows, logo_b64_map, logo_rc_b64_map, sm.output.html)
 
 
 if "snakemake" in dir():
