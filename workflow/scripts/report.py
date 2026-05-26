@@ -40,11 +40,10 @@ def parse_bbduk_log(path):
 
 def parse_narrowpeak(path):
     """
-    Return (total_peaks, min5fold_peaks, max_signal) from a narrowPeak file.
+    Return (total_peaks, max_signal) from a narrowPeak file.
     Column 7 (0-indexed: 6) is signalValue (fold enrichment).
     """
     total = 0
-    min5 = 0
     max_signal = None
     with open(path) as fh:
         for line in fh:
@@ -54,13 +53,11 @@ def parse_narrowpeak(path):
             fields = line.split("\t")
             signal = float(fields[6])
             total += 1
-            if signal >= 5:
-                min5 += 1
             if max_signal is None or signal > max_signal:
                 max_signal = signal
     if max_signal is None:
-        return "NA", "NA", "NA"
-    return total, min5, round(max_signal, 4)
+        return "NA", "NA"
+    return total, round(max_signal, 4)
 
 
 def logo_to_base64(png_path):
@@ -83,21 +80,37 @@ def logo_to_base64(png_path):
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-COLS = [
-    "sample",
-    "total_frags",
-    "clean_reads",
-    "align_rate%",
-    "filtered_reads",
-    "peak#",
-    "min5fold peak#",
-    "max peak score",
-    "peak reads#",
-    "FRiP_score",
-]
+def _fmt_n(min_foldch):
+    """Format fold-change threshold as int when whole, else as-is (e.g. 2.0 -> '2', 2.5 -> '2.5')."""
+    return str(int(min_foldch)) if min_foldch == int(min_foldch) else str(min_foldch)
 
 
-def build_row(sample, trim_log_dir, stats_dir, macs_dir):
+def make_cols(n):
+    return [
+        "sample",
+        "total_frags",
+        "clean_reads",
+        "align_rate%",
+        "filtered_reads",
+        "peak#",
+        f"peaks_{n}fold#",
+        "max peak score",
+        "peak reads#",
+        "FRiP_score",
+        "FRiP_top_n_fold",
+    ]
+
+
+def int_cols(n):
+    return {"total_frags", "clean_reads", "filtered_reads", "peak#", f"peaks_{n}fold#", "peak reads#"}
+
+
+PCT_COLS = {"align_rate%", "FRiP_score", "FRiP_top_n_fold"}
+
+
+def build_row(sample, trim_log_dir, stats_dir, macs_dir, min_foldch):
+    n = _fmt_n(min_foldch)
+
     total_frags_path = os.path.join(stats_dir, f"{sample}.total_frags.txt")
     total_frags = open(total_frags_path).read().strip() if os.path.exists(total_frags_path) else "NA"
 
@@ -110,8 +123,12 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir):
     filt_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.filtered_stats.txt"))
     filtered_reads = filt_stats.get("filtered_reads", "NA")
 
-    np_path = os.path.join(macs_dir, f"{sample}_peaks_filt.narrowPeak")
-    peak_total, min5fold, max_score = parse_narrowpeak(np_path)
+    # peak# from unfiltered file; peaks_nfold# from filtered file
+    unfilt_np = os.path.join(macs_dir, f"{sample}_peaks.narrowPeak")
+    peak_total, max_score = parse_narrowpeak(unfilt_np)
+
+    filt_np = os.path.join(macs_dir, f"{sample}_peaks_filt.narrowPeak")
+    peaks_nfold, _ = parse_narrowpeak(filt_np)
 
     frip_macs = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs.txt"))
     peak_reads = frip_macs.get("reads_in_peaks_macs", "NA")
@@ -120,6 +137,13 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir):
     else:
         frip = "NA"
 
+    frip_macs_filt = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs_filt.txt"))
+    peak_reads_filt = frip_macs_filt.get("reads_in_peaks_macs_filt", "NA")
+    if peak_reads_filt != "NA" and filtered_reads != "NA":
+        frip_top_n = round(int(peak_reads_filt) / int(filtered_reads) * 100, 2)
+    else:
+        frip_top_n = "NA"
+
     return {
         "sample":          sample,
         "total_frags":     total_frags,
@@ -127,10 +151,11 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir):
         "align_rate%":     align_rate,
         "filtered_reads":  filtered_reads,
         "peak#":           peak_total,
-        "min5fold peak#":  min5fold,
+        f"peaks_{n}fold#": peaks_nfold,
         "max peak score":  max_score,
         "peak reads#":     peak_reads,
         "FRiP_score":      frip,
+        "FRiP_top_n_fold": frip_top_n,
     }
 
 
@@ -147,25 +172,20 @@ _HTML_STYLE = """
 </style>
 """
 
-_INT_COLS = {"total_frags", "clean_reads", "filtered_reads",
-             "peak#", "min5fold peak#", "peak reads#"}
-_PCT_COLS = {"align_rate%", "FRiP_score"}
 
-
-def _fmt_html(col, val):
+def _fmt_html(col, val, i_cols, p_cols):
     if val == "NA":
         return "NA"
-    if col in _INT_COLS:
+    if col in i_cols:
         return f"{int(val):,}"
-    if col in _PCT_COLS:
+    if col in p_cols:
         return f"{val}%"
     return str(val)
 
-_HTML_COLS = COLS + ["top motif", "top motif RC"]
 
-
-def write_html(rows, logo_b64_map, logo_rc_b64_map, out_path):
+def write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, out_path):
     """Write a self-contained HTML report table with embedded motif logos."""
+    html_cols = cols + ["top motif", "top motif RC"]
     lines = [
         "<!DOCTYPE html>",
         "<html><head><meta charset='utf-8'>",
@@ -176,23 +196,21 @@ def write_html(rows, logo_b64_map, logo_rc_b64_map, out_path):
         "<table>",
         "<thead><tr>",
     ]
-    for col in _HTML_COLS:
+    for col in html_cols:
         lines.append(f"  <th>{col}</th>")
     lines.append("</tr></thead><tbody>")
 
     for row in rows:
         lines.append("<tr>")
-        for col in COLS:
+        for col in cols:
             val = row.get(col, "NA")
             css = ' class="na"' if val == "NA" else ""
-            lines.append(f"  <td{css}>{_fmt_html(col, val)}</td>")
-        # Motif logo column
+            lines.append(f"  <td{css}>{_fmt_html(col, val, i_cols, p_cols)}</td>")
         b64 = logo_b64_map.get(row["sample"])
         if b64:
             lines.append(f'  <td><img class="motif" src="data:image/png;base64,{b64}" alt="motif logo"/></td>')
         else:
             lines.append('  <td class="na">NA</td>')
-        # RC motif logo column
         b64_rc = logo_rc_b64_map.get(row["sample"])
         if b64_rc:
             lines.append(f'  <td><img class="motif" src="data:image/png;base64,{b64_rc}" alt="motif RC logo"/></td>')
@@ -214,19 +232,23 @@ def main():
     macs_dir          = sm.params.macs_dir
     meme_dir          = sm.params.meme_dir
     stats_dir         = sm.params.stats_dir
+    min_foldch        = float(sm.params.min_foldch)
+
+    n      = _fmt_n(min_foldch)
+    cols   = make_cols(n)
+    i_cols = int_cols(n)
+    p_cols = PCT_COLS
 
     rows = [
-        build_row(s, trim_log_dir, stats_dir, macs_dir)
+        build_row(s, trim_log_dir, stats_dir, macs_dir, min_foldch)
         for s in treatment_samples
     ]
 
-    # TSV output
     with open(sm.output.tsv, "w") as out:
-        out.write("\t".join(COLS) + "\n")
+        out.write("\t".join(cols) + "\n")
         for row in rows:
-            out.write("\t".join(str(row.get(c, "NA")) for c in COLS) + "\n")
+            out.write("\t".join(str(row.get(c, "NA")) for c in cols) + "\n")
 
-    # HTML output — embed motif logos as base64
     logo_b64_map = {
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo1.png"))
         for s in treatment_samples
@@ -235,7 +257,7 @@ def main():
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo_rc1.png"))
         for s in treatment_samples
     }
-    write_html(rows, logo_b64_map, logo_rc_b64_map, sm.output.html)
+    write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, sm.output.html)
 
 
 if "snakemake" in dir():
