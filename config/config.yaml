@@ -141,7 +141,7 @@ resources:
     mem_mb: 4000
     runtime: 30
   filter_chr:
-    mem_mb: 8000
+    mem_mb: 16000
     runtime: 60
   qc_summary:
     mem_mb: 2000
