@@ -67,6 +67,9 @@ samtools:
   mapq: 10
   extra_merge: ""
 
+contig_filter:
+  pattern: "^([0-9]+|X|Y|MT)$"  # GRCh38 (Ensembl, no chr prefix)
+
 bamcoverage:
   normalize_using: RPGC
   bin_size: 1
@@ -159,6 +162,9 @@ resources:
   alignment_stats:
     mem_mb: 8000
     runtime: 120
+  filter_chr:
+    mem_mb: 16000
+    runtime: 60
   filtered_stats:
     mem_mb: 8000
     runtime: 30

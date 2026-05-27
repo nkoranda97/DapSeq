@@ -108,9 +108,10 @@ def int_cols(n):
 PCT_COLS = {"align_rate%", "FRiP_score", "FRiP_top_n_fold"}
 
 
-def build_row(sample, trim_log_dir, stats_dir, macs_dir, min_foldch):
+def build_row(sample, bam_type, trim_log_dir, stats_dir, macs_dir, min_foldch):
     n = _fmt_n(min_foldch)
 
+    # Pre-filter stats — keyed by sample only (same for both bam_types)
     total_frags_path = os.path.join(stats_dir, f"{sample}.total_frags.txt")
     total_frags = open(total_frags_path).read().strip() if os.path.exists(total_frags_path) else "NA"
 
@@ -120,24 +121,25 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir, min_foldch):
     align_rate_path = os.path.join(stats_dir, f"{sample}.align_rate.txt")
     align_rate = open(align_rate_path).read().strip() if os.path.exists(align_rate_path) else "NA"
 
-    filt_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.filtered_stats.txt"))
+    # Post-filter stats — keyed by sample.bam_type
+    filt_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bam_type}.filtered_stats.txt"))
     filtered_reads = filt_stats.get("filtered_reads", "NA")
 
     # peak# from unfiltered file; peaks_nfold# from filtered file
-    unfilt_np = os.path.join(macs_dir, f"{sample}_peaks.narrowPeak")
+    unfilt_np = os.path.join(macs_dir, f"{sample}.{bam_type}_peaks.narrowPeak")
     peak_total, max_score = parse_narrowpeak(unfilt_np)
 
-    filt_np = os.path.join(macs_dir, f"{sample}_peaks_filt.narrowPeak")
+    filt_np = os.path.join(macs_dir, f"{sample}.{bam_type}_peaks_filt.narrowPeak")
     peaks_nfold, _ = parse_narrowpeak(filt_np)
 
-    frip_macs = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs.txt"))
+    frip_macs = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bam_type}.frip_macs.txt"))
     peak_reads = frip_macs.get("reads_in_peaks_macs", "NA")
     if peak_reads != "NA" and filtered_reads != "NA":
         frip = round(int(peak_reads) / int(filtered_reads) * 100, 2)
     else:
         frip = "NA"
 
-    frip_macs_filt = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs_filt.txt"))
+    frip_macs_filt = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bam_type}.frip_macs_filt.txt"))
     peak_reads_filt = frip_macs_filt.get("reads_in_peaks_macs_filt", "NA")
     if peak_reads_filt != "NA" and filtered_reads != "NA":
         frip_top_n = round(int(peak_reads_filt) / int(filtered_reads) * 100, 2)
@@ -145,7 +147,7 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir, min_foldch):
         frip_top_n = "NA"
 
     return {
-        "sample":          sample,
+        "sample":          f"{sample}.{bam_type}",
         "total_frags":     total_frags,
         "clean_reads":     clean_reads,
         "align_rate%":     align_rate,
@@ -281,6 +283,7 @@ def main():
     sm = snakemake  # noqa: F821 — injected by Snakemake
 
     treatment_samples = list(sm.params.treatment_samples)
+    bam_types         = list(sm.params.bam_types)
     trim_log_dir      = sm.params.trim_log_dir
     macs_dir          = sm.params.macs_dir
     meme_dir          = sm.params.meme_dir
@@ -293,8 +296,9 @@ def main():
     p_cols = PCT_COLS
 
     rows = [
-        build_row(s, trim_log_dir, stats_dir, macs_dir, min_foldch)
+        build_row(s, bt, trim_log_dir, stats_dir, macs_dir, min_foldch)
         for s in treatment_samples
+        for bt in bam_types
     ]
 
     with open(sm.output.tsv, "w") as out:
@@ -302,13 +306,16 @@ def main():
         for row in rows:
             out.write("\t".join(str(row.get(c, "NA")) for c in cols) + "\n")
 
+    # Logo map keyed by "sample.bam_type" to match the row "sample" field
     logo_b64_map = {
-        s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo1.png"))
+        f"{s}.{bt}": logo_to_base64(os.path.join(meme_dir, f"{s}.{bt}", "summits", "logo1.png"))
         for s in treatment_samples
+        for bt in bam_types
     }
     logo_rc_b64_map = {
-        s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo_rc1.png"))
+        f"{s}.{bt}": logo_to_base64(os.path.join(meme_dir, f"{s}.{bt}", "summits", "logo_rc1.png"))
         for s in treatment_samples
+        for bt in bam_types
     }
     write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, sm.output.html)
 

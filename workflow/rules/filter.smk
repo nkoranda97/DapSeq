@@ -1,11 +1,13 @@
 if len(CONTROL_SAMPLES) > 1:
     rule merge_control:
         input:
-            bams = expand(OUT + "/bam/{s}.bam",     s=CONTROL_SAMPLES),
-            bais = expand(OUT + "/bam/{s}.bam.bai", s=CONTROL_SAMPLES),
+            bams = lambda wc: expand(OUT + "/bam/{s}.{bam_type}.bam",
+                                     s=CONTROL_SAMPLES, bam_type=wc.bam_type),
+            bais = lambda wc: expand(OUT + "/bam/{s}.{bam_type}.bam.bai",
+                                     s=CONTROL_SAMPLES, bam_type=wc.bam_type),
         output:
-            bam = OUT + "/bam/merged_control.bam",
-            bai = OUT + "/bam/merged_control.bam.bai",
+            bam = OUT + "/bam/merged_control.{bam_type}.bam",
+            bai = OUT + "/bam/merged_control.{bam_type}.bam.bai",
         params:
             extra_merge = config["samtools"].get("extra_merge", ""),
         threads:
@@ -16,7 +18,7 @@ if len(CONTROL_SAMPLES) > 1:
             slurm_partition = config["slurm_partition"],
             slurm_account   = config["slurm_account"],
         log:
-            OUT + "/logs/samtools/merge_control.log"
+            OUT + "/logs/samtools/merge_control.{bam_type}.log"
         shell:
             """
             samtools merge -@ {threads} -f {params.extra_merge} {output.bam} {input.bams} 2>{log}
@@ -27,12 +29,12 @@ if len(CONTROL_SAMPLES) > 1:
 if CONTROL:
     rule bamcompare:
         input:
-            sample_bam  = OUT + "/bam/{sample}.bam",
-            sample_bai  = OUT + "/bam/{sample}.bam.bai",
-            control_bam = OUT + f"/bam/{CONTROL}.bam",
-            control_bai = OUT + f"/bam/{CONTROL}.bam.bai",
+            sample_bam  = OUT + "/bam/{sample}.{bam_type}.bam",
+            sample_bai  = OUT + "/bam/{sample}.{bam_type}.bam.bai",
+            control_bam = OUT + f"/bam/{CONTROL}.{{bam_type}}.bam",
+            control_bai = OUT + f"/bam/{CONTROL}.{{bam_type}}.bam.bai",
         output:
-            OUT + "/bigWig/{sample}.peaks.bw"
+            OUT + "/bigWig/{sample}.{bam_type}.peaks.bw"
         params:
             extra = config["bamcompare"].get("extra", ""),
         threads:
@@ -43,7 +45,7 @@ if CONTROL:
             slurm_partition = config["slurm_partition"],
             slurm_account   = config["slurm_account"],
         log:
-            OUT + "/logs/bamcompare/{sample}.log"
+            OUT + "/logs/bamcompare/{sample}.{bam_type}.log"
         shell:
             """
             bamCompare \

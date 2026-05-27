@@ -1,17 +1,17 @@
 rule filtered_stats:
     input:
-        bam = OUT + "/bam/{sample}.bam",
-        bai = OUT + "/bam/{sample}.bam.bai",
+        bam = OUT + "/bam/{sample}.{bam_type}.bam",
+        bai = OUT + "/bam/{sample}.{bam_type}.bam.bai",
     output:
-        stats    = OUT + "/stats/{sample}.filtered_stats.txt",
-        idxstats = OUT + "/stats/{sample}.idxstats.txt",
+        stats    = OUT + "/stats/{sample}.{bam_type}.filtered_stats.txt",
+        idxstats = OUT + "/stats/{sample}.{bam_type}.idxstats.txt",
     resources:
         mem_mb          = config["resources"]["filtered_stats"]["mem_mb"],
         runtime         = config["resources"]["filtered_stats"]["runtime"],
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/filtered_stats/{sample}.log"
+        OUT + "/logs/filtered_stats/{sample}.{bam_type}.log"
     shell:
         """
         exec 2>{log}
@@ -25,11 +25,11 @@ rule filtered_stats:
 
 rule frip_macs:
     input:
-        bam   = OUT + "/bam/{sample}.bam",
-        bai   = OUT + "/bam/{sample}.bam.bai",
-        peaks = OUT + "/MACS/{sample}_peaks.narrowPeak",
+        bam   = OUT + "/bam/{sample}.{bam_type}.bam",
+        bai   = OUT + "/bam/{sample}.{bam_type}.bam.bai",
+        peaks = OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
     output:
-        OUT + "/stats/{sample}.frip_macs.txt"
+        OUT + "/stats/{sample}.{bam_type}.frip_macs.txt"
     wildcard_constraints:
         sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
     resources:
@@ -38,7 +38,7 @@ rule frip_macs:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/frip_macs/{sample}.log"
+        OUT + "/logs/frip_macs/{sample}.{bam_type}.log"
     shell:
         """
         exec 2>{log}
@@ -57,11 +57,11 @@ rule frip_macs:
 
 rule frip_macs_filt:
     input:
-        bam   = OUT + "/bam/{sample}.bam",
-        bai   = OUT + "/bam/{sample}.bam.bai",
-        peaks = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+        bam   = OUT + "/bam/{sample}.{bam_type}.bam",
+        bai   = OUT + "/bam/{sample}.{bam_type}.bam.bai",
+        peaks = OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
     output:
-        OUT + "/stats/{sample}.frip_macs_filt.txt"
+        OUT + "/stats/{sample}.{bam_type}.frip_macs_filt.txt"
     wildcard_constraints:
         sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
     resources:
@@ -70,7 +70,7 @@ rule frip_macs_filt:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/frip_macs_filt/{sample}.log"
+        OUT + "/logs/frip_macs_filt/{sample}.{bam_type}.log"
     shell:
         """
         exec 2>{log}
@@ -91,16 +91,22 @@ rule report:
         trim_logs    = expand(OUT + "/logs/bbduk/{sample}.trim.log",               sample=TREATMENT_SAMPLES),
         total_frags  = expand(OUT + "/stats/{sample}.total_frags.txt",             sample=TREATMENT_SAMPLES),
         align_rates  = expand(OUT + "/stats/{sample}.align_rate.txt",              sample=TREATMENT_SAMPLES),
-        filt_stats   = expand(OUT + "/stats/{sample}.filtered_stats.txt",          sample=TREATMENT_SAMPLES),
-        frip_macs      = expand(OUT + "/stats/{sample}.frip_macs.txt",           sample=TREATMENT_SAMPLES),
-        frip_macs_filt = expand(OUT + "/stats/{sample}.frip_macs_filt.txt",     sample=TREATMENT_SAMPLES),
-        narrowpeaks    = expand(OUT + "/MACS/{sample}_peaks.narrowPeak",         sample=TREATMENT_SAMPLES),
-        logo_pngs    = expand(OUT + "/meme/{sample}/summits/logo1.png",            sample=TREATMENT_SAMPLES),
+        filt_stats   = expand(OUT + "/stats/{sample}.{bam_type}.filtered_stats.txt",
+                              sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        frip_macs      = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs.txt",
+                                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        frip_macs_filt = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs_filt.txt",
+                                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        narrowpeaks    = expand(OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
+                                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        logo_pngs    = expand(OUT + "/meme/{sample}.{bam_type}/summits/logo1.png",
+                              sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
     output:
         tsv  = OUT + "/stats/report.tsv",
         html = OUT + "/stats/report.html",
     params:
         treatment_samples = TREATMENT_SAMPLES,
+        bam_types         = BAM_TYPES,
         trim_log_dir      = OUT + "/logs/bbduk",
         macs_dir          = OUT + "/MACS",
         meme_dir          = OUT + "/meme",

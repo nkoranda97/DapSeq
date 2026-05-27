@@ -46,6 +46,10 @@ samtools:
   mapq: 10
   extra_merge: ""
 
+contig_filter:
+  pattern: null   # Regex for samtools view -e 'rname =~ "pattern"'
+  # GRCh38 (Ensembl, no chr prefix): "^([0-9]+|X|Y|MT)$"
+
 bamcoverage:
   normalize_using: RPGC
   bin_size: 1
@@ -136,6 +140,9 @@ resources:
   frip_macs:
     mem_mb: 4000
     runtime: 30
+  filter_chr:
+    mem_mb: 8000
+    runtime: 60
   qc_summary:
     mem_mb: 2000
     runtime: 10
