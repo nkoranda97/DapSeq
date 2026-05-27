@@ -22,3 +22,6 @@ __pycache__/
 !.pixi/config.toml
 *.sif
 sunbeam/
+
+# data
+bam_data/
