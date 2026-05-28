@@ -99,6 +99,8 @@ rule report:
                                 sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
         narrowpeaks    = expand(OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
                                 sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        factorbook_tsv  = "factorbook/factorbook_chip_seq_meme_motifs.tsv",
+        factorbook_meme = "factorbook/factorbook_chip_seq_meme_motif_catalog.meme",
         logo_pngs    = expand(OUT + "/meme/{sample}.{bam_type}/summits/logo1.png",
                               sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
     output:
@@ -112,6 +114,8 @@ rule report:
         meme_dir          = OUT + "/meme",
         stats_dir         = OUT + "/stats",
         min_foldch        = config["macs3"]["min_foldch"],
+        factorbook_tsv    = "factorbook/factorbook_chip_seq_meme_motifs.tsv",
+        factorbook_meme   = "factorbook/factorbook_chip_seq_meme_motif_catalog.meme",
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],
