@@ -10,6 +10,7 @@ version = "0.1.0"
 snakemake = ">=9.19.0,<10"
 snakemake-executor-plugin-slurm = ">=2.6.0,<3"
 pillow = ">=10.0.0"
+matplotlib = ">=3.0"
 snakemake-logger-plugin-snkmt = ">=0.1.6,<0.2"
 pip = ">=26.0.1,<27"
 pytest = ">=8.0.0,<9"
@@ -17,3 +18,4 @@ samtools = ">=1.23.1,<2"
 
 [pypi-dependencies]
 snakemake-logger-plugin-rich = ">=0.4.1, <0.5"
+logomaker = ">=0.8"

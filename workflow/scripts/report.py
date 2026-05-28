@@ -89,6 +89,27 @@ def logo_to_base64(png_path):
 
 
 
+def _render_logo_with_logomaker(ppm, out_path):
+    import pandas as pd
+    import matplotlib
+    matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    import logomaker
+
+    df    = pd.DataFrame(ppm, columns=['A', 'C', 'G', 'T'])
+    ic_df = logomaker.transform_matrix(df, from_type='probability', to_type='information')
+
+    fig, ax = plt.subplots(figsize=(max(2, len(ppm) * 0.35), 2.5))
+    logomaker.Logo(ic_df, ax=ax, color_scheme='classic')
+    ax.set_xticks(range(len(ppm)))
+    ax.set_xticklabels(range(1, len(ppm) + 1), fontsize=7)
+    ax.set_ylabel('bits', fontsize=8)
+    ax.spines[['top', 'right']].set_visible(False)
+    plt.tight_layout()
+    fig.savefig(out_path, format='png', dpi=150, bbox_inches='tight')
+    plt.close(fig)
+
+
 def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
     """Generate factorbook logo PNGs for any samples that don't already have one."""
     os.makedirs(factorbook_dir, exist_ok=True)
@@ -115,14 +136,27 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
             continue
 
         header_lines, motif_lines = [], []
-        in_header = True
-        in_motif  = False
+        ppm = []
+        in_header  = True
+        in_motif   = False
+        in_matrix  = False
         with open(meme_path) as fh:
             for line in fh:
                 if in_motif:
                     if line.startswith('MOTIF '):
                         break
                     motif_lines.append(line)
+                    if 'letter-probability matrix' in line:
+                        in_matrix = True
+                    elif in_matrix:
+                        try:
+                            vals = [float(x) for x in line.split()]
+                            if len(vals) == 4:
+                                ppm.append(vals)
+                            else:
+                                in_matrix = False
+                        except ValueError:
+                            in_matrix = False
                 elif line.startswith('MOTIF '):
                     in_header = False
                     if line.split()[1] == motif_id:
@@ -150,7 +184,10 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
                 if os.path.exists(f):
                     os.remove(f)
         if not os.path.exists(out_png) or os.path.getsize(out_png) == 0:
-            open(out_png, 'w').close()
+            if ppm:
+                _render_logo_with_logomaker(ppm, out_png)
+            else:
+                open(out_png, 'w').close()
 
 
 def _detect_samples_and_bam_types(stats_dir):
