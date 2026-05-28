@@ -125,56 +125,88 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
             continue
 
         tf = sample.upper()
+
+        # Collect the first motif (MEME motif 1) per experiment in TSV order
+        tf_first_motifs = []
+        seen_acc = set()
         with open(tsv_path) as fh:
             header = fh.readline().rstrip('\n').split('\t')
             ti = header.index('target')
             ai = header.index('dataset_accession')
             ni = header.index('name')
-            ii = header.index('Information') if 'Information' in header else None
-            best = None
-            best_flags = float('inf')
             for line in fh:
                 parts = line.rstrip('\n').split('\t')
                 if parts[ti].upper() == tf:
-                    n_flags = len(parts[ii].split(',')) if (ii is not None and len(parts) > ii and parts[ii]) else 0
-                    if n_flags < best_flags:
-                        best_flags = n_flags
-                        best = f"{parts[ai]}_{parts[ni]}"
-            motif_id = best
+                    acc = parts[ai]
+                    if acc not in seen_acc:
+                        seen_acc.add(acc)
+                        tf_first_motifs.append(f"{parts[ai]}_{parts[ni]}")
 
-        if motif_id is None:
+        if not tf_first_motifs:
             open(out_png, 'w').close()
             continue
 
-        header_lines, motif_lines = [], []
-        ppm = []
-        in_header  = True
-        in_motif   = False
-        in_matrix  = False
+        # Read MEME catalog once — collect PPMs and motif lines for all candidates
+        tf_first_set    = set(tf_first_motifs)
+        header_lines    = []
+        motif_ppms      = {}   # motif_id -> [[A,C,G,T], ...]
+        motif_lines_map = {}   # motif_id -> list of raw catalog lines
+        current  = None
+        in_header = True
+        in_matrix = False
         with open(meme_path) as fh:
             for line in fh:
-                if in_motif:
-                    if line.startswith('MOTIF '):
-                        break
-                    motif_lines.append(line)
+                if line.startswith('MOTIF '):
+                    in_header = False
+                    mid = line.split()[1]
+                    if mid in tf_first_set:
+                        current = mid
+                        motif_ppms[mid]      = []
+                        motif_lines_map[mid] = [line]
+                        in_matrix = False
+                    else:
+                        current   = None
+                        in_matrix = False
+                elif in_header:
+                    header_lines.append(line)
+                elif current is not None:
+                    motif_lines_map[current].append(line)
                     if 'letter-probability matrix' in line:
                         in_matrix = True
                     elif in_matrix:
                         try:
                             vals = [float(x) for x in line.split()]
                             if len(vals) == 4:
-                                ppm.append(vals)
+                                motif_ppms[current].append(vals)
                             else:
                                 in_matrix = False
                         except ValueError:
                             in_matrix = False
-                elif line.startswith('MOTIF '):
-                    in_header = False
-                    if line.split()[1] == motif_id:
-                        in_motif = True
-                        motif_lines.append(line)
-                elif in_header:
-                    header_lines.append(line)
+
+        # Pick the motif whose MEME motif 1 has the highest IC per position —
+        # canonical TF binding sites are more specific than co-factor contaminations
+        import math as _math
+        def _ic_per_pos(ppm):
+            if not ppm:
+                return 0.0
+            total = sum(
+                2.0 - (-sum(p * _math.log2(p) for p in row if p > 0))
+                for row in ppm
+            )
+            return total / len(ppm)
+
+        motif_id = max(
+            (mid for mid in tf_first_motifs if motif_ppms.get(mid)),
+            key=lambda mid: _ic_per_pos(motif_ppms[mid]),
+            default=None,
+        )
+
+        if motif_id is None:
+            open(out_png, 'w').close()
+            continue
+
+        motif_lines = motif_lines_map[motif_id]
+        ppm         = motif_ppms[motif_id]
 
         tmp_meme = out_png + ".meme"
         tmp_eps  = out_png + ".eps"
