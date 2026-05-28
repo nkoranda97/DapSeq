@@ -17,9 +17,17 @@ rule factorbook_logo:
         OUT + "/logs/factorbook/{sample}.log"
     run:
         import os
+        import re
+        import sys
+
+        sys.path.insert(0, os.path.join(workflow.basedir, "scripts"))
+        from logo_utils import _render_logo_with_logomaker
 
         tf = wildcards.sample.upper()
-        motif_id = None
+
+        # Collect all motif IDs for this TF
+        tf_motif_ids = []
+        seen = set()
         with open(input.tsv) as fh:
             header = fh.readline().rstrip('\n').split('\t')
             ti = header.index('target')
@@ -28,63 +36,57 @@ rule factorbook_logo:
             for line in fh:
                 parts = line.rstrip('\n').split('\t')
                 if parts[ti].upper() == tf:
-                    motif_id = f"{parts[ai]}_{parts[ni]}"
-                    break
+                    mid = f"{parts[ai]}_{parts[ni]}"
+                    if mid not in seen:
+                        seen.add(mid)
+                        tf_motif_ids.append(mid)
 
-        if motif_id is None:
+        if not tf_motif_ids:
             open(str(output[0]), 'w').close()
         else:
-            tmp_meme = str(output[0]) + ".meme"
-            tmp_eps  = str(output[0]) + ".eps"
-
-            header_lines = []
-            motif_lines  = []
-            in_header    = True
-            in_motif     = False
-
+            # Parse catalog for all candidate motifs, pick the one with highest nsites
+            tf_id_set    = set(tf_motif_ids)
+            motif_ppms   = {}
+            motif_nsites = {}
+            current      = None
+            in_matrix    = False
             with open(input.meme) as fh:
                 for line in fh:
-                    if in_motif:
-                        if line.startswith('MOTIF '):
-                            break
-                        motif_lines.append(line)
-                    elif line.startswith('MOTIF '):
-                        in_header = False
-                        if line.split()[1] == motif_id:
-                            in_motif = True
-                            motif_lines.append(line)
-                    elif in_header:
-                        header_lines.append(line)
+                    if line.startswith('MOTIF '):
+                        mid       = line.split()[1]
+                        current   = mid if mid in tf_id_set else None
+                        in_matrix = False
+                        if current:
+                            motif_ppms[current]   = []
+                            motif_nsites[current] = 0
+                    elif current is not None:
+                        if 'letter-probability matrix' in line:
+                            m = re.search(r'nsites= *(\d+)', line)
+                            if m:
+                                motif_nsites[current] = int(m.group(1))
+                            in_matrix = True
+                        elif in_matrix:
+                            try:
+                                vals = [float(x) for x in line.split()]
+                                if len(vals) == 4:
+                                    motif_ppms[current].append(vals)
+                                else:
+                                    in_matrix = False
+                            except ValueError:
+                                in_matrix = False
+
+            motif_id = max(
+                (mid for mid in tf_motif_ids if motif_ppms.get(mid)),
+                key=lambda mid: motif_nsites.get(mid, 0),
+                default=None,
+            )
 
             os.makedirs(os.path.dirname(str(output[0])), exist_ok=True)
-            with open(tmp_meme, 'w') as fh:
-                fh.writelines(header_lines)
-                fh.writelines(motif_lines)
-
-            active = {k: v for k, v in params.base_colors.items() if v}
-            if active:
-                defaults = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
-                def _hex(k):
-                    return active.get(k, defaults[k]).lstrip("#")
-                alph_file = str(output[0]) + ".alph"
-                with open(alph_file, "w") as fh:
-                    fh.write('ALPHABET "DNA"\n')
-                    fh.write(f'A ADENINE {_hex("A")} ~ T THYMINE {_hex("T")}\n')
-                    fh.write(f'C CYTOSINE {_hex("C")} ~ G GUANINE {_hex("G")}\n')
-                    fh.write("END ALPHABET\n")
-                alph_arg = f"-a {alph_file}"
+            ppm = motif_ppms.get(motif_id) if motif_id else None
+            if ppm:
+                _render_logo_with_logomaker(ppm, str(output[0]), params.base_colors)
             else:
-                alph_file = None
-                alph_arg  = "-dna"
-
-            shell(
-                f"ceqlogo -i1 {tmp_meme} {alph_arg} -o {tmp_eps} -f EPS >{log} 2>&1"
-                f" && gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150"
-                f" -sOutputFile={output[0]} {tmp_eps} >>{log} 2>&1"
-                f" ; rm -f {tmp_meme} {tmp_eps}"
-                + (f" {alph_file}" if alph_file else "")
-                f" ; [ -s {output[0]} ] || touch {output[0]}"
-            )
+                open(str(output[0]), 'w').close()
 
 
 rule narrow_peak_to_fasta_summits:
@@ -185,12 +187,14 @@ rule meme_summits:
                 f"-maxsize {params.maxsize} -p {threads} -nostatus {params.extra} "
                 f"2>{log}"
             )
-            if os.path.isfile(os.path.join(params.outdir, "logo1.eps")):
-                shell(
-                    f"gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150 "
-                    f"-sOutputFile={output.logo} {params.outdir}/logo1.eps "
-                    f"2>>{log}"
-                )
+            import sys
+
+            sys.path.insert(0, os.path.join(workflow.basedir, "scripts"))
+            from logo_utils import _render_logo_with_logomaker, parse_meme_ppm
+
+            ppm = parse_meme_ppm(output.txt) if os.path.getsize(output.txt) > 0 else None
+            if ppm:
+                _render_logo_with_logomaker(ppm, str(output.logo), params.base_colors)
             else:
                 open(str(output.logo), "w").close()
 

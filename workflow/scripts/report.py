@@ -12,11 +12,13 @@ import os
 import re
 import sys
 
-import subprocess
 
 _SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
 _DEFAULT_FB_TSV  = os.path.normpath(os.path.join(_SCRIPT_DIR, '..', '..', 'factorbook', 'factorbook_chip_seq_meme_motifs.tsv'))
 _DEFAULT_FB_MEME = os.path.normpath(os.path.join(_SCRIPT_DIR, '..', '..', 'factorbook', 'factorbook_chip_seq_meme_motif_catalog.meme'))
+
+sys.path.insert(0, _SCRIPT_DIR)
+from logo_utils import _render_logo_with_logomaker
 
 
 def parse_kv_file(path):
@@ -88,34 +90,6 @@ def logo_to_base64(png_path):
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
 
-
-_MEME_DEFAULT_COLORS = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
-
-
-def _render_logo_with_logomaker(ppm, out_path, base_colors=None):
-    import pandas as pd
-    import matplotlib
-    matplotlib.use('Agg')
-    import matplotlib.pyplot as plt
-    import logomaker
-
-    raw = {k: v for k, v in (base_colors or {}).items() if v}
-    color_scheme = {b: '#' + raw.get(b, _MEME_DEFAULT_COLORS[b]).lstrip('#') for b in 'ACGT'}
-
-    df    = pd.DataFrame(ppm, columns=['A', 'C', 'G', 'T'])
-    ic_df = logomaker.transform_matrix(df, from_type='probability', to_type='information')
-
-    fig, ax = plt.subplots(figsize=(max(2, len(ppm) * 0.35), 2.5))
-    logomaker.Logo(ic_df, ax=ax, color_scheme=color_scheme)
-    ax.set_xticks(range(len(ppm)))
-    ax.set_xticklabels(range(1, len(ppm) + 1), fontsize=7)
-    ax.set_ylabel('bits', fontsize=8)
-    ax.spines[['top', 'right']].set_visible(False)
-    plt.tight_layout()
-    fig.savefig(out_path, format='png', dpi=150, bbox_inches='tight')
-    plt.close(fig)
-
-
 def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_colors=None):
     """Generate factorbook logo PNGs for any samples that don't already have one."""
     os.makedirs(factorbook_dir, exist_ok=True)
@@ -146,36 +120,24 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
             open(out_png, 'w').close()
             continue
 
-        # Read MEME catalog — collect nsites, PPM, and raw lines for all candidates
-        import re as _re
-        tf_id_set       = set(tf_motif_ids)
-        header_lines    = []
-        motif_ppms      = {}   # motif_id -> [[A,C,G,T], ...]
-        motif_nsites    = {}   # motif_id -> int
-        motif_lines_map = {}   # motif_id -> raw catalog lines for ceqlogo
+        # Read MEME catalog — collect nsites and PPM for all candidates
+        tf_id_set    = set(tf_motif_ids)
+        motif_ppms   = {}   # motif_id -> [[A,C,G,T], ...]
+        motif_nsites = {}   # motif_id -> int
         current   = None
-        in_header = True
         in_matrix = False
         with open(meme_path) as fh:
             for line in fh:
                 if line.startswith('MOTIF '):
-                    in_header = False
                     mid = line.split()[1]
-                    if mid in tf_id_set:
-                        current = mid
-                        motif_ppms[mid]      = []
-                        motif_lines_map[mid] = [line]
-                        motif_nsites[mid]    = 0
-                        in_matrix = False
-                    else:
-                        current   = None
-                        in_matrix = False
-                elif in_header:
-                    header_lines.append(line)
+                    current   = mid if mid in tf_id_set else None
+                    in_matrix = False
+                    if current:
+                        motif_ppms[current]   = []
+                        motif_nsites[current] = 0
                 elif current is not None:
-                    motif_lines_map[current].append(line)
                     if 'letter-probability matrix' in line:
-                        m = _re.search(r'nsites= *(\d+)', line)
+                        m = re.search(r'nsites= *(\d+)', line)
                         if m:
                             motif_nsites[current] = int(m.group(1))
                         in_matrix = True
@@ -200,32 +162,11 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
             open(out_png, 'w').close()
             continue
 
-        motif_lines = motif_lines_map[motif_id]
-        ppm         = motif_ppms[motif_id]
-
-        tmp_meme = out_png + ".meme"
-        tmp_eps  = out_png + ".eps"
-        try:
-            with open(tmp_meme, 'w') as fh:
-                fh.writelines(header_lines)
-                fh.writelines(motif_lines)
-            r = subprocess.run(['ceqlogo', '-i1', tmp_meme, '-o', tmp_eps, '-f', 'EPS'],
-                               capture_output=True)
-            if r.returncode == 0 and os.path.exists(tmp_eps):
-                subprocess.run(['gs', '-dNOPAUSE', '-dBATCH', '-sDEVICE=png16m', '-r150',
-                                f'-sOutputFile={out_png}', tmp_eps],
-                               capture_output=True)
-        except FileNotFoundError:
-            pass  # ceqlogo not on PATH
-        finally:
-            for f in (tmp_meme, tmp_eps):
-                if os.path.exists(f):
-                    os.remove(f)
-        if not os.path.exists(out_png) or os.path.getsize(out_png) == 0:
-            if ppm:
-                _render_logo_with_logomaker(ppm, out_png, base_colors)
-            else:
-                open(out_png, 'w').close()
+        ppm = motif_ppms[motif_id]
+        if ppm:
+            _render_logo_with_logomaker(ppm, out_png, base_colors)
+        else:
+            open(out_png, 'w').close()
 
 
 def _detect_samples_and_bam_types(stats_dir):

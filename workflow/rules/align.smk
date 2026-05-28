@@ -15,7 +15,7 @@ rule align_se:
         extra           = config["bowtie2"].get("extra", ""),
         bw_normalize    = config["bamcoverage"].get("normalize_using", "RPGC"),
         bw_bin_size     = config["bamcoverage"].get("bin_size", 1),
-        bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
+        bw_ignore_dups  = "--ignoreDuplicates"q if config["bamcoverage"].get("ignore_duplicates", True) else "",
         bw_extra        = config["bamcoverage"].get("extra", ""),
         bw_tempdir      = OUT + "/temp",
     threads:
