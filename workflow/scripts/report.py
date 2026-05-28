@@ -12,9 +12,7 @@ import os
 import re
 import sys
 
-_SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
-_DEFAULT_FB_TSV  = os.path.normpath(os.path.join(_SCRIPT_DIR, '..', '..', 'factorbook', 'factorbook_chip_seq_meme_motifs.tsv'))
-_DEFAULT_FB_MEME = os.path.normpath(os.path.join(_SCRIPT_DIR, '..', '..', 'factorbook', 'factorbook_chip_seq_meme_motif_catalog.meme'))
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 
 def parse_kv_file(path):
@@ -85,97 +83,6 @@ def logo_to_base64(png_path):
     img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
-
-def parse_factorbook(tsv_path, meme_path):
-    """
-    Return {tf_upper: ppm} for the first factorbook motif found per TF.
-    ppm is a list of [A, C, G, T] probability rows.
-    """
-    # Build TF → first motif ID from the TSV
-    tf_to_motif_id = {}
-    with open(tsv_path) as fh:
-        header = fh.readline().rstrip('\n').split('\t')
-        ti = header.index('target')
-        ai = header.index('dataset_accession')
-        ni = header.index('name')
-        for line in fh:
-            parts = line.rstrip('\n').split('\t')
-            tf  = parts[ti].upper()
-            mid = f"{parts[ai]}_{parts[ni]}"
-            tf_to_motif_id.setdefault(tf, mid)
-
-    wanted      = set(tf_to_motif_id.values())
-    motif_to_tf = {mid: tf for tf, mid in tf_to_motif_id.items()}
-    tf_to_ppm   = {}
-    current_id  = None
-    in_matrix   = False
-    rows        = []
-
-    with open(meme_path) as fh:
-        for line in fh:
-            line = line.rstrip()
-            if line.startswith('MOTIF '):
-                if current_id and rows and current_id in wanted:
-                    tf = motif_to_tf[current_id]
-                    tf_to_ppm.setdefault(tf, rows)
-                current_id = line.split()[1]
-                in_matrix  = False
-                rows       = []
-            elif 'letter-probability matrix' in line:
-                in_matrix = True
-            elif in_matrix and line:
-                try:
-                    vals = [float(x) for x in line.split()]
-                    if len(vals) == 4:
-                        rows.append(vals)
-                    else:
-                        in_matrix = False
-                except ValueError:
-                    in_matrix = False
-
-    if current_id and rows and current_id in wanted:
-        tf_to_ppm.setdefault(motif_to_tf[current_id], rows)
-
-    return tf_to_ppm
-
-
-def ppm_to_svg_b64(ppm, col_w=20, max_h=60):
-    """Render a PPM (list of [A,C,G,T] rows) as a base64-encoded SVG logo."""
-    bases  = ['A', 'C', 'G', 'T']
-    colors = {'A': '#2ca02c', 'C': '#1f77b4', 'G': '#ff7f0e', 'T': '#d62728'}
-    width  = len(ppm) * col_w
-    height = max_h + 14
-
-    parts = [
-        f'<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="{height}">'
-    ]
-    for i, probs in enumerate(ppm):
-        x = i * col_w
-        ordered = sorted(zip(probs, bases))  # ascending so tallest bar renders on top
-        y = float(max_h)
-        for prob, base in ordered:
-            h = prob * max_h
-            if h < 0.5:
-                continue
-            y -= h
-            parts.append(
-                f'<rect x="{x}" y="{y:.2f}" width="{col_w}" '
-                f'height="{h:.2f}" fill="{colors[base]}"/>'
-            )
-            if h > 6:
-                fs = min(col_w * 0.85, h * 0.9)
-                parts.append(
-                    f'<text x="{x + col_w / 2:.1f}" y="{y + h * 0.82:.1f}" '
-                    f'text-anchor="middle" font-family="monospace" '
-                    f'font-size="{fs:.1f}" fill="white" '
-                    f'font-weight="bold">{base}</text>'
-                )
-        parts.append(
-            f'<text x="{x + col_w / 2:.1f}" y="{max_h + 12}" '
-            f'text-anchor="middle" font-size="8" fill="#777">{i + 1}</text>'
-        )
-    parts.append('</svg>')
-    return base64.b64encode('\n'.join(parts).encode('utf-8')).decode('ascii')
 
 
 def _detect_samples_and_bam_types(stats_dir):
@@ -382,10 +289,10 @@ def write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, factor
             lines.append(f'  <td><img class="motif" src="data:image/png;base64,{b64_rc}" alt="motif RC logo"/></td>')
         else:
             lines.append('  <td class="na">NA</td>')
-        tf = row["sample"].rsplit(".", 1)[0].upper()
+        tf = row["sample"].rsplit(".", 1)[0]
         fb_b64 = factorbook_logo_map.get(tf)
         if fb_b64:
-            lines.append(f'  <td><img class="motif" src="data:image/svg+xml;base64,{fb_b64}" alt="factorbook motif"/></td>')
+            lines.append(f'  <td><img class="motif" src="data:image/png;base64,{fb_b64}" alt="factorbook motif"/></td>')
         else:
             lines.append('  <td class="na">NA</td>')
         lines.append("</tr>")
@@ -397,7 +304,7 @@ def write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, factor
 
 
 def run(treatment_samples, bam_types, trim_log_dir, stats_dir, macs_dir, meme_dir,
-        min_foldch, factorbook_tsv, factorbook_meme, tsv_out, html_out):
+        min_foldch, factorbook_dir, tsv_out, html_out):
     n      = _fmt_n(min_foldch)
     cols   = make_cols(n)
     i_cols = int_cols(n)
@@ -424,8 +331,10 @@ def run(treatment_samples, bam_types, trim_log_dir, stats_dir, macs_dir, meme_di
         for s in treatment_samples
         for bt in bam_types
     }
-    tf_ppms = parse_factorbook(factorbook_tsv, factorbook_meme)
-    factorbook_logo_map = {tf: ppm_to_svg_b64(ppm) for tf, ppm in tf_ppms.items()}
+    factorbook_logo_map = {
+        s: logo_to_base64(os.path.join(factorbook_dir, f"{s}.logo.png"))
+        for s in treatment_samples
+    }
     write_html(rows, cols, i_cols, p_cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out)
 
 
@@ -439,8 +348,7 @@ def main():
         meme_dir          = sm.params.meme_dir,
         stats_dir         = sm.params.stats_dir,
         min_foldch        = float(sm.params.min_foldch),
-        factorbook_tsv    = sm.params.factorbook_tsv,
-        factorbook_meme   = sm.params.factorbook_meme,
+        factorbook_dir    = sm.params.factorbook_dir,
         tsv_out           = sm.output.tsv,
         html_out          = sm.output.html,
     )
@@ -484,8 +392,7 @@ def cli_main():
         macs_dir          = macs_dir,
         meme_dir          = meme_dir,
         min_foldch        = min_foldch,
-        factorbook_tsv    = _DEFAULT_FB_TSV,
-        factorbook_meme   = _DEFAULT_FB_MEME,
+        factorbook_dir    = os.path.join(out_dir, "factorbook"),
         tsv_out           = tsv_out,
         html_out          = html_out,
     )

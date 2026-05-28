@@ -1,3 +1,73 @@
+rule factorbook_logo:
+    input:
+        tsv  = "factorbook/factorbook_chip_seq_meme_motifs.tsv",
+        meme = "factorbook/factorbook_chip_seq_meme_motif_catalog.meme",
+    output:
+        OUT + "/factorbook/{sample}.logo.png",
+    wildcard_constraints:
+        sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
+    resources:
+        mem_mb          = config["resources"]["report"]["mem_mb"],
+        runtime         = 20,
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/factorbook/{sample}.log"
+    run:
+        import os
+
+        tf = wildcards.sample.upper()
+        motif_id = None
+        with open(input.tsv) as fh:
+            header = fh.readline().rstrip('\n').split('\t')
+            ti = header.index('target')
+            ai = header.index('dataset_accession')
+            ni = header.index('name')
+            for line in fh:
+                parts = line.rstrip('\n').split('\t')
+                if parts[ti].upper() == tf:
+                    motif_id = f"{parts[ai]}_{parts[ni]}"
+                    break
+
+        if motif_id is None:
+            open(str(output[0]), 'w').close()
+        else:
+            tmp_meme = str(output[0]) + ".meme"
+            tmp_eps  = str(output[0]) + ".eps"
+
+            header_lines = []
+            motif_lines  = []
+            in_header    = True
+            in_motif     = False
+
+            with open(input.meme) as fh:
+                for line in fh:
+                    if in_motif:
+                        if line.startswith('MOTIF '):
+                            break
+                        motif_lines.append(line)
+                    elif line.startswith('MOTIF '):
+                        in_header = False
+                        if line.split()[1] == motif_id:
+                            in_motif = True
+                            motif_lines.append(line)
+                    elif in_header:
+                        header_lines.append(line)
+
+            os.makedirs(os.path.dirname(str(output[0])), exist_ok=True)
+            with open(tmp_meme, 'w') as fh:
+                fh.writelines(header_lines)
+                fh.writelines(motif_lines)
+
+            shell(
+                f"ceqlogo -i1 {tmp_meme} -o {tmp_eps} -f EPS >{log} 2>&1"
+                f" && gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150"
+                f" -sOutputFile={output[0]} {tmp_eps} >>{log} 2>&1"
+                f" ; rm -f {tmp_meme} {tmp_eps}"
+                f" ; [ -s {output[0]} ] || touch {output[0]}"
+            )
+
+
 rule narrow_peak_to_fasta_summits:
     input:
         narrowpeak = OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
