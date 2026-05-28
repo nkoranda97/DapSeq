@@ -11,6 +11,8 @@ rule factorbook_logo:
         runtime         = 20,
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
+    params:
+        base_colors = config["meme"].get("base_colors") or {},
     log:
         OUT + "/logs/factorbook/{sample}.log"
     run:
@@ -59,11 +61,28 @@ rule factorbook_logo:
                 fh.writelines(header_lines)
                 fh.writelines(motif_lines)
 
+            active = {k: v for k, v in params.base_colors.items() if v}
+            if active:
+                defaults = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
+                def _hex(k):
+                    return active.get(k, defaults[k]).lstrip("#")
+                alph_file = str(output[0]) + ".alph"
+                with open(alph_file, "w") as fh:
+                    fh.write('ALPHABET "DNA"\n')
+                    fh.write(f'A ADENINE {_hex("A")} ~ T THYMINE {_hex("T")}\n')
+                    fh.write(f'C CYTOSINE {_hex("C")} ~ G GUANINE {_hex("G")}\n')
+                    fh.write("END ALPHABET\n")
+                alph_arg = f"-a {alph_file}"
+            else:
+                alph_file = None
+                alph_arg  = "-dna"
+
             shell(
-                f"ceqlogo -i1 {tmp_meme} -o {tmp_eps} -f EPS >{log} 2>&1"
+                f"ceqlogo -i1 {tmp_meme} {alph_arg} -o {tmp_eps} -f EPS >{log} 2>&1"
                 f" && gs -dNOPAUSE -dBATCH -sDEVICE=png16m -r150"
                 f" -sOutputFile={output[0]} {tmp_eps} >>{log} 2>&1"
                 f" ; rm -f {tmp_meme} {tmp_eps}"
+                + (f" {alph_file}" if alph_file else "")
                 f" ; [ -s {output[0]} ] || touch {output[0]}"
             )
 

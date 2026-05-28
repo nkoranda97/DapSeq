@@ -89,18 +89,24 @@ def logo_to_base64(png_path):
 
 
 
-def _render_logo_with_logomaker(ppm, out_path):
+_MEME_DEFAULT_COLORS = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
+
+
+def _render_logo_with_logomaker(ppm, out_path, base_colors=None):
     import pandas as pd
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     import logomaker
 
+    raw = {k: v for k, v in (base_colors or {}).items() if v}
+    color_scheme = {b: '#' + raw.get(b, _MEME_DEFAULT_COLORS[b]).lstrip('#') for b in 'ACGT'}
+
     df    = pd.DataFrame(ppm, columns=['A', 'C', 'G', 'T'])
     ic_df = logomaker.transform_matrix(df, from_type='probability', to_type='information')
 
     fig, ax = plt.subplots(figsize=(max(2, len(ppm) * 0.35), 2.5))
-    logomaker.Logo(ic_df, ax=ax, color_scheme='classic')
+    logomaker.Logo(ic_df, ax=ax, color_scheme=color_scheme)
     ax.set_xticks(range(len(ppm)))
     ax.set_xticklabels(range(1, len(ppm) + 1), fontsize=7)
     ax.set_ylabel('bits', fontsize=8)
@@ -110,7 +116,7 @@ def _render_logo_with_logomaker(ppm, out_path):
     plt.close(fig)
 
 
-def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
+def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_colors=None):
     """Generate factorbook logo PNGs for any samples that don't already have one."""
     os.makedirs(factorbook_dir, exist_ok=True)
     for sample in samples:
@@ -119,17 +125,22 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
             continue
 
         tf = sample.upper()
-        motif_id = None
         with open(tsv_path) as fh:
             header = fh.readline().rstrip('\n').split('\t')
             ti = header.index('target')
             ai = header.index('dataset_accession')
             ni = header.index('name')
+            ii = header.index('Information') if 'Information' in header else None
+            best = None
+            best_flags = float('inf')
             for line in fh:
                 parts = line.rstrip('\n').split('\t')
                 if parts[ti].upper() == tf:
-                    motif_id = f"{parts[ai]}_{parts[ni]}"
-                    break
+                    n_flags = len(parts[ii].split(',')) if (ii is not None and len(parts) > ii and parts[ii]) else 0
+                    if n_flags < best_flags:
+                        best_flags = n_flags
+                        best = f"{parts[ai]}_{parts[ni]}"
+            motif_id = best
 
         if motif_id is None:
             open(out_png, 'w').close()
@@ -185,7 +196,7 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
                     os.remove(f)
         if not os.path.exists(out_png) or os.path.getsize(out_png) == 0:
             if ppm:
-                _render_logo_with_logomaker(ppm, out_png)
+                _render_logo_with_logomaker(ppm, out_png, base_colors)
             else:
                 open(out_png, 'w').close()
 
@@ -476,22 +487,20 @@ def cli_main():
 
     samples, bam_types = _detect_samples_and_bam_types(stats_dir)
 
-    if os.path.exists(_DEFAULT_FB_TSV) and os.path.exists(_DEFAULT_FB_MEME):
-        _make_factorbook_logos(samples, _DEFAULT_FB_TSV, _DEFAULT_FB_MEME,
-                               os.path.join(out_dir, "factorbook"))
-
-    # Try to read min_foldch from config; fall back to 2.0
-    min_foldch = 2.0
+    # Read min_foldch and base_colors from config; fall back to defaults
+    min_foldch  = 2.0
+    base_colors = {}
     config_path = os.path.join(_SCRIPT_DIR, '..', '..', 'config', 'config.yaml')
     if os.path.exists(config_path):
+        import yaml
         with open(config_path) as fh:
-            for line in fh:
-                if 'min_foldch' in line:
-                    try:
-                        min_foldch = float(line.split(':')[1].strip())
-                    except (IndexError, ValueError):
-                        pass
-                    break
+            cfg = yaml.safe_load(fh)
+        min_foldch  = float(cfg.get("macs3", {}).get("min_foldch", min_foldch))
+        base_colors = cfg.get("meme", {}).get("base_colors") or {}
+
+    if os.path.exists(_DEFAULT_FB_TSV) and os.path.exists(_DEFAULT_FB_MEME):
+        _make_factorbook_logos(samples, _DEFAULT_FB_TSV, _DEFAULT_FB_MEME,
+                               os.path.join(out_dir, "factorbook"), base_colors)
 
     run(
         treatment_samples = samples,
