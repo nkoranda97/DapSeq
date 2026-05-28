@@ -126,9 +126,9 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
 
         tf = sample.upper()
 
-        # Collect the first motif (MEME motif 1) per experiment in TSV order
-        tf_first_motifs = []
-        seen_acc = set()
+        # Collect ALL motif IDs for this TF (every experiment, every MEME motif)
+        tf_motif_ids = []
+        seen = set()
         with open(tsv_path) as fh:
             header = fh.readline().rstrip('\n').split('\t')
             ti = header.index('target')
@@ -137,21 +137,23 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
             for line in fh:
                 parts = line.rstrip('\n').split('\t')
                 if parts[ti].upper() == tf:
-                    acc = parts[ai]
-                    if acc not in seen_acc:
-                        seen_acc.add(acc)
-                        tf_first_motifs.append(f"{parts[ai]}_{parts[ni]}")
+                    mid = f"{parts[ai]}_{parts[ni]}"
+                    if mid not in seen:
+                        seen.add(mid)
+                        tf_motif_ids.append(mid)
 
-        if not tf_first_motifs:
+        if not tf_motif_ids:
             open(out_png, 'w').close()
             continue
 
-        # Read MEME catalog once — collect PPMs and motif lines for all candidates
-        tf_first_set    = set(tf_first_motifs)
+        # Read MEME catalog — collect nsites, PPM, and raw lines for all candidates
+        import re as _re
+        tf_id_set       = set(tf_motif_ids)
         header_lines    = []
         motif_ppms      = {}   # motif_id -> [[A,C,G,T], ...]
-        motif_lines_map = {}   # motif_id -> list of raw catalog lines
-        current  = None
+        motif_nsites    = {}   # motif_id -> int
+        motif_lines_map = {}   # motif_id -> raw catalog lines for ceqlogo
+        current   = None
         in_header = True
         in_matrix = False
         with open(meme_path) as fh:
@@ -159,10 +161,11 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
                 if line.startswith('MOTIF '):
                     in_header = False
                     mid = line.split()[1]
-                    if mid in tf_first_set:
+                    if mid in tf_id_set:
                         current = mid
                         motif_ppms[mid]      = []
                         motif_lines_map[mid] = [line]
+                        motif_nsites[mid]    = 0
                         in_matrix = False
                     else:
                         current   = None
@@ -172,6 +175,9 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
                 elif current is not None:
                     motif_lines_map[current].append(line)
                     if 'letter-probability matrix' in line:
+                        m = _re.search(r'nsites= *(\d+)', line)
+                        if m:
+                            motif_nsites[current] = int(m.group(1))
                         in_matrix = True
                     elif in_matrix:
                         try:
@@ -183,21 +189,10 @@ def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir, base_co
                         except ValueError:
                             in_matrix = False
 
-        # Pick the motif whose MEME motif 1 has the highest IC per position —
-        # canonical TF binding sites are more specific than co-factor contaminations
-        import math as _math
-        def _ic_per_pos(ppm):
-            if not ppm:
-                return 0.0
-            total = sum(
-                2.0 - (-sum(p * _math.log2(p) for p in row if p > 0))
-                for row in ppm
-            )
-            return total / len(ppm)
-
+        # The motif found in the most sequences is the canonical binding site
         motif_id = max(
-            (mid for mid in tf_first_motifs if motif_ppms.get(mid)),
-            key=lambda mid: _ic_per_pos(motif_ppms[mid]),
+            (mid for mid in tf_motif_ids if motif_ppms.get(mid)),
+            key=lambda mid: motif_nsites.get(mid, 0),
             default=None,
         )
 
