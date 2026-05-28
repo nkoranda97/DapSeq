@@ -12,7 +12,11 @@ import os
 import re
 import sys
 
-_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+import subprocess
+
+_SCRIPT_DIR      = os.path.dirname(os.path.abspath(__file__))
+_DEFAULT_FB_TSV  = os.path.normpath(os.path.join(_SCRIPT_DIR, '..', '..', 'factorbook', 'factorbook_chip_seq_meme_motifs.tsv'))
+_DEFAULT_FB_MEME = os.path.normpath(os.path.join(_SCRIPT_DIR, '..', '..', 'factorbook', 'factorbook_chip_seq_meme_motif_catalog.meme'))
 
 
 def parse_kv_file(path):
@@ -83,6 +87,70 @@ def logo_to_base64(png_path):
     img.save(buf, format="PNG")
     return base64.b64encode(buf.getvalue()).decode("ascii")
 
+
+
+def _make_factorbook_logos(samples, tsv_path, meme_path, factorbook_dir):
+    """Generate factorbook logo PNGs for any samples that don't already have one."""
+    os.makedirs(factorbook_dir, exist_ok=True)
+    for sample in samples:
+        out_png = os.path.join(factorbook_dir, f"{sample}.logo.png")
+        if os.path.exists(out_png) and os.path.getsize(out_png) > 0:
+            continue
+
+        tf = sample.upper()
+        motif_id = None
+        with open(tsv_path) as fh:
+            header = fh.readline().rstrip('\n').split('\t')
+            ti = header.index('target')
+            ai = header.index('dataset_accession')
+            ni = header.index('name')
+            for line in fh:
+                parts = line.rstrip('\n').split('\t')
+                if parts[ti].upper() == tf:
+                    motif_id = f"{parts[ai]}_{parts[ni]}"
+                    break
+
+        if motif_id is None:
+            open(out_png, 'w').close()
+            continue
+
+        header_lines, motif_lines = [], []
+        in_header = True
+        in_motif  = False
+        with open(meme_path) as fh:
+            for line in fh:
+                if in_motif:
+                    if line.startswith('MOTIF '):
+                        break
+                    motif_lines.append(line)
+                elif line.startswith('MOTIF '):
+                    in_header = False
+                    if line.split()[1] == motif_id:
+                        in_motif = True
+                        motif_lines.append(line)
+                elif in_header:
+                    header_lines.append(line)
+
+        tmp_meme = out_png + ".meme"
+        tmp_eps  = out_png + ".eps"
+        try:
+            with open(tmp_meme, 'w') as fh:
+                fh.writelines(header_lines)
+                fh.writelines(motif_lines)
+            r = subprocess.run(['ceqlogo', '-i1', tmp_meme, '-o', tmp_eps, '-f', 'EPS'],
+                               capture_output=True)
+            if r.returncode == 0 and os.path.exists(tmp_eps):
+                subprocess.run(['gs', '-dNOPAUSE', '-dBATCH', '-sDEVICE=png16m', '-r150',
+                                f'-sOutputFile={out_png}', tmp_eps],
+                               capture_output=True)
+        except FileNotFoundError:
+            pass  # ceqlogo not on PATH
+        finally:
+            for f in (tmp_meme, tmp_eps):
+                if os.path.exists(f):
+                    os.remove(f)
+        if not os.path.exists(out_png) or os.path.getsize(out_png) == 0:
+            open(out_png, 'w').close()
 
 
 def _detect_samples_and_bam_types(stats_dir):
@@ -370,6 +438,10 @@ def cli_main():
     html_out     = os.path.join(stats_dir, "report.html")
 
     samples, bam_types = _detect_samples_and_bam_types(stats_dir)
+
+    if os.path.exists(_DEFAULT_FB_TSV) and os.path.exists(_DEFAULT_FB_MEME):
+        _make_factorbook_logos(samples, _DEFAULT_FB_TSV, _DEFAULT_FB_MEME,
+                               os.path.join(out_dir, "factorbook"))
 
     # Try to read min_foldch from config; fall back to 2.0
     min_foldch = 2.0
