@@ -6,12 +6,14 @@ rule macs3:
         summits    = OUT + "/MACS/{sample}.{bam_type}_summits.bed",
         narrowpeak = OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
     params:
-        ctrl     = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
-        outdir   = OUT + "/MACS",
-        name     = lambda wc: f"{wc.sample}.{wc.bam_type}",
-        keep_dup = config["macs3"].get("keep_dup", 1),
-        extra    = config["macs3"].get("extra", ""),
-        tmpdir   = OUT + "/temp",
+        ctrl        = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
+        outdir      = OUT + "/MACS",
+        name        = lambda wc: f"{wc.sample}.{wc.bam_type}",
+        keep_dup    = config["macs3"].get("keep_dup", 1),
+        extra       = config["macs3"].get("extra", ""),
+        tmpdir      = OUT + "/temp",
+        macs3_format = config["macs3"]["format"],
+        genome_size  = config["genome_size"],
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],
@@ -21,12 +23,13 @@ rule macs3:
         OUT + "/logs/macs3/{sample}.{bam_type}.log"
     shell:
         """
+        set -euo pipefail
         mkdir -p {params.tmpdir}
         export TMPDIR={params.tmpdir}
         macs3 callpeak \
           -t {input.sample_bam} {params.ctrl} \
-          -f {config[macs3][format]} --outdir {params.outdir} \
-          -g {config[genome_size]} -n {params.name} \
+          -f {params.macs3_format} --outdir {params.outdir} \
+          -g {params.genome_size} -n {params.name} \
           --call-summits --keep-dup {params.keep_dup} {params.extra} --verbose=0 2>{log}
         """
 
@@ -36,6 +39,7 @@ rule filter_peaks:
         OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
     output:
         filt          = OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
+        # we just need the number we don't need to save this data
         peaks_5fold   = OUT + "/MACS/{sample}.{bam_type}_peaks_5fold.narrowPeak",
         numpeaks      = OUT + "/MACS/{sample}.{bam_type}_numpeaks.txt",
         numpeaks_filt = OUT + "/MACS/{sample}.{bam_type}_numpeaks_filt.txt",
@@ -50,6 +54,7 @@ rule filter_peaks:
         OUT + "/logs/filter_peaks/{sample}.{bam_type}.log"
     shell:
         """
+        set -euo pipefail
         awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt}    2>{log}
         awk '$7 >= 5.0'                              {input} > {output.peaks_5fold}
         wc -l < {input}       > {output.numpeaks}

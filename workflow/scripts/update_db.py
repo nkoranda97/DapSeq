@@ -77,8 +77,10 @@ META_COLS = [
     "trimmed_r1",
     "trimmed_r2",
     # generated paths — alignment
-    "bam",
-    "bigwig",
+    "bam_full",
+    "bam_chr",
+    "bigwig_full",
+    "bigwig_chr",
     # generated paths — peaks (treatment only)
     "peaks_narrowpeak",
     "peaks_filt_narrowpeak",
@@ -184,8 +186,10 @@ def _build_meta_paths(output_dir, sample, is_treatment):
     paths = {
         "trimmed_r1": f"{o}/trimmed/{sample}.R1.fastq.gz",
         "trimmed_r2": f"{o}/trimmed/{sample}.R2.fastq.gz",
-        "bam":        f"{o}/bam/{sample}.bam",
-        "bigwig":     f"{o}/bigWig/{sample}.bw",
+        "bam_full":    f"{o}/bam/{sample}.full.bam",
+        "bam_chr":     f"{o}/bam/{sample}.chr.bam",
+        "bigwig_full": f"{o}/bigWig/{sample}.full.bw",
+        "bigwig_chr":  f"{o}/bigWig/{sample}.chr.bw",
     }
     if is_treatment:
         paths.update({

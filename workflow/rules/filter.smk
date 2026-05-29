@@ -21,8 +21,9 @@ if len(CONTROL_SAMPLES) > 1:
             OUT + "/logs/samtools/merge_control.{bam_type}.log"
         shell:
             """
+            set -euo pipefail
             samtools merge -@ {threads} -f {params.extra_merge} {output.bam} {input.bams} 2>{log}
-            samtools index {output.bam} 2>>{log}
+            samtools index {output.bam} 2>{log}
             """
 
 
@@ -36,7 +37,11 @@ if CONTROL:
         output:
             OUT + "/bigWig/{sample}.{bam_type}.peaks.bw"
         params:
-            extra = config["bamcompare"].get("extra", ""),
+            extra                = config["bamcompare"].get("extra", ""),
+            bin_size             = config["bamcompare"]["bin_size"],
+            operation            = config["bamcompare"]["operation"],
+            scale_factors_method = config["bamcompare"]["scale_factors_method"],
+            n                    = config["bamcompare"]["n"],
         threads:
             config["threads"]
         resources:
@@ -51,7 +56,7 @@ if CONTROL:
             bamCompare \
               -b1 {input.sample_bam} -b2 {input.control_bam} \
               -o {output} \
-              --binSize {config[bamcompare][bin_size]} --operation {config[bamcompare][operation]} \
-              --scaleFactorsMethod {config[bamcompare][scale_factors_method]} -n {config[bamcompare][n]} \
+              --binSize {params.bin_size} --operation {params.operation} \
+              --scaleFactorsMethod {params.scale_factors_method} -n {params.n} \
               -p {threads} {params.extra} 2>{log}
             """

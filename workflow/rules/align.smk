@@ -18,6 +18,7 @@ rule align_se:
         bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
         bw_extra        = config["bamcoverage"].get("extra", ""),
         bw_tempdir      = OUT + "/temp",
+        genome_size     = config["genome_size"],
     threads:
         config["threads"]
     resources:
@@ -30,6 +31,7 @@ rule align_se:
         bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
     shell:
         """
+        set -euo pipefail
         bowtie2 \
           --reorder \
           --threads {threads} \
@@ -48,7 +50,7 @@ rule align_se:
         export TMPDIR={params.bw_tempdir}
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
           --normalizeUsing {params.bw_normalize} \
-          --effectiveGenomeSize {config[genome_size]} \
+          --effectiveGenomeSize {params.genome_size} \
           --binSize {params.bw_bin_size} {params.bw_ignore_dups} \
           {params.bw_extra} \
           2>{log.bamcoverage}
@@ -79,6 +81,7 @@ rule align_pe:
         bw_extend_reads = "--extendReads" if config["bamcoverage"].get("extend_reads", True) else "",
         bw_extra        = config["bamcoverage"].get("extra", ""),
         bw_tempdir      = OUT + "/temp",
+        genome_size     = config["genome_size"],
     threads:
         config["threads"]
     resources:
@@ -91,6 +94,7 @@ rule align_pe:
         bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
     shell:
         """
+        set -euo pipefail
         bowtie2 \
           --reorder \
           --threads {threads} \
@@ -113,7 +117,7 @@ rule align_pe:
         export TMPDIR={params.bw_tempdir}
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
           --normalizeUsing {params.bw_normalize} \
-          --effectiveGenomeSize {config[genome_size]} \
+          --effectiveGenomeSize {params.genome_size} \
           --binSize {params.bw_bin_size} {params.bw_ignore_dups} \
           --maxFragmentLength {params.bw_max_frag} {params.bw_extend_reads} \
           {params.bw_extra} \
@@ -136,6 +140,7 @@ rule filter_chr:
         bw_ignore_dups = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
         bw_extra       = config["bamcoverage"].get("extra", ""),
         bw_tempdir     = OUT + "/temp",
+        genome_size    = config["genome_size"],
     threads:
         config["threads"]
     resources:
@@ -148,16 +153,17 @@ rule filter_chr:
         bamcoverage = OUT + "/logs/bamcoverage/{sample}.chr.log",
     shell:
         """
-        samtools view -b -@ {threads} \
-          -e 'rname =~ "{params.pattern}"' \
-          -o {output.bam} {input.bam} 2>{log.filter}
+        set -euo pipefail
+        REGIONS=$(samtools view -H {input.bam} \
+          | awk '/^@SQ/{{split($2,a,":");if(a[2]~"{params.pattern}")printf "%s ",a[2]}}')
+        samtools view -b -@ {threads} -o {output.bam} {input.bam} $REGIONS 2>{log.filter}
         samtools index {output.bam}
 
         mkdir -p {params.bw_tempdir}
         export TMPDIR={params.bw_tempdir}
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
           --normalizeUsing {params.bw_normalize} \
-          --effectiveGenomeSize {config[genome_size]} \
+          --effectiveGenomeSize {params.genome_size} \
           --binSize {params.bw_bin_size} {params.bw_ignore_dups} \
           {params.bw_extra} 2>{log.bamcoverage}
         """

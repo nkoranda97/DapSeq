@@ -12,6 +12,8 @@ rule bowtie2_index:
         fai    = config["genome_ref"] + ".fai",
     params:
         extra_build = config["bowtie2"].get("extra_build", ""),
+    threads:
+        config["threads"]
     resources:
         mem_mb          = config["resources"]["bowtie2_index"]["mem_mb"],
         runtime         = config["resources"]["bowtie2_index"]["runtime"],
@@ -21,7 +23,8 @@ rule bowtie2_index:
         OUT + "/logs/bowtie2_index.log"
     shell:
         """
-        bowtie2-build {params.extra_build} {input} {input} 2>{log}
-        samtools faidx {input} 2>>{log}
+        set -euo pipefail
+        bowtie2-build --threads {threads} {params.extra_build} {input} {input} 2>{log}
+        samtools faidx {input} 2>{log}
         cut -f1,2 {input}.fai > {output.sizes}
         """

@@ -45,6 +45,8 @@ def parse_narrowpeak_max(path):
             if not line:
                 continue
             fields = line.split("\t")
+            if len(fields) < 10:
+                continue
             signal = float(fields[6])
             if max_signal is None or signal > max_signal:
                 max_signal = signal
@@ -109,7 +111,11 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir, fimo_dir):
     row = {"sample": sample}
 
     total_frags_path = os.path.join(stats_dir, f"{sample}.total_frags.txt")
-    row["reads_original"] = open(total_frags_path).read().strip() if os.path.exists(total_frags_path) else "NA"
+    if os.path.exists(total_frags_path):
+        with open(total_frags_path) as fh:
+            row["reads_original"] = fh.read().strip()
+    else:
+        row["reads_original"] = "NA"
 
     trim_log_path = os.path.join(trim_log_dir, f"{sample}.trim.log")
     row["reads_trimmed"] = parse_bbduk_log(trim_log_path) if os.path.exists(trim_log_path) else "NA"

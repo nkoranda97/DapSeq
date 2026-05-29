@@ -38,9 +38,10 @@ def is_pe(wc):
 
 
 wildcard_constraints:
-    sample   = "[^/.]+",
-    read     = "R[12]",
-    bam_type = "full|chr",
+    sample    = "[^/.]+",
+    read      = "R[12]",
+    bam_type  = "full|chr",
+    peak_type = "summits|peaks",
 
 
 rule mapped:
