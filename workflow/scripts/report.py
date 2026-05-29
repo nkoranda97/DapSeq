@@ -36,6 +36,18 @@ def parse_bbduk_log(path):
     return int(m.group(1)) if m else "NA"
 
 
+def parse_align_rate(path):
+    """Return the overall alignment rate (%) from a bowtie2 align_rate.txt, or 'NA'."""
+    if not os.path.exists(path):
+        return "NA"
+    with open(path) as fh:
+        val = fh.read().strip()
+    try:
+        return round(float(val), 2)
+    except ValueError:
+        return "NA"
+
+
 def parse_narrowpeak_max(path):
     """Return max signalValue (column 6, 0-indexed) from a narrowPeak file, or 'NA'."""
     max_signal = None
@@ -82,6 +94,7 @@ def make_cols():
         "reads_trimmed",
         # ── alignment ───────────────────────────────────────────────────
         "reads_mapped",           # full.bam (all contigs, MAPQ-filtered)
+        "alignment_rate",         # bowtie2 overall alignment rate (%)
         "reads_on_chromosomes",   # chr.bam (canonical chromosomes only)
         # ── full.bam peak stats (pipeline order) ────────────────────────
         "reads_in_peaks_full",
@@ -122,6 +135,7 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir, fimo_dir):
 
     full_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.full.filtered_stats.txt"))
     row["reads_mapped"] = full_stats.get("filtered_reads", "NA")
+    row["alignment_rate"] = parse_align_rate(os.path.join(stats_dir, f"{sample}.align_rate.txt"))
 
     chr_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.chr.filtered_stats.txt"))
     reads_chr = chr_stats.get("filtered_reads", "NA")
@@ -138,7 +152,7 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir, fimo_dir):
         frip_filt_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bt}.frip_macs_filt.txt"))
         row[f"reads_nfold_{bt}"] = frip_filt_data.get("reads_in_peaks_macs_filt", "NA")
 
-        np_path = os.path.join(macs_dir, f"{sample}.{bt}_peaks.narrowPeak")
+        np_path = os.path.join(macs_dir, f"{sample}.{bt}_peaks_chr.narrowPeak")
         row[f"max_peak_score_{bt}"] = parse_narrowpeak_max(np_path)
 
         row[f"mapping_pct_{bt}"] = _safe_frip(reads_in_peaks, reads_chr)

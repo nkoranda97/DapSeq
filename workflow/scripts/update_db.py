@@ -45,6 +45,7 @@ COLS = [
     "reads_original",
     "reads_trimmed",
     "reads_mapped",
+    "alignment_rate",
     "reads_on_chromosomes",
     "reads_in_peaks_full",
     "reads_in_peaks_chr",
@@ -265,6 +266,7 @@ def main():
         row["reads_original"]       = stats.get("reads_original", "NA")
         row["reads_trimmed"]        = stats.get("reads_trimmed", "NA")
         row["reads_mapped"]         = stats.get("reads_mapped", "NA")
+        row["alignment_rate"]       = stats.get("alignment_rate", "NA")
         row["reads_on_chromosomes"] = stats.get("reads_on_chromosomes", "NA")
         row["reads_in_peaks_full"]  = stats.get("reads_in_peaks_full", "NA")
         row["reads_in_peaks_chr"]   = stats.get("reads_in_peaks_chr", "NA")

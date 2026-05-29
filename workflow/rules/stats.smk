@@ -27,7 +27,7 @@ rule frip_macs:
     input:
         bam   = OUT + "/bam/{sample}.{bam_type}.bam",
         bai   = OUT + "/bam/{sample}.{bam_type}.bam.bai",
-        peaks = OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
+        peaks = OUT + "/MACS/{sample}.{bam_type}_peaks_chr.narrowPeak",
     output:
         OUT + "/stats/{sample}.{bam_type}.frip_macs.txt"
     wildcard_constraints:
@@ -119,7 +119,8 @@ rule report:
         frip           = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs.txt",                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
         frip_filt      = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs_filt.txt",           sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
         frip_5fold     = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs_5fold.txt",          sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
-        narrowpeaks    = expand(OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",              sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        align_rates    = expand(OUT + "/stats/{sample}.align_rate.txt",                          sample=TREATMENT_SAMPLES),
+        narrowpeaks    = expand(OUT + "/MACS/{sample}.{bam_type}_peaks_chr.narrowPeak",          sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
         fimo_peaks     = expand(OUT + "/fimo/{sample}.{bam_type}/peaks/fimo.tsv",                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
     output:
         csv = OUT + "/stats/report.csv",

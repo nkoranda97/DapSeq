@@ -34,9 +34,29 @@ rule macs3:
         """
 
 
-rule filter_peaks:
+rule filter_contig_peaks:
     input:
         OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
+    output:
+        OUT + "/MACS/{sample}.{bam_type}_peaks_chr.narrowPeak",
+    params:
+        chr_pattern = config["contig_filter"]["pattern"],
+    resources:
+        mem_mb          = config["resources"]["filter_peaks"]["mem_mb"],
+        runtime         = 5,
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/filter_contig_peaks/{sample}.{bam_type}.log"
+    shell:
+        """
+        awk -v p="{params.chr_pattern}" '$1 ~ p' {input} > {output} 2>{log}
+        """
+
+
+rule filter_peaks:
+    input:
+        OUT + "/MACS/{sample}.{bam_type}_peaks_chr.narrowPeak",
     output:
         filt          = OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
         # we just need the number we don't need to save this data
@@ -55,7 +75,7 @@ rule filter_peaks:
     shell:
         """
         set -euo pipefail
-        awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt}    2>{log}
+        awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt}  2>{log}
         awk '$7 >= 5.0'                              {input} > {output.peaks_5fold}
         wc -l < {input}       > {output.numpeaks}
         wc -l < {output.filt} > {output.numpeaks_filt}

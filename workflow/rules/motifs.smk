@@ -73,16 +73,18 @@ rule meme_peaks:
     input:
         OUT + "/fasta/{sample}.{bam_type}.peaks.fasta",
     output:
-        txt = OUT + "/meme/{sample}.{bam_type}/peaks/meme.txt",
-        xml = OUT + "/meme/{sample}.{bam_type}/peaks/meme.xml",
+        txt  = OUT + "/meme/{sample}.{bam_type}/peaks/meme.txt",
+        xml  = OUT + "/meme/{sample}.{bam_type}/peaks/meme.xml",
+        logo = OUT + "/meme/{sample}.{bam_type}/peaks/logo1.png",
     params:
-        outdir  = OUT + "/meme/{sample}.{bam_type}/peaks",
-        nmotifs = config["meme"]["nmotifs"],
-        minw    = config["meme"]["minw"],
-        maxw    = config["meme"]["maxw"],
-        mod     = config["meme"]["mod"],
-        maxsize = config["meme"].get("maxsize", 10000000),
-        extra   = config["meme"].get("extra", ""),
+        outdir      = OUT + "/meme/{sample}.{bam_type}/peaks",
+        nmotifs     = config["meme"]["nmotifs"],
+        minw        = config["meme"]["minw"],
+        maxw        = config["meme"]["maxw"],
+        mod         = config["meme"]["mod"],
+        maxsize     = config["meme"].get("maxsize", 10000000),
+        extra       = config["meme"].get("extra", ""),
+        base_colors = config["meme"].get("base_colors") or {},
     threads:
         config["threads"]
     resources:
@@ -92,18 +94,8 @@ rule meme_peaks:
         slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.{bam_type}.peaks.log"
-    shell:
-        """
-        if [ ! -s {input} ]; then
-            touch {output.txt} {output.xml}
-        else
-            meme {input} -oc {params.outdir} \
-              -dna -revcomp \
-              -mod {params.mod} -nmotifs {params.nmotifs} \
-              -minw {params.minw} -maxw {params.maxw} \
-              -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} 2>{log}
-        fi
-        """
+    script:
+        "../scripts/run_meme.py"
 
 
 rule fimo:
