@@ -42,15 +42,22 @@ COLS = [
     "r1",
     "r2",
     "is_treatment",
-    "total_frags",
-    "clean_reads",
-    "align_rate%",
-    "filtered_reads",
-    "peak#",
-    "min5fold_peak#",
-    "max_peak_score",
-    "peak_reads#",
-    "FRiP_score",
+    "reads_original",
+    "reads_trimmed",
+    "reads_mapped",
+    "reads_on_chromosomes",
+    "reads_in_peaks_full",
+    "reads_in_peaks_chr",
+    "reads_5fold_full",
+    "reads_5fold_chr",
+    "reads_nfold_full",
+    "reads_nfold_chr",
+    "max_peak_score_full",
+    "max_peak_score_chr",
+    "mapping_pct_full",
+    "mapping_pct_chr",
+    "motif_peaks_full",
+    "motif_peaks_chr",
 ]
 
 META_COLS = [
@@ -88,8 +95,7 @@ META_COLS = [
     # generated paths — homer (treatment only, if gene_annotation set)
     "homer_annotations",
     # generated paths — report
-    "report_tsv",
-    "report_html",
+    "report_csv",
 ]
 
 _col_defs  = ", ".join(f'"{c}" TEXT' for c in COLS)
@@ -114,10 +120,10 @@ _INSERT_META = f'INSERT INTO run_metadata ({_meta_col_names}) VALUES ({_meta_col
 
 
 def read_report(path):
-    """Return a dict of {sample: {col: value}} from the report TSV."""
+    """Return a dict of {sample: {col: value}} from the report CSV."""
     result = {}
     with open(path) as fh:
-        reader = csv.DictReader(fh, delimiter="\t")
+        reader = csv.DictReader(fh)
         for row in reader:
             result[row["sample"]] = dict(row)
     return result
@@ -202,8 +208,7 @@ def _build_meta_paths(output_dir, sample, is_treatment):
             "fimo_summits_tsv", "fimo_peaks_tsv",
             "homer_annotations",
         ]})
-    paths["report_tsv"]  = f"{o}/stats/report.tsv"
-    paths["report_html"] = f"{o}/stats/report.html"
+    paths["report_csv"] = f"{o}/stats/report.csv"
     return paths
 
 
@@ -253,16 +258,22 @@ def main():
         row["r1"]           = r1
         row["r2"]           = get_r2(scfg) or ""
         row["is_treatment"] = is_treatment
-
-        row["total_frags"]    = stats.get("total_frags", "NA")
-        row["clean_reads"]    = stats.get("clean_reads", "NA")
-        row["align_rate%"]    = stats.get("align_rate%", "NA")
-        row["filtered_reads"] = stats.get("filtered_reads", "NA")
-        row["peak#"]          = stats.get("peak#", "NA")
-        row["min5fold_peak#"] = stats.get("min5fold peak#", "NA")
-        row["max_peak_score"] = stats.get("max peak score", "NA")
-        row["peak_reads#"]    = stats.get("peak reads#", "NA")
-        row["FRiP_score"]     = stats.get("FRiP_score", "NA")
+        row["reads_original"]       = stats.get("reads_original", "NA")
+        row["reads_trimmed"]        = stats.get("reads_trimmed", "NA")
+        row["reads_mapped"]         = stats.get("reads_mapped", "NA")
+        row["reads_on_chromosomes"] = stats.get("reads_on_chromosomes", "NA")
+        row["reads_in_peaks_full"]  = stats.get("reads_in_peaks_full", "NA")
+        row["reads_in_peaks_chr"]   = stats.get("reads_in_peaks_chr", "NA")
+        row["reads_5fold_full"]     = stats.get("reads_5fold_full", "NA")
+        row["reads_5fold_chr"]      = stats.get("reads_5fold_chr", "NA")
+        row["reads_nfold_full"]     = stats.get("reads_nfold_full", "NA")
+        row["reads_nfold_chr"]      = stats.get("reads_nfold_chr", "NA")
+        row["max_peak_score_full"]  = stats.get("max_peak_score_full", "NA")
+        row["max_peak_score_chr"]   = stats.get("max_peak_score_chr", "NA")
+        row["mapping_pct_full"]     = stats.get("mapping_pct_full", "NA")
+        row["mapping_pct_chr"]      = stats.get("mapping_pct_chr", "NA")
+        row["motif_peaks_full"]     = stats.get("motif_peaks_full", "NA")
+        row["motif_peaks_chr"]      = stats.get("motif_peaks_chr", "NA")
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 

@@ -86,34 +86,49 @@ rule frip_macs_filt:
         """
 
 
+rule frip_macs_5fold:
+    input:
+        bam   = OUT + "/bam/{sample}.{bam_type}.bam",
+        bai   = OUT + "/bam/{sample}.{bam_type}.bam.bai",
+        peaks = OUT + "/MACS/{sample}.{bam_type}_peaks_5fold.narrowPeak",
+    output:
+        OUT + "/stats/{sample}.{bam_type}.frip_macs_5fold.txt"
+    wildcard_constraints:
+        sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
+    resources:
+        mem_mb          = config["resources"]["frip_macs"]["mem_mb"],
+        runtime         = config["resources"]["frip_macs"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/frip_macs_5fold/{sample}.{bam_type}.log"
+    shell:
+        """
+        exec 2>{log}
+        IN_PEAKS=$(bedtools intersect -abam {input.bam} -b {input.peaks} -u | samtools view -c)
+        printf "reads_in_peaks_macs_5fold\t%d\n" "$IN_PEAKS" > {output}
+        """
+
+
 rule report:
     input:
-        trim_logs    = expand(OUT + "/logs/bbduk/{sample}.trim.log",               sample=TREATMENT_SAMPLES),
-        total_frags  = expand(OUT + "/stats/{sample}.total_frags.txt",             sample=TREATMENT_SAMPLES),
-        align_rates  = expand(OUT + "/stats/{sample}.align_rate.txt",              sample=TREATMENT_SAMPLES),
-        filt_stats   = expand(OUT + "/stats/{sample}.{bam_type}.filtered_stats.txt",
-                              sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
-        frip_macs      = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs.txt",
-                                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
-        frip_macs_filt = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs_filt.txt",
-                                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
-        narrowpeaks    = expand(OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
-                                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
-        factorbook_logos = expand(OUT + "/factorbook/{sample}.logo.png", sample=TREATMENT_SAMPLES),
-        logo_pngs    = expand(OUT + "/meme/{sample}.{bam_type}/summits/logo1.png",
-                              sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        trim_logs      = expand(OUT + "/logs/bbduk/{sample}.trim.log",                           sample=TREATMENT_SAMPLES),
+        total_frags    = expand(OUT + "/stats/{sample}.total_frags.txt",                         sample=TREATMENT_SAMPLES),
+        filt_stats_full= expand(OUT + "/stats/{sample}.full.filtered_stats.txt",                 sample=TREATMENT_SAMPLES),
+        filt_stats_chr = expand(OUT + "/stats/{sample}.chr.filtered_stats.txt",                  sample=TREATMENT_SAMPLES),
+        frip           = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs.txt",                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        frip_filt      = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs_filt.txt",           sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        frip_5fold     = expand(OUT + "/stats/{sample}.{bam_type}.frip_macs_5fold.txt",          sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        narrowpeaks    = expand(OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",              sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        fimo_peaks     = expand(OUT + "/fimo/{sample}.{bam_type}/peaks/fimo.tsv",                sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
     output:
-        tsv  = OUT + "/stats/report.tsv",
-        html = OUT + "/stats/report.html",
+        csv = OUT + "/stats/report.csv",
     params:
         treatment_samples = TREATMENT_SAMPLES,
-        bam_types         = BAM_TYPES,
         trim_log_dir      = OUT + "/logs/bbduk",
         macs_dir          = OUT + "/MACS",
-        meme_dir          = OUT + "/meme",
         stats_dir         = OUT + "/stats",
-        min_foldch        = config["macs3"]["min_foldch"],
-        factorbook_dir    = OUT + "/factorbook",
+        fimo_dir          = OUT + "/fimo",
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],

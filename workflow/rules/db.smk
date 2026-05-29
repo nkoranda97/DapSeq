@@ -1,6 +1,6 @@
 rule update_db:
     input:
-        report = OUT + "/stats/report.tsv",
+        report = OUT + "/stats/report.csv",
     output:
         flag = OUT + "/stats/db_updated.flag",
     params:

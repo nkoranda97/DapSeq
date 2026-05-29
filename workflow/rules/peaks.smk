@@ -36,6 +36,7 @@ rule filter_peaks:
         OUT + "/MACS/{sample}.{bam_type}_peaks.narrowPeak",
     output:
         filt          = OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
+        peaks_5fold   = OUT + "/MACS/{sample}.{bam_type}_peaks_5fold.narrowPeak",
         numpeaks      = OUT + "/MACS/{sample}.{bam_type}_numpeaks.txt",
         numpeaks_filt = OUT + "/MACS/{sample}.{bam_type}_numpeaks_filt.txt",
     params:
@@ -49,7 +50,8 @@ rule filter_peaks:
         OUT + "/logs/filter_peaks/{sample}.{bam_type}.log"
     shell:
         """
-        awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt} 2>{log}
+        awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt}    2>{log}
+        awk '$7 >= 5.0'                              {input} > {output.peaks_5fold}
         wc -l < {input}       > {output.numpeaks}
         wc -l < {output.filt} > {output.numpeaks_filt}
         """
