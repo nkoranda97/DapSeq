@@ -28,7 +28,6 @@ OUT               = config["output_dir"]
 
 SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
 PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
-BAM_TYPES  = ["full", "chr"]
 
 SCRIPTS = os.path.join(workflow.basedir, "scripts")
 
@@ -40,29 +39,28 @@ def is_pe(wc):
 wildcard_constraints:
     sample    = "[^/.]+",
     read      = "R[12]",
-    bam_type  = "full|chr",
     peak_type = "summits|peaks",
 
 
 rule mapped:
     input:
-        expand(OUT + "/bam/{sample}.{bam_type}.bam",     sample=SAMPLES, bam_type=BAM_TYPES),
-        expand(OUT + "/bam/{sample}.{bam_type}.bam.bai", sample=SAMPLES, bam_type=BAM_TYPES),
-        expand(OUT + "/bigWig/{sample}.{bam_type}.bw",   sample=SAMPLES, bam_type=BAM_TYPES),
+        expand(OUT + "/bam/{sample}.bam",     sample=SAMPLES),
+        expand(OUT + "/bam/{sample}.bam.bai", sample=SAMPLES),
+        expand(OUT + "/bigWig/{sample}.bw",   sample=SAMPLES),
 
 
 rule peaked:
     input:
-        expand(OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
-               sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        expand(OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+               sample=TREATMENT_SAMPLES),
 
 
 rule motifs_done:
     input:
-        expand(OUT + "/fimo/{sample}.{bam_type}/summits/fimo.tsv",
-               sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
-        expand(OUT + "/fimo/{sample}.{bam_type}/peaks/fimo.tsv",
-               sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+        expand(OUT + "/fimo/{sample}/summits/fimo.tsv",
+               sample=TREATMENT_SAMPLES),
+        expand(OUT + "/fimo/{sample}/peaks/fimo.tsv",
+               sample=TREATMENT_SAMPLES),
 
 
 rule qc_done:
@@ -74,5 +72,5 @@ rule qc_done:
 if config.get("gene_annotation"):
     rule annotate_done:
         input:
-            expand(OUT + "/annotations/{sample}.{bam_type}.peak_annotations.txt",
-                   sample=TREATMENT_SAMPLES, bam_type=BAM_TYPES),
+            expand(OUT + "/annotations/{sample}.peak_annotations.txt",
+                   sample=TREATMENT_SAMPLES),

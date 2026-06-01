@@ -46,19 +46,12 @@ COLS = [
     "reads_trimmed",
     "reads_mapped",
     "alignment_rate",
-    "reads_on_chromosomes",
-    "reads_in_peaks_full",
-    "reads_in_peaks_chr",
-    "reads_5fold_full",
-    "reads_5fold_chr",
-    "reads_nfold_full",
-    "reads_nfold_chr",
-    "max_peak_score_full",
-    "max_peak_score_chr",
-    "mapping_pct_full",
-    "mapping_pct_chr",
-    "motif_peaks_full",
-    "motif_peaks_chr",
+    "reads_in_peaks",
+    "reads_5fold",
+    "reads_nfold",
+    "max_peak_score",
+    "mapping_pct",
+    "motif_peaks",
 ]
 
 META_COLS = [
@@ -78,10 +71,8 @@ META_COLS = [
     "trimmed_r1",
     "trimmed_r2",
     # generated paths — alignment
-    "bam_full",
-    "bam_chr",
-    "bigwig_full",
-    "bigwig_chr",
+    "bam",
+    "bigwig",
     # generated paths — peaks (treatment only)
     "peaks_narrowpeak",
     "peaks_filt_narrowpeak",
@@ -187,10 +178,8 @@ def _build_meta_paths(output_dir, sample, is_treatment):
     paths = {
         "trimmed_r1": f"{o}/trimmed/{sample}.R1.fastq.gz",
         "trimmed_r2": f"{o}/trimmed/{sample}.R2.fastq.gz",
-        "bam_full":    f"{o}/bam/{sample}.full.bam",
-        "bam_chr":     f"{o}/bam/{sample}.chr.bam",
-        "bigwig_full": f"{o}/bigWig/{sample}.full.bw",
-        "bigwig_chr":  f"{o}/bigWig/{sample}.chr.bw",
+        "bam":    f"{o}/bam/{sample}.bam",
+        "bigwig": f"{o}/bigWig/{sample}.bw",
     }
     if is_treatment:
         paths.update({
@@ -267,19 +256,12 @@ def main():
         row["reads_trimmed"]        = stats.get("reads_trimmed", "NA")
         row["reads_mapped"]         = stats.get("reads_mapped", "NA")
         row["alignment_rate"]       = stats.get("alignment_rate", "NA")
-        row["reads_on_chromosomes"] = stats.get("reads_on_chromosomes", "NA")
-        row["reads_in_peaks_full"]  = stats.get("reads_in_peaks_full", "NA")
-        row["reads_in_peaks_chr"]   = stats.get("reads_in_peaks_chr", "NA")
-        row["reads_5fold_full"]     = stats.get("reads_5fold_full", "NA")
-        row["reads_5fold_chr"]      = stats.get("reads_5fold_chr", "NA")
-        row["reads_nfold_full"]     = stats.get("reads_nfold_full", "NA")
-        row["reads_nfold_chr"]      = stats.get("reads_nfold_chr", "NA")
-        row["max_peak_score_full"]  = stats.get("max_peak_score_full", "NA")
-        row["max_peak_score_chr"]   = stats.get("max_peak_score_chr", "NA")
-        row["mapping_pct_full"]     = stats.get("mapping_pct_full", "NA")
-        row["mapping_pct_chr"]      = stats.get("mapping_pct_chr", "NA")
-        row["motif_peaks_full"]     = stats.get("motif_peaks_full", "NA")
-        row["motif_peaks_chr"]      = stats.get("motif_peaks_chr", "NA")
+        row["reads_in_peaks"]  = stats.get("reads_in_peaks", "NA")
+        row["reads_5fold"]     = stats.get("reads_5fold", "NA")
+        row["reads_nfold"]     = stats.get("reads_nfold", "NA")
+        row["max_peak_score"]  = stats.get("max_peak_score", "NA")
+        row["mapping_pct"]     = stats.get("mapping_pct", "NA")
+        row["motif_peaks"]     = stats.get("motif_peaks", "NA")
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 

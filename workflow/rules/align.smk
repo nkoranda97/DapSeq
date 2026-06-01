@@ -5,9 +5,9 @@ rule align_se:
         r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
         idx = config["genome_ref"] + ".1.bt2",
     output:
-        bam        = OUT + "/bam/{sample}.full.bam",
-        bai        = OUT + "/bam/{sample}.full.bam.bai",
-        bw         = OUT + "/bigWig/{sample}.full.bw",
+        bam        = OUT + "/bam/{sample}.bam",
+        bai        = OUT + "/bam/{sample}.bam.bai",
+        bw         = OUT + "/bigWig/{sample}.bw",
         align_rate = OUT + "/stats/{sample}.align_rate.txt",
     params:
         idx             = config["genome_ref"],
@@ -65,9 +65,9 @@ rule align_pe:
         r2  = OUT + "/trimmed/{sample}.R2.fastq.gz",
         idx = config["genome_ref"] + ".1.bt2",
     output:
-        bam              = OUT + "/bam/{sample}.full.bam",
-        bai              = OUT + "/bam/{sample}.full.bam.bai",
-        bw               = OUT + "/bigWig/{sample}.full.bw",
+        bam              = OUT + "/bam/{sample}.bam",
+        bai              = OUT + "/bam/{sample}.bam.bai",
+        bw               = OUT + "/bigWig/{sample}.bw",
         align_rate       = OUT + "/stats/{sample}.align_rate.txt",
         median_frag_size = OUT + "/stats/{sample}.median_frag_size.txt",
     params:
@@ -122,48 +122,4 @@ rule align_pe:
           --maxFragmentLength {params.bw_max_frag} {params.bw_extend_reads} \
           {params.bw_extra} \
           2>{log.bamcoverage}
-        """
-
-
-rule filter_chr:
-    input:
-        bam = OUT + "/bam/{sample}.full.bam",
-        bai = OUT + "/bam/{sample}.full.bam.bai",
-    output:
-        bam = OUT + "/bam/{sample}.chr.bam",
-        bai = OUT + "/bam/{sample}.chr.bam.bai",
-        bw  = OUT + "/bigWig/{sample}.chr.bw",
-    params:
-        pattern        = config["contig_filter"]["pattern"],
-        bw_normalize   = config["bamcoverage"].get("normalize_using", "RPGC"),
-        bw_bin_size    = config["bamcoverage"].get("bin_size", 1),
-        bw_ignore_dups = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
-        bw_extra       = config["bamcoverage"].get("extra", ""),
-        bw_tempdir     = OUT + "/temp",
-        genome_size    = config["genome_size"],
-    threads:
-        config["threads"]
-    resources:
-        mem_mb          = config["resources"]["filter_chr"]["mem_mb"],
-        runtime         = config["resources"]["filter_chr"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
-    log:
-        filter      = OUT + "/logs/filter_chr/{sample}.log",
-        bamcoverage = OUT + "/logs/bamcoverage/{sample}.chr.log",
-    shell:
-        """
-        set -euo pipefail
-        REGIONS=$(samtools view -H {input.bam} \
-          | awk '/^@SQ/{{split($2,a,":");if(a[2]~"{params.pattern}")printf "%s ",a[2]}}')
-        samtools view -b -@ {threads} -o {output.bam} {input.bam} $REGIONS 2>{log.filter}
-        samtools index {output.bam}
-
-        mkdir -p {params.bw_tempdir}
-        export TMPDIR={params.bw_tempdir}
-        bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
-          --normalizeUsing {params.bw_normalize} \
-          --effectiveGenomeSize {params.genome_size} \
-          --binSize {params.bw_bin_size} {params.bw_ignore_dups} \
-          {params.bw_extra} 2>{log.bamcoverage}
         """

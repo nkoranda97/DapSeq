@@ -21,10 +21,10 @@ rule factorbook_logo:
 
 rule narrow_peak_to_fasta:
     input:
-        narrowpeak = OUT + "/MACS/{sample}.{bam_type}_peaks_filt.narrowPeak",
+        narrowpeak = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
         genome     = config["genome_ref"],
     output:
-        OUT + "/fasta/{sample}.{bam_type}.{peak_type}.fasta",
+        OUT + "/fasta/{sample}.{peak_type}.fasta",
     params:
         maxpeaks   = config["meme"]["maxpeaks"],
         extend_bp  = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
@@ -35,20 +35,20 @@ rule narrow_peak_to_fasta:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/narrow_peak_to_fasta/{sample}.{bam_type}.{peak_type}.log"
+        OUT + "/logs/narrow_peak_to_fasta/{sample}.{peak_type}.log"
     script:
         "../scripts/narrow_peak_to_fasta.py"
 
 
 rule meme_summits:
     input:
-        OUT + "/fasta/{sample}.{bam_type}.summits.fasta",
+        OUT + "/fasta/{sample}.summits.fasta",
     output:
-        txt  = OUT + "/meme/{sample}.{bam_type}/summits/meme.txt",
-        xml  = OUT + "/meme/{sample}.{bam_type}/summits/meme.xml",
-        logo = OUT + "/meme/{sample}.{bam_type}/summits/logo1.png",
+        txt  = OUT + "/meme/{sample}/summits/meme.txt",
+        xml  = OUT + "/meme/{sample}/summits/meme.xml",
+        logo = OUT + "/meme/{sample}/summits/logo1.png",
     params:
-        outdir      = OUT + "/meme/{sample}.{bam_type}/summits",
+        outdir      = OUT + "/meme/{sample}/summits",
         nmotifs     = config["meme"]["nmotifs"],
         minw        = config["meme"]["minw"],
         maxw        = config["meme"]["maxw"],
@@ -64,20 +64,20 @@ rule meme_summits:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/meme/{sample}.{bam_type}.summits.log"
+        OUT + "/logs/meme/{sample}.summits.log"
     script:
         "../scripts/run_meme.py"
 
 
 rule meme_peaks:
     input:
-        OUT + "/fasta/{sample}.{bam_type}.peaks.fasta",
+        OUT + "/fasta/{sample}.peaks.fasta",
     output:
-        txt  = OUT + "/meme/{sample}.{bam_type}/peaks/meme.txt",
-        xml  = OUT + "/meme/{sample}.{bam_type}/peaks/meme.xml",
-        logo = OUT + "/meme/{sample}.{bam_type}/peaks/logo1.png",
+        txt  = OUT + "/meme/{sample}/peaks/meme.txt",
+        xml  = OUT + "/meme/{sample}/peaks/meme.xml",
+        logo = OUT + "/meme/{sample}/peaks/logo1.png",
     params:
-        outdir      = OUT + "/meme/{sample}.{bam_type}/peaks",
+        outdir      = OUT + "/meme/{sample}/peaks",
         nmotifs     = config["meme"]["nmotifs"],
         minw        = config["meme"]["minw"],
         maxw        = config["meme"]["maxw"],
@@ -93,19 +93,19 @@ rule meme_peaks:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/meme/{sample}.{bam_type}.peaks.log"
+        OUT + "/logs/meme/{sample}.peaks.log"
     script:
         "../scripts/run_meme.py"
 
 
 rule fimo:
     input:
-        meme_xml = OUT + "/meme/{sample}.{bam_type}/{peak_type}/meme.xml",
-        fasta    = OUT + "/fasta/{sample}.{bam_type}.{peak_type}.fasta",
+        meme_xml = OUT + "/meme/{sample}/{peak_type}/meme.xml",
+        fasta    = OUT + "/fasta/{sample}.{peak_type}.fasta",
     output:
-        tsv = OUT + "/fimo/{sample}.{bam_type}/{peak_type}/fimo.tsv",
+        tsv = OUT + "/fimo/{sample}/{peak_type}/fimo.tsv",
     params:
-        outdir      = OUT + "/fimo/{sample}.{bam_type}/{peak_type}",
+        outdir      = OUT + "/fimo/{sample}/{peak_type}",
         extra       = config["fimo"].get("extra", ""),
         fimo_thresh = config["fimo"]["thresh"],
     resources:
@@ -114,7 +114,7 @@ rule fimo:
         slurm_partition = config["slurm_partition"],
         slurm_account   = config["slurm_account"],
     log:
-        OUT + "/logs/fimo/{sample}.{bam_type}.{peak_type}.log"
+        OUT + "/logs/fimo/{sample}.{peak_type}.log"
     shell:
         """
         if [ ! -s {input.meme_xml} ]; then

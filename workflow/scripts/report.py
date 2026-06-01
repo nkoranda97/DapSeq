@@ -1,9 +1,7 @@
 """
 Aggregate per-sample QC statistics into a CSV summary table.
 
-One row per treatment sample. Peak stats are reported for both bam types
-(full = all contigs, chr = canonical chromosomes). FRiP always uses
-reads_on_chromosomes as denominator. Called via Snakemake's script: directive
+One row per treatment sample. Called via Snakemake's script: directive
 or directly from the CLI.
 """
 
@@ -93,30 +91,22 @@ def make_cols():
         "reads_original",
         "reads_trimmed",
         # ── alignment ───────────────────────────────────────────────────
-        "reads_mapped",           # full.bam (all contigs, MAPQ-filtered)
-        "alignment_rate",         # bowtie2 overall alignment rate (%)
-        "reads_on_chromosomes",   # chr.bam (canonical chromosomes only)
-        # ── full.bam peak stats (pipeline order) ────────────────────────
-        "reads_in_peaks_full",
-        "max_peak_score_full",
-        "reads_5fold_full",
-        "reads_nfold_full",
-        "mapping_pct_full",       # reads_in_peaks_full / reads_on_chromosomes × 100
-        "motif_peaks_full",
-        # ── chr.bam peak stats (pipeline order) ─────────────────────────
-        "reads_in_peaks_chr",
-        "max_peak_score_chr",
-        "reads_5fold_chr",
-        "reads_nfold_chr",
-        "mapping_pct_chr",        # reads_in_peaks_chr / reads_on_chromosomes × 100
-        "motif_peaks_chr",
+        "reads_mapped",
+        "alignment_rate",
+        # ── peak stats ──────────────────────────────────────────────────
+        "reads_in_peaks",
+        "max_peak_score",
+        "reads_5fold",
+        "reads_nfold",
+        "mapping_pct",
+        "motif_peaks",
     ]
 
 
-def _safe_frip(reads_in_peaks, reads_chr):
-    if reads_in_peaks == "NA" or reads_chr == "NA":
+def _safe_frip(reads_in_peaks, reads_mapped):
+    if reads_in_peaks == "NA" or reads_mapped == "NA":
         return "NA"
-    denom = int(reads_chr)
+    denom = int(reads_mapped)
     return round(int(reads_in_peaks) / denom * 100, 2) if denom > 0 else "NA"
 
 
@@ -133,32 +123,28 @@ def build_row(sample, trim_log_dir, stats_dir, macs_dir, fimo_dir):
     trim_log_path = os.path.join(trim_log_dir, f"{sample}.trim.log")
     row["reads_trimmed"] = parse_bbduk_log(trim_log_path) if os.path.exists(trim_log_path) else "NA"
 
-    full_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.full.filtered_stats.txt"))
-    row["reads_mapped"] = full_stats.get("filtered_reads", "NA")
+    bam_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.filtered_stats.txt"))
+    reads_mapped = bam_stats.get("filtered_reads", "NA")
+    row["reads_mapped"] = reads_mapped
     row["alignment_rate"] = parse_align_rate(os.path.join(stats_dir, f"{sample}.align_rate.txt"))
 
-    chr_stats = parse_kv_file(os.path.join(stats_dir, f"{sample}.chr.filtered_stats.txt"))
-    reads_chr = chr_stats.get("filtered_reads", "NA")
-    row["reads_on_chromosomes"] = reads_chr
+    frip_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs.txt"))
+    reads_in_peaks = frip_data.get("reads_in_peaks_macs", "NA")
+    row["reads_in_peaks"] = reads_in_peaks
 
-    for bt in ("full", "chr"):
-        frip_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bt}.frip_macs.txt"))
-        reads_in_peaks = frip_data.get("reads_in_peaks_macs", "NA")
-        row[f"reads_in_peaks_{bt}"] = reads_in_peaks
+    frip_5fold_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs_5fold.txt"))
+    row["reads_5fold"] = frip_5fold_data.get("reads_in_peaks_macs_5fold", "NA")
 
-        frip_5fold_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bt}.frip_macs_5fold.txt"))
-        row[f"reads_5fold_{bt}"] = frip_5fold_data.get("reads_in_peaks_macs_5fold", "NA")
+    frip_filt_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.frip_macs_filt.txt"))
+    row["reads_nfold"] = frip_filt_data.get("reads_in_peaks_macs_filt", "NA")
 
-        frip_filt_data = parse_kv_file(os.path.join(stats_dir, f"{sample}.{bt}.frip_macs_filt.txt"))
-        row[f"reads_nfold_{bt}"] = frip_filt_data.get("reads_in_peaks_macs_filt", "NA")
+    np_path = os.path.join(macs_dir, f"{sample}_peaks_filt.narrowPeak")
+    row["max_peak_score"] = parse_narrowpeak_max(np_path)
 
-        np_path = os.path.join(macs_dir, f"{sample}.{bt}_peaks_chr.narrowPeak")
-        row[f"max_peak_score_{bt}"] = parse_narrowpeak_max(np_path)
+    row["mapping_pct"] = _safe_frip(reads_in_peaks, reads_mapped)
 
-        row[f"mapping_pct_{bt}"] = _safe_frip(reads_in_peaks, reads_chr)
-
-        fimo_path = os.path.join(fimo_dir, f"{sample}.{bt}", "peaks", "fimo.tsv")
-        row[f"motif_peaks_{bt}"] = parse_fimo(fimo_path)
+    fimo_path = os.path.join(fimo_dir, sample, "peaks", "fimo.tsv")
+    row["motif_peaks"] = parse_fimo(fimo_path)
 
     return row
 
@@ -202,10 +188,10 @@ def cli_main():
 
     samples = set()
     for fname in os.listdir(stats_dir):
-        if fname.endswith(".chr.frip_macs.txt"):
-            samples.add(fname[: -len(".chr.frip_macs.txt")])
+        if fname.endswith(".frip_macs.txt"):
+            samples.add(fname[: -len(".frip_macs.txt")])
     if not samples:
-        sys.exit(f"No *.chr.frip_macs.txt files found in {stats_dir} — is the pipeline complete?")
+        sys.exit(f"No *.frip_macs.txt files found in {stats_dir} — is the pipeline complete?")
 
     run(
         treatment_samples = sorted(samples),
