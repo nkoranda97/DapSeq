@@ -172,14 +172,14 @@ def test_meta_treatment_paths_are_nonempty():
 def test_meta_shared_paths_always_present():
     for is_treatment in (True, False):
         paths = m._build_meta_paths("/out/test", "s1", is_treatment=is_treatment)
-        for col in ["bam_full", "bam_chr", "bigwig_full", "bigwig_chr", "trimmed_r1", "trimmed_r2"]:
+        for col in ["bam", "bigwig", "trimmed_r1", "trimmed_r2"]:
             assert paths[col] != "", f"{col} should always be set (is_treatment={is_treatment})"
 
 
 def test_meta_paths_contain_sample_and_output_dir():
     paths = m._build_meta_paths("/my/output", "sample_A", is_treatment=True)
-    assert "/my/output" in paths["bam_full"]
-    assert "sample_A" in paths["bam_full"]
+    assert "/my/output" in paths["bam"]
+    assert "sample_A" in paths["bam"]
     assert "/my/output" in paths["peaks_narrowpeak"]
     assert "sample_A" in paths["peaks_narrowpeak"]
 
