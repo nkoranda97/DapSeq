@@ -5,8 +5,6 @@ rule trim_se:
         r1  = lambda wc: get_r1(wc.sample),
     output:
         r1           = OUT + "/trimmed/{sample}.R1.fastq.gz",
-        total_frags  = OUT + "/stats/{sample}.total_frags.txt",
-        subsampled_frags = OUT + "/stats/{sample}.subsampled_frags.txt",
     params:
         max_frags = config["bbduk"].get("max_frags") or "None",
         adapters  = config["bbduk"].get("adapters") or "adapters",
@@ -39,7 +37,6 @@ rule trim_se:
           done | wc -l
         )
         TOTAL_FRAGS=$((TOTAL_LINES / 4))
-        echo "$TOTAL_FRAGS" > {output.total_frags}
 
         MAXFRAGS={params.max_frags}
         if [ "$MAXFRAGS" = "None" ] || [ -z "$MAXFRAGS" ]; then
@@ -72,8 +69,6 @@ rule trim_se:
           {params.extra} \
           2>{log.trim}
 
-        grep "^Output:" {log.subsample} \
-          | awk '{{print int($2)}}' > {output.subsampled_frags}
         """
 
 
@@ -86,8 +81,6 @@ rule trim_pe:
     output:
         r1               = OUT + "/trimmed/{sample}.R1.fastq.gz",
         r2               = OUT + "/trimmed/{sample}.R2.fastq.gz",
-        total_frags      = OUT + "/stats/{sample}.total_frags.txt",
-        subsampled_frags = OUT + "/stats/{sample}.subsampled_frags.txt",
     params:
         max_frags = config["bbduk"].get("max_frags") or "None",
         adapters  = config["bbduk"].get("adapters") or "adapters",
@@ -120,7 +113,6 @@ rule trim_pe:
           if gzip -t "$R1" 2>/dev/null; then gzip -dc "$R1"; else cat "$R1"; fi | wc -l
         )
         TOTAL_FRAGS=$((TOTAL_FRAGS / 4))
-        echo "$TOTAL_FRAGS" > {output.total_frags}
 
         MAXFRAGS={params.max_frags}
         if [ "$MAXFRAGS" = "None" ] || [ -z "$MAXFRAGS" ]; then
@@ -148,6 +140,4 @@ rule trim_pe:
           {params.extra} \
           2>{log.trim}
 
-        grep "^Output:" {log.subsample} \
-          | awk '{{print int($2/2)}}' > {output.subsampled_frags}
         """

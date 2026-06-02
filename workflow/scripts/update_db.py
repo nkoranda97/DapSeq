@@ -42,9 +42,9 @@ COLS = [
     "r1",
     "r2",
     "is_treatment",
-    "reads_original",
-    "reads_trimmed",
-    "reads_mapped",
+    "total_reads",
+    "trimmed_reads",
+    "mapped_reads",
     "alignment_rate",
     "reads_in_peaks",
     "reads_5fold",
@@ -52,6 +52,10 @@ COLS = [
     "max_peak_score",
     "mapping_pct",
     "motif_peaks",
+    "subsampled_frags",
+    "median_frag_size",
+    "num_peaks",
+    "num_peaks_filt",
 ]
 
 META_COLS = [
@@ -113,6 +117,18 @@ _CREATE_META = (
 _INSERT_META = f'INSERT INTO run_metadata ({_meta_col_names}) VALUES ({_meta_col_ph})'
 
 
+def _ensure_columns(con, table, cols):
+    """Add any columns in *cols* that are missing from *table*.
+
+    ALTER TABLE must run outside a transaction (SQLite DDL implicitly commits),
+    so callers must invoke this before opening a 'with con:' block.
+    """
+    existing = {row[1] for row in con.execute(f"PRAGMA table_info({table})")}
+    for col in cols:
+        if col not in existing:
+            con.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+
+
 def read_report(path):
     """Return a dict of {sample: {col: value}} from the report CSV."""
     result = {}
@@ -146,6 +162,7 @@ def write_rows(db_path, output_dir, rows):
     con = sqlite3.connect(str(db_path), timeout=60)
     con.execute("PRAGMA journal_mode=DELETE")
     con.execute(_CREATE)
+    _ensure_columns(con, "pipeline_runs", COLS)  # DDL outside transaction
     with con:
         con.execute("DELETE FROM pipeline_runs WHERE output_dir = ?", (output_dir,))
         con.executemany(_INSERT, rows)
@@ -252,16 +269,20 @@ def main():
         row["r1"]           = r1
         row["r2"]           = get_r2(scfg) or ""
         row["is_treatment"] = is_treatment
-        row["reads_original"]       = stats.get("reads_original", "NA")
-        row["reads_trimmed"]        = stats.get("reads_trimmed", "NA")
-        row["reads_mapped"]         = stats.get("reads_mapped", "NA")
+        row["total_reads"]   = stats.get("total_reads", "NA")
+        row["trimmed_reads"] = stats.get("trimmed_reads", "NA")
+        row["mapped_reads"]  = stats.get("mapped_reads", "NA")
         row["alignment_rate"]       = stats.get("alignment_rate", "NA")
         row["reads_in_peaks"]  = stats.get("reads_in_peaks", "NA")
         row["reads_5fold"]     = stats.get("reads_5fold", "NA")
         row["reads_nfold"]     = stats.get("reads_nfold", "NA")
-        row["max_peak_score"]  = stats.get("max_peak_score", "NA")
-        row["mapping_pct"]     = stats.get("mapping_pct", "NA")
-        row["motif_peaks"]     = stats.get("motif_peaks", "NA")
+        row["max_peak_score"]    = stats.get("max_peak_score", "NA")
+        row["mapping_pct"]       = stats.get("mapping_pct", "NA")
+        row["motif_peaks"]       = stats.get("motif_peaks", "NA")
+        row["subsampled_frags"]  = stats.get("subsampled_frags", "NA")
+        row["median_frag_size"]  = stats.get("median_frag_size", "NA")
+        row["num_peaks"]         = stats.get("num_peaks", "NA")
+        row["num_peaks_filt"]    = stats.get("num_peaks_filt", "NA")
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 

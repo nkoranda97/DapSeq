@@ -38,10 +38,8 @@ rule filter_peaks:
     input:
         OUT + "/MACS/{sample}_peaks.narrowPeak",
     output:
-        filt          = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
-        peaks_5fold   = OUT + "/MACS/{sample}_peaks_5fold.narrowPeak",
-        numpeaks      = OUT + "/MACS/{sample}_numpeaks.txt",
-        numpeaks_filt = OUT + "/MACS/{sample}_numpeaks_filt.txt",
+        filt        = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+        peaks_5fold = OUT + "/MACS/{sample}_peaks_5fold.narrowPeak",
     params:
         min_foldch = config["macs3"]["min_foldch"],
     resources:
@@ -56,6 +54,4 @@ rule filter_peaks:
         set -euo pipefail
         awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt}  2>{log}
         awk '$7 >= 5.0'                              {input} > {output.peaks_5fold}
-        wc -l < {input}       > {output.numpeaks}
-        wc -l < {output.filt} > {output.numpeaks_filt}
         """

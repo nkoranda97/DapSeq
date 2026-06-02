@@ -8,7 +8,6 @@ rule align_se:
         bam        = OUT + "/bam/{sample}.bam",
         bai        = OUT + "/bam/{sample}.bam.bai",
         bw         = OUT + "/bigWig/{sample}.bw",
-        align_rate = OUT + "/stats/{sample}.align_rate.txt",
     params:
         idx             = config["genome_ref"],
         mapq            = config["samtools"]["mapq"],
@@ -43,9 +42,6 @@ rule align_se:
         | samtools sort -@ {threads} -o {output.bam} -
         samtools index {output.bam}
 
-        grep "overall alignment rate" {log.align} \
-          | awk -v FS="% " '{{print $1}}' > {output.align_rate}
-
         mkdir -p {params.bw_tempdir}
         export TMPDIR={params.bw_tempdir}
         bamCoverage -b {output.bam} -o {output.bw} -p {threads} \
@@ -68,8 +64,6 @@ rule align_pe:
         bam              = OUT + "/bam/{sample}.bam",
         bai              = OUT + "/bam/{sample}.bam.bai",
         bw               = OUT + "/bigWig/{sample}.bw",
-        align_rate       = OUT + "/stats/{sample}.align_rate.txt",
-        median_frag_size = OUT + "/stats/{sample}.median_frag_size.txt",
     params:
         idx             = config["genome_ref"],
         mapq            = config["samtools"]["mapq"],
@@ -106,12 +100,6 @@ rule align_pe:
         | samtools view -h -F 4 -q {params.mapq} -b - \
         | samtools sort -@ {threads} -o {output.bam} -
         samtools index {output.bam}
-
-        grep "overall alignment rate" {log.align} \
-          | awk -v FS="% " '{{print $1}}' > {output.align_rate}
-
-        bamPEFragmentSize -b {output.bam} \
-          | grep Median: | awk 'NR==1 {{print $2}}' > {output.median_frag_size}
 
         mkdir -p {params.bw_tempdir}
         export TMPDIR={params.bw_tempdir}
