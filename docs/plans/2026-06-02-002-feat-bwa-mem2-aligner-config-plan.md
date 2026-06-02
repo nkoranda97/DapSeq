@@ -1,7 +1,7 @@
 ---
 title: "feat: Add bwa-mem2 as a configurable aligner"
 date: 2026-06-02
-status: active
+status: completed
 type: feat
 ---
 
