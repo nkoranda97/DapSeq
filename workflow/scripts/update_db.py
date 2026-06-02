@@ -177,6 +177,7 @@ def write_meta_rows(db_path, output_dir, rows):
     con = sqlite3.connect(str(db_path), timeout=60)
     con.execute("PRAGMA journal_mode=DELETE")
     con.execute(_CREATE_META)
+    _ensure_columns(con, "run_metadata", META_COLS)  # DDL outside transaction
     with con:
         con.execute("DELETE FROM run_metadata WHERE output_dir = ?", (output_dir,))
         con.executemany(_INSERT_META, rows)

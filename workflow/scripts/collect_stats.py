@@ -80,7 +80,9 @@ def _bedtools_intersect_count(bam, peaks):
         stdin=intersect.stdout, capture_output=True, text=True, check=True,
     )
     intersect.stdout.close()
-    intersect.wait()
+    rc = intersect.wait()
+    if rc != 0:
+        raise subprocess.CalledProcessError(rc, "bedtools intersect")
     return count.stdout.strip()
 
 
