@@ -1,3 +1,7 @@
+_align_log_dir = "bwa_mem2" if config.get("aligner", "bowtie2") == "bwa_mem2" else "bowtie2"
+_is_bwa_mem2   = config.get("aligner", "bowtie2") == "bwa_mem2"
+
+
 rule sample_stats_treatment:
     input:
         bam          = OUT + "/bam/{sample}.bam",
@@ -8,7 +12,9 @@ rule sample_stats_treatment:
         fimo         = OUT + "/fimo/{sample}/peaks/fimo.tsv",
         subsample_log= OUT + "/logs/bbduk/{sample}.subsample.log",
         trim_log     = OUT + "/logs/bbduk/{sample}.trim.log",
-        align_log    = OUT + "/logs/bowtie2/{sample}.log",
+        align_log    = OUT + f"/logs/{_align_log_dir}/{{sample}}.log",
+        **({} if not _is_bwa_mem2 else
+           {"flagstat_log": OUT + "/logs/bwa_mem2/{sample}.flagstat.log"}),
     output:
         stats_csv = OUT + "/stats/{sample}.stats.csv",
     wildcard_constraints:
@@ -16,6 +22,7 @@ rule sample_stats_treatment:
     params:
         is_pe        = lambda wc: wc.sample in PE_SAMPLES,
         is_treatment = True,
+        aligner      = config.get("aligner", "bowtie2"),
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],
@@ -33,7 +40,9 @@ rule sample_stats_control:
         bai          = OUT + "/bam/{sample}.bam.bai",
         subsample_log= OUT + "/logs/bbduk/{sample}.subsample.log",
         trim_log     = OUT + "/logs/bbduk/{sample}.trim.log",
-        align_log    = OUT + "/logs/bowtie2/{sample}.log",
+        align_log    = OUT + f"/logs/{_align_log_dir}/{{sample}}.log",
+        **({} if not _is_bwa_mem2 else
+           {"flagstat_log": OUT + "/logs/bwa_mem2/{sample}.flagstat.log"}),
     output:
         stats_csv = OUT + "/stats/{sample}.stats.csv",
     wildcard_constraints:
@@ -41,6 +50,7 @@ rule sample_stats_control:
     params:
         is_pe        = lambda wc: wc.sample in PE_SAMPLES,
         is_treatment = False,
+        aligner      = config.get("aligner", "bowtie2"),
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],
