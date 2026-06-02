@@ -56,6 +56,19 @@ def _parse_align_rate(path):
     return str(round(float(m.group(1)), 2)) if m else NA
 
 
+def _bwamem2_align_rate(flagstat_log):
+    """Return pre-filter alignment rate (%) from a samtools flagstat file.
+
+    Parses the 'N + 0 mapped (X.XX% : ...)' line written by the bwa-mem2
+    align rule's tee step before the MAPQ filter.  Returns NA when the
+    pattern is absent (e.g. zero mapped reads, which flagstat reports as N/A).
+    """
+    with open(flagstat_log) as fh:
+        content = fh.read()
+    m = re.search(r"\d+ \+ \d+ mapped \(([\d.]+)%", content)
+    return str(round(float(m.group(1)), 2)) if m else NA
+
+
 # ---------------------------------------------------------------------------
 # Subprocess helpers
 # ---------------------------------------------------------------------------
@@ -187,8 +200,11 @@ def main():
     row["total_reads"], row["subsampled_frags"] = _parse_subsample_log(
         sm.input.subsample_log, is_pe
     )
-    row["trimmed_reads"]  = _parse_bbduk_log(sm.input.trim_log)
-    row["alignment_rate"] = _parse_align_rate(sm.input.align_log)
+    row["trimmed_reads"] = _parse_bbduk_log(sm.input.trim_log)
+    if sm.params.aligner == "bwa_mem2":
+        row["alignment_rate"] = _bwamem2_align_rate(sm.input.flagstat_log)
+    else:
+        row["alignment_rate"] = _parse_align_rate(sm.input.align_log)
 
     # --- Samtools count (all samples) ---
     row["mapped_reads"] = _samtools_count(sm.input.bam)
