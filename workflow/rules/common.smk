@@ -57,10 +57,11 @@ rule peaked:
 
 rule motifs_done:
     input:
-        expand(OUT + "/fimo/{sample}/summits/fimo.tsv",
-               sample=TREATMENT_SAMPLES),
-        expand(OUT + "/fimo/{sample}/peaks/fimo.tsv",
-               sample=TREATMENT_SAMPLES),
+        expand(OUT + "/fimo/{sample}/summits/fimo.tsv",  sample=TREATMENT_SAMPLES),
+        expand(OUT + "/fimo/{sample}/peaks/fimo.tsv",    sample=TREATMENT_SAMPLES),
+        expand(OUT + "/meme/{sample}/summits/logo1.png", sample=TREATMENT_SAMPLES),
+        expand(OUT + "/meme/{sample}/peaks/logo1.png",   sample=TREATMENT_SAMPLES),
+        expand(OUT + "/factorbook/{sample}.logo.png",    sample=TREATMENT_SAMPLES),
 
 
 rule qc_done:
