@@ -84,18 +84,12 @@ rule idxstats:
 
 rule report:
     input:
-        stats_csvs      = expand(OUT + "/stats/{sample}.stats.csv",              sample=TREATMENT_SAMPLES),
-        meme_logos      = expand(OUT + "/meme/{sample}/summits/logo1.png",       sample=TREATMENT_SAMPLES),
-        meme_logos_rc   = expand(OUT + "/meme/{sample}/summits/logo_rc1.png",    sample=TREATMENT_SAMPLES),
-        factorbook_logos= expand(OUT + "/factorbook/{sample}.logo.png",          sample=TREATMENT_SAMPLES),
+        stats_csvs = expand(OUT + "/stats/{sample}.stats.csv", sample=TREATMENT_SAMPLES),
     output:
-        csv  = OUT + "/stats/report.csv",
-        html = OUT + "/stats/report.html",
+        csv = OUT + "/stats/report.csv",
     params:
         treatment_samples = TREATMENT_SAMPLES,
         stats_dir         = OUT + "/stats",
-        meme_dir          = OUT + "/meme",
-        factorbook_dir    = OUT + "/factorbook",
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],
@@ -105,3 +99,26 @@ rule report:
         OUT + "/logs/report.log"
     script:
         "../scripts/report.py"
+
+
+rule report_html:
+    input:
+        report_csv      = OUT + "/stats/report.csv",
+        meme_logos      = expand(OUT + "/meme/{sample}/summits/logo1.png",    sample=TREATMENT_SAMPLES),
+        meme_logos_rc   = expand(OUT + "/meme/{sample}/summits/logo_rc1.png", sample=TREATMENT_SAMPLES),
+        factorbook_logos= expand(OUT + "/factorbook/{sample}.logo.png",       sample=TREATMENT_SAMPLES),
+    output:
+        html = OUT + "/stats/report.html",
+    params:
+        treatment_samples = TREATMENT_SAMPLES,
+        meme_dir          = OUT + "/meme",
+        factorbook_dir    = OUT + "/factorbook",
+    resources:
+        mem_mb          = config["resources"]["report"]["mem_mb"],
+        runtime         = config["resources"]["report"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/report_html.log"
+    script:
+        "../scripts/render_report_html.py"

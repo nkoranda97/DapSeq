@@ -1,9 +1,9 @@
 """
-Aggregate per-sample QC statistics into a CSV summary table and a companion
-HTML report with embedded motif logo images.
+Aggregate per-sample QC statistics into a CSV summary table.
 
 One row per treatment sample. Reads from {sample}.stats.csv files produced
-by collect_stats.py. Called via Snakemake's script: directive or from CLI.
+by collect_stats.py. Called via Snakemake's script: directive (CSV only) or
+from the CLI (CSV + HTML together).
 """
 
 import argparse
@@ -83,7 +83,7 @@ def build_row(sample, stats_dir):
 
 
 # ---------------------------------------------------------------------------
-# HTML report
+# HTML report helpers
 # ---------------------------------------------------------------------------
 
 _HTML_STYLE = """
@@ -207,8 +207,8 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
             css = ' class="na"' if val == "NA" else ""
             lines.append(f"  <td{css}>{_fmt_html(col, val)}</td>")
         for logo_map, alt in (
-            (logo_b64_map,      "motif logo"),
-            (logo_rc_b64_map,   "motif RC logo"),
+            (logo_b64_map,        "motif logo"),
+            (logo_rc_b64_map,     "motif RC logo"),
             (factorbook_logo_map, "factorbook motif"),
         ):
             b64 = logo_map.get(sample)
@@ -224,19 +224,25 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
 
 
 # ---------------------------------------------------------------------------
-# Entry points
+# Run functions
 # ---------------------------------------------------------------------------
 
-def run(treatment_samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out):
+def run_csv(treatment_samples, stats_dir, csv_out):
+    """Build per-sample rows and write report.csv."""
     cols = make_cols()
     rows = [build_row(s, stats_dir) for s in treatment_samples]
-
     with open(csv_out, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
         writer.writeheader()
         for row in rows:
             writer.writerow({c: row.get(c, "NA") for c in cols})
+    return rows
 
+
+def run_html(treatment_samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out):
+    """Write report.csv then render report.html from the same rows + logos."""
+    rows = run_csv(treatment_samples, stats_dir, csv_out)
+    cols = make_cols()
     logo_b64_map = {
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo1.png"))
         for s in treatment_samples
@@ -252,19 +258,22 @@ def run(treatment_samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_ou
     write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out)
 
 
+# ---------------------------------------------------------------------------
+# Entry points
+# ---------------------------------------------------------------------------
+
 def main():
+    """Snakemake entry point — writes report.csv only."""
     sm = snakemake  # noqa: F821 — injected by Snakemake
-    run(
-        treatment_samples = list(sm.params.treatment_samples),
-        stats_dir         = sm.params.stats_dir,
-        meme_dir          = sm.params.meme_dir,
-        factorbook_dir    = sm.params.factorbook_dir,
-        csv_out           = sm.output.csv,
-        html_out          = sm.output.html,
+    run_csv(
+        treatment_samples=list(sm.params.treatment_samples),
+        stats_dir=sm.params.stats_dir,
+        csv_out=sm.output.csv,
     )
 
 
 def cli_main():
+    """CLI entry point — writes both report.csv and report.html."""
     parser = argparse.ArgumentParser(
         description="Regenerate the DAP-seq stats report from completed pipeline output."
     )
@@ -286,7 +295,7 @@ def cli_main():
     if not samples:
         sys.exit(f"No *.stats.csv files found in {stats_dir} — is the pipeline complete?")
 
-    run(
+    run_html(
         treatment_samples=samples,
         stats_dir=stats_dir,
         meme_dir=meme_dir,
