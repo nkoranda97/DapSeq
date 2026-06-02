@@ -1,7 +1,7 @@
 ---
 title: "refactor: Consolidate per-sample statistics into one stats CSV per sample"
 date: 2026-06-02
-status: active
+status: completed
 type: refactor
 ---
 

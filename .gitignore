@@ -25,3 +25,4 @@ sunbeam/
 
 # data
 bam_data/
+.compound-engineering/*.local.yaml
