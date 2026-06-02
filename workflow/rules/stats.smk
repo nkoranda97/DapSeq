@@ -84,12 +84,18 @@ rule idxstats:
 
 rule report:
     input:
-        stats_csvs = expand(OUT + "/stats/{sample}.stats.csv", sample=TREATMENT_SAMPLES),
+        stats_csvs      = expand(OUT + "/stats/{sample}.stats.csv",              sample=TREATMENT_SAMPLES),
+        meme_logos      = expand(OUT + "/meme/{sample}/summits/logo1.png",       sample=TREATMENT_SAMPLES),
+        meme_logos_rc   = expand(OUT + "/meme/{sample}/summits/logo_rc1.png",    sample=TREATMENT_SAMPLES),
+        factorbook_logos= expand(OUT + "/factorbook/{sample}.logo.png",          sample=TREATMENT_SAMPLES),
     output:
-        csv = OUT + "/stats/report.csv",
+        csv  = OUT + "/stats/report.csv",
+        html = OUT + "/stats/report.html",
     params:
         treatment_samples = TREATMENT_SAMPLES,
         stats_dir         = OUT + "/stats",
+        meme_dir          = OUT + "/meme",
+        factorbook_dir    = OUT + "/factorbook",
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],

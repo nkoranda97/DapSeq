@@ -94,7 +94,8 @@ rule meme_logo_summits:
     input:
         OUT + "/meme/{sample}/summits/meme.txt",
     output:
-        OUT + "/meme/{sample}/summits/logo1.png",
+        logo    = OUT + "/meme/{sample}/summits/logo1.png",
+        logo_rc = OUT + "/meme/{sample}/summits/logo_rc1.png",
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:
@@ -162,7 +163,8 @@ rule meme_logo_peaks:
     input:
         OUT + "/meme/{sample}/peaks/meme.txt",
     output:
-        OUT + "/meme/{sample}/peaks/logo1.png",
+        logo    = OUT + "/meme/{sample}/peaks/logo1.png",
+        logo_rc = OUT + "/meme/{sample}/peaks/logo_rc1.png",
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:

@@ -55,3 +55,8 @@ def parse_meme_ppm(path, motif_index=0):
                     in_matrix = False
 
     return ppm if ppm else None
+
+
+def rc_ppm(ppm):
+    """Return reverse complement of a PPM (A↔T, C↔G, positions reversed)."""
+    return [[row[3], row[2], row[1], row[0]] for row in reversed(ppm)]

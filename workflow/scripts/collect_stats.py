@@ -169,7 +169,7 @@ COLUMNS = [
     "total_reads",
     "subsampled_frags",
     "trimmed_reads",
-    "alignment_rate",
+    "mapping_rate",
     "median_frag_size",
     "mapped_reads",
     "reads_in_peaks",
@@ -202,9 +202,9 @@ def main():
     )
     row["trimmed_reads"] = _parse_bbduk_log(sm.input.trim_log)
     if sm.params.aligner == "bwa_mem2":
-        row["alignment_rate"] = _bwamem2_align_rate(sm.input.flagstat_log)
+        row["mapping_rate"] = _bwamem2_align_rate(sm.input.flagstat_log)
     else:
-        row["alignment_rate"] = _parse_align_rate(sm.input.align_log)
+        row["mapping_rate"] = _parse_align_rate(sm.input.align_log)
 
     # --- Samtools count (all samples) ---
     row["mapped_reads"] = _samtools_count(sm.input.bam)
