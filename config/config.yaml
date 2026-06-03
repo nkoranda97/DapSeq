@@ -97,7 +97,7 @@ resources:
     mem_mb: 8000
     runtime: 60
   bwa_mem2_index:
-    mem_mb: 30000
+    mem_mb: 64000
     runtime: 120
   bwa_mem2_align:
     mem_mb: 16000
