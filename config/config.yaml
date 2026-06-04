@@ -94,68 +94,68 @@ multiqc:
 
 resources:
   bowtie2_index:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   bwa_mem2_index:
-    mem_mb: 64000
+    mem_mb: 100000
     runtime: 120
   bwa_mem2_align:
-    mem_mb: 16000
+    mem_mb: 100000
     runtime: 120
   trim_align:
-    mem_mb: 16000
+    mem_mb: 64000
     runtime: 120
   fastqc:
-    mem_mb: 2000
+    mem_mb: 32000
     runtime: 30
   multiqc:
-    mem_mb: 2000
+    mem_mb: 32000
     runtime: 30
   bowtie2:
     mem_mb: 16000
     runtime: 120
   samtools_filter_sort:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   bamcoverage:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   bamcompare:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   macs3:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   filter_peaks:
-    mem_mb: 1000
+    mem_mb: 64000
     runtime: 10
   narrow_peak_to_fasta:
-    mem_mb: 4000
+    mem_mb: 64000
     runtime: 30
   meme:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 120
   fimo:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   alignment_stats:
-    mem_mb: 4000
+    mem_mb: 64000
     runtime: 30
   sample_stats:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   qc_summary:
-    mem_mb: 2000
+    mem_mb: 64000
     runtime: 10
   update_db:
-    mem_mb: 1000
+    mem_mb: 64000
     runtime: 5
   merge_control:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 60
   homer_annotate:
-    mem_mb: 4000
+    mem_mb: 64000
     runtime: 30
   report:
-    mem_mb: 8000
+    mem_mb: 64000
     runtime: 30
