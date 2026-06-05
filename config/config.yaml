@@ -48,7 +48,7 @@ bwa_mem2:
   extra_index: ""
 
 samtools:
-  mapq: 10
+  mapq: 30
   extra_merge: ""
 
 bamcoverage:
