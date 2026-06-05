@@ -19,7 +19,7 @@ INT_COLS = {
     "reads_in_peaks", "reads_5fold", "reads_nfold",
     "motif_peaks", "subsampled_frags", "num_peaks", "num_peaks_filt",
 }
-PCT_COLS = {"frip", "frip_top_n_fold"}
+PCT_COLS = {"frip", "frip_top_n_fold", "mapping_pct"}
 
 
 def make_cols():
@@ -34,6 +34,7 @@ def make_cols():
         "reads_nfold",
         # ── alignment / FRiP ───────────────────────────────────────────────
         "mapping_rate",
+        "mapping_pct",
         "frip",
         "frip_top_n_fold",
         # ── peak quality ───────────────────────────────────────────────────

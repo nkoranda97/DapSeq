@@ -73,6 +73,17 @@ def _bwamem2_align_rate(flagstat_log):
 # Subprocess helpers
 # ---------------------------------------------------------------------------
 
+def _safe_pct(numerator, denominator):
+    """Return numerator/denominator*100 rounded to 2dp, or NA on bad inputs."""
+    if numerator == NA or denominator == NA:
+        return NA
+    try:
+        denom = int(denominator)
+        return str(round(int(numerator) / denom * 100, 2)) if denom > 0 else NA
+    except (ValueError, ZeroDivisionError):
+        return NA
+
+
 def _samtools_count(bam):
     """Return filtered read count via samtools view -c -F 2308."""
     result = subprocess.run(
@@ -170,6 +181,7 @@ COLUMNS = [
     "subsampled_frags",
     "trimmed_reads",
     "mapping_rate",
+    "mapping_pct",
     "median_frag_size",
     "mapped_reads",
     "reads_in_peaks",
@@ -208,6 +220,7 @@ def main():
 
     # --- Samtools count (all samples) ---
     row["mapped_reads"] = _samtools_count(sm.input.bam)
+    row["mapping_pct"] = _safe_pct(row["mapped_reads"], row["trimmed_reads"])
 
     # --- PE-only stats ---
     if is_pe:
