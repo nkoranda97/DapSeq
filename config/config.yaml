@@ -72,6 +72,13 @@ macs3:
   keep_dup: 1
   extra: ""
 
+# Chromosomes to exclude from peaks before MEME motif analysis.
+# Useful for removing viral or decoy sequences (e.g. chrEBV).
+# Each excluded chromosome is counted in the log even if absent (zero count, no error).
+# chrom_filter:
+#   - chrEBV
+chrom_filter: []
+
 meme:
   nmotifs: 2
   minw: 8
