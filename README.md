@@ -29,7 +29,7 @@ Copy `config.yaml` from the repo root and fill in the required fields. Defaults 
 ### Required fields
 
 ```yaml
-author: "Your Name"
+author: "Your Name"  # optional
 
 samples:
   sample_name:
@@ -82,7 +82,7 @@ pixi run snakemake bowtie2_index \
     --directory /tmp/index_build
 ```
 
-**bwa-mem2:**
+**bwa-mem2:** *(config must include `aligner: bwa_mem2`)*
 ```sh
 pixi run snakemake bwa_mem2_index \
     --snakefile /path/to/pipeline/workflow/Snakefile \

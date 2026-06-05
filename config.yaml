@@ -23,25 +23,27 @@ samples:
 input_control: control
 
 # please put output folder in a directory outside of the pipeline folder
-output_dir: /project/zhuzhuzhang/nick/DapSeq/results/
+output_dir: null
 
 # ── Genome ───────────────────────────────────────────────────────────────────
 # full path to fasta file
-genome_ref: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.dna.primary_assembly.fa
+genome_ref: null
 
 # "1e5" notation also accepted
 genome_size: "3000000000"
 
 # Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
 # full path to gtf
-gene_annotation: /project/gzy8899/references/Homo_sapiens/Homo_sapiens.GRCh38.113.gtf
+gene_annotation: null
+
+aligner: bowtie2  # bowtie2 | bwa_mem2
 
 # ── Compute ──────────────────────────────────────────────────────────────────
 threads: 16
 
 # ── SLURM ────────────────────────────────────────────────────────────────────
 slurm_partition: "caslake"
-slurm_account: "pi-zhuzhuzhang"
+slurm_account: "pi-yourlab"
 
 bbduk:
   adapters: null
@@ -64,7 +66,7 @@ bowtie2:
   extra_build: ""
 
 samtools:
-  mapq: 10
+  mapq: 30
   extra_merge: ""
 
 bamcoverage:
@@ -87,6 +89,8 @@ macs3:
   min_foldch: 2.0
   keep_dup: 1
   extra: ""
+
+chrom_filter: []  # e.g. [chrEBV] — chromosomes excluded from peaks before MEME
 
 meme:
   nmotifs: 2
