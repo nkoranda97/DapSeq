@@ -56,9 +56,33 @@ def _parse_align_rate(path):
     return str(round(float(m.group(1)), 2)) if m else NA
 
 
+def _bwamem2_align_rate(flagstat_log):
+    """Return pre-filter alignment rate (%) from a samtools flagstat file.
+
+    Parses the 'N + 0 mapped (X.XX% : ...)' line written by the bwa-mem2
+    align rule's tee step before the MAPQ filter.  Returns NA when the
+    pattern is absent (e.g. zero mapped reads, which flagstat reports as N/A).
+    """
+    with open(flagstat_log) as fh:
+        content = fh.read()
+    m = re.search(r"\d+ \+ \d+ mapped \(([\d.]+)%", content)
+    return str(round(float(m.group(1)), 2)) if m else NA
+
+
 # ---------------------------------------------------------------------------
 # Subprocess helpers
 # ---------------------------------------------------------------------------
+
+def _safe_pct(numerator, denominator):
+    """Return numerator/denominator*100 rounded to 2dp, or NA on bad inputs."""
+    if numerator == NA or denominator == NA:
+        return NA
+    try:
+        denom = int(denominator)
+        return str(round(int(numerator) / denom * 100, 2)) if denom > 0 else NA
+    except (ValueError, ZeroDivisionError):
+        return NA
+
 
 def _samtools_count(bam):
     """Return filtered read count via samtools view -c -F 2308."""
@@ -156,7 +180,8 @@ COLUMNS = [
     "total_reads",
     "subsampled_frags",
     "trimmed_reads",
-    "alignment_rate",
+    "mapping_rate",
+    "mapping_pct",
     "median_frag_size",
     "mapped_reads",
     "reads_in_peaks",
@@ -187,11 +212,15 @@ def main():
     row["total_reads"], row["subsampled_frags"] = _parse_subsample_log(
         sm.input.subsample_log, is_pe
     )
-    row["trimmed_reads"]  = _parse_bbduk_log(sm.input.trim_log)
-    row["alignment_rate"] = _parse_align_rate(sm.input.align_log)
+    row["trimmed_reads"] = _parse_bbduk_log(sm.input.trim_log)
+    if sm.params.aligner == "bwa_mem2":
+        row["mapping_rate"] = _bwamem2_align_rate(sm.input.flagstat_log)
+    else:
+        row["mapping_rate"] = _parse_align_rate(sm.input.align_log)
 
     # --- Samtools count (all samples) ---
     row["mapped_reads"] = _samtools_count(sm.input.bam)
+    row["mapping_pct"] = _safe_pct(row["mapped_reads"], row["trimmed_reads"])
 
     # --- PE-only stats ---
     if is_pe:

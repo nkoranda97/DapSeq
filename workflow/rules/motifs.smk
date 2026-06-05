@@ -26,9 +26,10 @@ rule narrow_peak_to_fasta:
     output:
         OUT + "/fasta/{sample}.{peak_type}.fasta",
     params:
-        maxpeaks   = config["meme"]["maxpeaks"],
-        extend_bp  = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
-        fimocoords = True,
+        maxpeaks      = config["meme"]["maxpeaks"],
+        extend_bp     = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
+        fimocoords    = True,
+        filter_chroms = config.get("chrom_filter", []),
     resources:
         mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
         runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],
@@ -94,7 +95,8 @@ rule meme_logo_summits:
     input:
         OUT + "/meme/{sample}/summits/meme.txt",
     output:
-        OUT + "/meme/{sample}/summits/logo1.png",
+        logo    = OUT + "/meme/{sample}/summits/logo1.png",
+        logo_rc = OUT + "/meme/{sample}/summits/logo_rc1.png",
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:
@@ -162,7 +164,8 @@ rule meme_logo_peaks:
     input:
         OUT + "/meme/{sample}/peaks/meme.txt",
     output:
-        OUT + "/meme/{sample}/peaks/logo1.png",
+        logo    = OUT + "/meme/{sample}/peaks/logo1.png",
+        logo_rc = OUT + "/meme/{sample}/peaks/logo_rc1.png",
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:

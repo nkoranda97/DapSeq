@@ -26,7 +26,7 @@ def get_peak_seq(start, stop, record):
     return str(record[start:stop].seq)
 
 
-def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimocoords):
+def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimocoords, filter_chroms=None):
     chr_records = SeqIO.to_dict(SeqIO.parse(genome, "fasta"))
 
     peak_col_dtypes = {
@@ -46,6 +46,12 @@ def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimoc
         narrowpeak, sep="\t", header=None,
         names=list(peak_col_dtypes.keys()), dtype=peak_col_dtypes
     )
+    if filter_chroms:
+        for chrom in filter_chroms:
+            count = (peaks["chromosome"] == chrom).sum()
+            print(f"Filtered {count} peaks on chromosome {chrom}", file=sys.stderr)
+        peaks = peaks[~peaks["chromosome"].isin(filter_chroms)]
+
     peaks = peaks.sort_values(by=["fold-change"], ascending=False)
 
     if peaks.empty:
@@ -105,10 +111,11 @@ def narrow_peak_to_fasta(narrowpeak, genome, outfile, maxpeaks, extend_bp, fimoc
 if "snakemake" in dir():
     sys.stderr = open(snakemake.log[0], "w")  # noqa: F821
     narrow_peak_to_fasta(
-        snakemake.input.narrowpeak,    # noqa: F821
-        snakemake.input.genome,        # noqa: F821
-        snakemake.output[0],           # noqa: F821
-        snakemake.params.maxpeaks,     # noqa: F821
-        snakemake.params.extend_bp,    # noqa: F821
-        snakemake.params.fimocoords,   # noqa: F821
+        snakemake.input.narrowpeak,          # noqa: F821
+        snakemake.input.genome,              # noqa: F821
+        snakemake.output[0],                 # noqa: F821
+        snakemake.params.maxpeaks,           # noqa: F821
+        snakemake.params.extend_bp,          # noqa: F821
+        snakemake.params.fimocoords,         # noqa: F821
+        snakemake.params.filter_chroms,      # noqa: F821
     )

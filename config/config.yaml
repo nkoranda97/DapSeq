@@ -16,6 +16,7 @@ output_dir: null
 genome_ref: null
 genome_size: null
 gene_annotation: null
+aligner: bowtie2    # bowtie2 | bwa_mem2
 
 # compute
 threads: 8
@@ -42,6 +43,10 @@ bowtie2:
   extra: ""
   extra_build: ""
 
+bwa_mem2:
+  extra: ""
+  extra_index: ""
+
 samtools:
   mapq: 10
   extra_merge: ""
@@ -67,6 +72,13 @@ macs3:
   keep_dup: 1
   extra: ""
 
+# Chromosomes to exclude from peaks before MEME motif analysis.
+# Useful for removing viral or decoy sequences (e.g. chrEBV).
+# Each excluded chromosome is counted in the log even if absent (zero count, no error).
+# chrom_filter:
+#   - chrEBV
+chrom_filter: []
+
 meme:
   nmotifs: 2
   minw: 8
@@ -91,6 +103,12 @@ resources:
   bowtie2_index:
     mem_mb: 8000
     runtime: 60
+  bwa_mem2_index:
+    mem_mb: 8000
+    runtime: 60
+  bwa_mem2_align:
+    mem_mb: 16000
+    runtime: 120
   trim_align:
     mem_mb: 16000
     runtime: 120
