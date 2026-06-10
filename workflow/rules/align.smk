@@ -145,7 +145,6 @@ elif _aligner == "bwa_mem2":
             slurm_account   = config["slurm_account"],
         log:
             align       = OUT + "/logs/bwa_mem2/{sample}.log",
-            flagstat    = OUT + "/logs/bwa_mem2/{sample}.flagstat.log",
             bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
         shell:
             """
@@ -156,7 +155,6 @@ elif _aligner == "bwa_mem2":
               {input.r1} \
               {params.extra} \
               2>{log.align} \
-            | tee >(samtools flagstat - > {log.flagstat}) \
             | samtools view -h -F 1804 -q {params.mapq} -b - \
             | samtools sort -@ {threads} -o {output.bam} -
             samtools index {output.bam}
@@ -204,7 +202,6 @@ elif _aligner == "bwa_mem2":
             slurm_account   = config["slurm_account"],
         log:
             align       = OUT + "/logs/bwa_mem2/{sample}.log",
-            flagstat    = OUT + "/logs/bwa_mem2/{sample}.flagstat.log",
             bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
         shell:
             """
@@ -215,7 +212,6 @@ elif _aligner == "bwa_mem2":
               {input.r1} {input.r2} \
               {params.extra} \
               2>{log.align} \
-            | tee >(samtools flagstat - > {log.flagstat}) \
             | samtools view -h -F 1804 -q {params.mapq} -b - \
             | samtools sort -@ {threads} -o {output.bam} -
             samtools index {output.bam}
