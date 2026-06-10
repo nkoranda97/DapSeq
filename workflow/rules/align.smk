@@ -41,7 +41,7 @@ if _aligner == "bowtie2":
               -U {input.r1} \
               {params.extra} \
               2>{log.align} \
-            | samtools view -h -F 4 -q {params.mapq} -b - \
+            | samtools view -h -F 1804 -q {params.mapq} -b - \
             | samtools sort -@ {threads} -o {output.bam} -
             samtools index {output.bam}
 
@@ -100,7 +100,7 @@ if _aligner == "bowtie2":
               --no-mixed --no-discordant \
               {params.extra} \
               2>{log.align} \
-            | samtools view -h -F 4 -q {params.mapq} -b - \
+            | samtools view -h -F 1804 -q {params.mapq} -b - \
             | samtools sort -@ {threads} -o {output.bam} -
             samtools index {output.bam}
 
@@ -157,7 +157,7 @@ elif _aligner == "bwa_mem2":
               {params.extra} \
               2>{log.align} \
             | tee >(samtools flagstat - > {log.flagstat}) \
-            | samtools view -h -F 4 -q {params.mapq} -b - \
+            | samtools view -h -F 1804 -q {params.mapq} -b - \
             | samtools sort -@ {threads} -o {output.bam} -
             samtools index {output.bam}
 
@@ -216,7 +216,7 @@ elif _aligner == "bwa_mem2":
               {params.extra} \
               2>{log.align} \
             | tee >(samtools flagstat - > {log.flagstat}) \
-            | samtools view -h -F 4 -q {params.mapq} -b - \
+            | samtools view -h -F 1804 -q {params.mapq} -b - \
             | samtools sort -@ {threads} -o {output.bam} -
             samtools index {output.bam}
 
