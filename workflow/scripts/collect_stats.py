@@ -48,27 +48,6 @@ def _parse_bbduk_log(path):
     return str(m.group(1)) if m else NA
 
 
-def _parse_align_rate(path):
-    """Return alignment rate (%) from a bowtie2 log ('X% overall alignment rate')."""
-    with open(path) as fh:
-        content = fh.read()
-    m = re.search(r"([\d.]+)%\s+overall alignment rate", content)
-    return str(round(float(m.group(1)), 2)) if m else NA
-
-
-def _bwamem2_align_rate(flagstat_log):
-    """Return pre-filter alignment rate (%) from a samtools flagstat file.
-
-    Parses the 'N + 0 mapped (X.XX% : ...)' line written by the bwa-mem2
-    align rule's tee step before the MAPQ filter.  Returns NA when the
-    pattern is absent (e.g. zero mapped reads, which flagstat reports as N/A).
-    """
-    with open(flagstat_log) as fh:
-        content = fh.read()
-    m = re.search(r"\d+ \+ \d+ mapped \(([\d.]+)%", content)
-    return str(round(float(m.group(1)), 2)) if m else NA
-
-
 # ---------------------------------------------------------------------------
 # Subprocess helpers
 # ---------------------------------------------------------------------------
@@ -82,6 +61,11 @@ def _safe_pct(numerator, denominator):
         return str(round(int(numerator) / denom * 100, 2)) if denom > 0 else NA
     except (ValueError, ZeroDivisionError):
         return NA
+
+
+def _gate_subsampled(subsampled, max_frags):
+    """Return subsampled count if max_frags is set, else NA."""
+    return subsampled if max_frags else NA
 
 
 def _samtools_count(bam):
@@ -180,15 +164,14 @@ COLUMNS = [
     "total_reads",
     "subsampled_frags",
     "trimmed_reads",
-    "mapping_rate",
+    "mapped_reads",
     "mapping_pct",
     "median_frag_size",
-    "mapped_reads",
-    "reads_in_peaks",
-    "reads_5fold",
-    "reads_nfold",
     "num_peaks",
     "num_peaks_filt",
+    "reads_in_peaks",
+    "reads_in_peaks_5fold",
+    "reads_in_peaks_filt",
     "max_peak_score",
     "motif_peaks",
 ]
@@ -209,14 +192,10 @@ def main():
     row["sample"] = sample
 
     # --- Log-parsed stats (all samples) ---
-    row["total_reads"], row["subsampled_frags"] = _parse_subsample_log(
-        sm.input.subsample_log, is_pe
-    )
+    total_reads, subsampled = _parse_subsample_log(sm.input.subsample_log, is_pe)
+    row["total_reads"] = total_reads
+    row["subsampled_frags"] = _gate_subsampled(subsampled, sm.params.max_frags)
     row["trimmed_reads"] = _parse_bbduk_log(sm.input.trim_log)
-    if sm.params.aligner == "bwa_mem2":
-        row["mapping_rate"] = _bwamem2_align_rate(sm.input.flagstat_log)
-    else:
-        row["mapping_rate"] = _parse_align_rate(sm.input.align_log)
 
     # --- Samtools count (all samples) ---
     row["mapped_reads"] = _samtools_count(sm.input.bam)
@@ -231,10 +210,10 @@ def main():
         row["reads_in_peaks"] = _bedtools_intersect_count(
             sm.input.bam, sm.input.peaks
         )
-        row["reads_5fold"] = _bedtools_intersect_count(
+        row["reads_in_peaks_5fold"] = _bedtools_intersect_count(
             sm.input.bam, sm.input.peaks_5fold
         )
-        row["reads_nfold"] = _bedtools_intersect_count(
+        row["reads_in_peaks_filt"] = _bedtools_intersect_count(
             sm.input.bam, sm.input.peaks_filt
         )
         row["num_peaks"]      = _count_lines(sm.input.peaks)
