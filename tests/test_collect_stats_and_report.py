@@ -55,9 +55,68 @@ def test_make_cols_contains_mapping_pct():
     assert "mapping_pct" in rp.make_cols()
 
 
-def test_mapping_pct_after_mapping_rate():
+def test_make_cols_does_not_contain_mapping_rate():
+    assert "mapping_rate" not in rp.make_cols()
+
+
+def test_columns_does_not_contain_mapping_rate():
+    assert "mapping_rate" not in cs.COLUMNS
+
+
+def test_make_cols_order():
+    assert rp.make_cols() == [
+        "sample",
+        "total_reads",
+        "subsampled_frags",
+        "trimmed_reads",
+        "mapped_reads",
+        "mapping_pct",
+        "median_frag_size",
+        "num_peaks",
+        "num_peaks_filt",
+        "reads_in_peaks",
+        "reads_in_peaks_5fold",
+        "reads_in_peaks_filt",
+        "frip",
+        "frip_filt",
+        "max_peak_score",
+        "motif_peaks",
+    ]
+
+
+def test_mapping_pct_before_reads_in_peaks():
     cols = rp.make_cols()
-    assert cols.index("mapping_pct") == cols.index("mapping_rate") + 1
+    assert cols.index("mapping_pct") < cols.index("reads_in_peaks")
+
+
+def test_renamed_columns_present():
+    cols = rp.make_cols()
+    assert "reads_in_peaks_5fold" in cols
+    assert "reads_in_peaks_filt" in cols
+    assert "frip_filt" in cols
+    assert "reads_5fold" not in cols
+    assert "reads_nfold" not in cols
+    assert "frip_top_n_fold" not in cols
+
+
+# ---------------------------------------------------------------------------
+# collect_stats._gate_subsampled
+# ---------------------------------------------------------------------------
+
+def test_gate_subsampled_happy_path():
+    assert cs._gate_subsampled("5000000", "5000000") == "5000000"
+
+
+def test_gate_subsampled_max_frags_unset():
+    assert cs._gate_subsampled("5000000", None) == "NA"
+
+
+def test_gate_subsampled_subsampled_na():
+    assert cs._gate_subsampled("NA", "5000000") == "NA"
+
+
+def test_gate_subsampled_max_frags_zero():
+    assert cs._gate_subsampled("5000000", 0) == "NA"
 
 
 # ---------------------------------------------------------------------------
@@ -105,3 +164,17 @@ def test_run_csv_includes_mapping_pct(tmp_path):
         rows = list(reader)
     assert "mapping_pct" in reader.fieldnames
     assert rows[0]["mapping_pct"] == "90.0"
+
+
+def test_run_csv_excludes_mapping_rate_and_includes_renamed_frip(tmp_path):
+    stats_dir = _write_stats_csv(
+        tmp_path, "s1", extras={"reads_in_peaks_filt": "9000"}
+    )
+    csv_out = str(tmp_path / "report.csv")
+    rp.run_csv(["s1"], stats_dir, csv_out)
+    with open(csv_out) as fh:
+        reader = csv.DictReader(fh)
+        rows = list(reader)
+    assert "mapping_rate" not in reader.fieldnames
+    assert "frip_filt" in reader.fieldnames
+    assert rows[0]["frip_filt"] == "10.0"

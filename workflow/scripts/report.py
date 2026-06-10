@@ -16,35 +16,30 @@ import sys
 
 INT_COLS = {
     "total_reads", "trimmed_reads", "mapped_reads",
-    "reads_in_peaks", "reads_5fold", "reads_nfold",
+    "reads_in_peaks", "reads_in_peaks_5fold", "reads_in_peaks_filt",
     "motif_peaks", "subsampled_frags", "num_peaks", "num_peaks_filt",
 }
-PCT_COLS = {"frip", "frip_top_n_fold", "mapping_pct"}
+PCT_COLS = {"frip", "frip_filt", "mapping_pct"}
 
 
 def make_cols():
     return [
         "sample",
-        # ── reads ──────────────────────────────────────────────────────────
         "total_reads",
+        "subsampled_frags",
         "trimmed_reads",
         "mapped_reads",
-        "reads_in_peaks",
-        "reads_5fold",
-        "reads_nfold",
-        # ── alignment / FRiP ───────────────────────────────────────────────
-        "mapping_rate",
         "mapping_pct",
-        "frip",
-        "frip_top_n_fold",
-        # ── peak quality ───────────────────────────────────────────────────
-        "max_peak_score",
-        "motif_peaks",
-        # ── additional QC ──────────────────────────────────────────────────
-        "subsampled_frags",
         "median_frag_size",
         "num_peaks",
         "num_peaks_filt",
+        "reads_in_peaks",
+        "reads_in_peaks_5fold",
+        "reads_in_peaks_filt",
+        "frip",
+        "frip_filt",
+        "max_peak_score",
+        "motif_peaks",
     ]
 
 
@@ -76,8 +71,8 @@ def build_row(sample, stats_dir):
         data.get("reads_in_peaks", "NA"),
         data.get("mapped_reads", "NA"),
     )
-    row["frip_top_n_fold"] = _safe_frip(
-        data.get("reads_nfold", "NA"),
+    row["frip_filt"] = _safe_frip(
+        data.get("reads_in_peaks_filt", "NA"),
         data.get("mapped_reads", "NA"),
     )
     return row
