@@ -14,13 +14,8 @@ curl -fsSL https://pixi.sh/install.sh | sh
 
 ```sh
 module load apptainer
-pixi run snakemake \
-    --snakefile /path/to/pipeline/workflow/Snakefile \
-    --configfile /path/to/your/config.yaml \
-    --directory /your/output/dir
+pixi run snakemake --configfile /path/to/your/config.yaml \
 ```
-
-`--directory` must match `output_dir` in your config and must be outside the pipeline directory. Snakemake stores its working state (`.snakemake/`) there — without this flag it defaults to the pipeline root, which is shared across users.
 
 ## Configuration
 
@@ -55,11 +50,27 @@ slurm_account: "pi-yourlab"
 | Option | Default | Notes |
 |---|---|---|
 | `aligner` | `bowtie2` | `bowtie2` or `bwa_mem2` |
-| `samtools.mapq` | `30` | MAPQ filter applied after alignment |
+| `bbduk.k` | `21` | Kmer length for adapter/contaminant trimming (program default: `31`) |
+| `bbduk.mink` | `11` | Enables short-kmer matching at read tips for adapter trimming (program default: `0`, disabled) |
+| `bbduk.ktrim` | `r` | Trim direction for kmer-matched adapters (program default: `f`, no trimming) |
+| `bbduk.qtrim` | `r` | Trim direction for quality trimming (program default: `f`, no trimming) |
+| `bbduk.maq` | `10` | Minimum average read quality after trimming (program default: `0`, no filter) |
+| `samtools.mapq` | `30` | MAPQ filter applied after alignment (program default: `0`, no filter) |
+| `bamcoverage.normalize_using` | `RPGC` | Coverage normalization method (program default: `None`) |
+| `bamcoverage.bin_size` | `1` | bigwig bin size, in bp (program default: `50`) |
+| `bamcoverage.extend_reads` | `true` | Extend reads to fragment size; PE only (program default: `f`) |
+| `bamcoverage.max_fragment_length` | `600` | Max fragment length for PE read/pair inclusion (program default: `0`, no limit) |
+| `bamcoverage.ignore_duplicates` | `true` | Count duplicate reads only once (program default: `f`) |
 | `chrom_filter` | `[]` | Chromosomes excluded from peaks before MEME (e.g. `[chrEBV]`) |
 | `macs3.min_foldch` | `2.0` | Peak fold-change filter |
 | `macs3.format` | `BAMPE` | Set to `BAM` for single-end data |
+| `meme.nmotifs` | `2` | Number of motifs to search for (program default: `1`) |
+| `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
+| `meme.mod` | `anr` | Motif site distribution model (program default: `zoops`) |
+| `meme.maxsize` | `10000000` | Max total size (bp) of input sequences searched for motifs (`searchsize`; program default: sampling above `100000`) |
+| `meme.summit_extend` | `50` | bp around the peak summit used for motif search in "summits" mode |
 | `meme.base_colors` | unset | Optional hex color overrides for sequence logos |
+| `fimo.thresh` | `1.0e-5` | p-value threshold for FIMO motif scanning |
 
 ### Extra arguments
 
@@ -69,6 +80,8 @@ Any tool accepts an `extra` field for additional flags:
 macs3:
   extra: "--qvalue 0.01"
 ```
+
+---
 
 ## Default Pipeline Parameters
 
@@ -149,6 +162,8 @@ Only biologically relevent parameters are shown. Please refere to original docum
 - `khist=<file>` — Kmer frequency histogram; plots number of kmers versus kmer depth. This is approximate — type: `string` — program default: unset
 - `khistout=<file>` — Kmer frequency histogram for output reads — type: `string` — program default: unset
 
+---
+
 ### [bowtie2](https://bowtie-bio.sourceforge.net/bowtie2/manual.shtml)
 
 - `N=0` — Number of mismatches allowed in a seed alignment during multiseed alignment (0 or 1). Higher values increase sensitivity but slow alignment — type: `int` — program default: `0`
@@ -169,6 +184,8 @@ Only biologically relevent parameters are shown. Please refere to original docum
 - `rdg=5,3` — Read gap open and extend penalties. A gap of length N costs int1 + N*int2 — type: `int,int` — program default: `5,3`
 - `rfg=5,3` — Reference gap open and extend penalties. A gap of length N costs int1 + N*int2 — type: `int,int` — program default: `5,3`
 - `score-min=L,-0.6,-0.6` — Function governing the minimum alignment score for an alignment to be considered valid, as a function of read length — type: `func` — program default: `L,-0.6,-0.6`
+
+---
 
 ### [bwa-mem2](https://bio-bwa.sourceforge.net/bwa.shtml)
 >[!Note]
@@ -196,10 +213,14 @@ Only biologically relevent parameters are shown. Please refere to original docum
 - `M=f` — Mark shorter split hits as secondary, for Picard compatibility — type: `bool` — program default: `f`
 - `v=3` — Verbosity level: 0 disables stderr output, 1 errors only, 2 warnings and errors, 3 all normal messages, 4+ for debugging (output is no longer SAM at this level) — type: `int` — program default: `3`
 
+---
+
 ### [SAMtools view](https://www.htslib.org/doc/samtools-view.html)
 
 - `mapq=30 (q=30)` — Skip alignments with MAPQ smaller than this — type: `int` — program default: `0`
 - `F=1804` — Do not output alignments with any of these bits set in the FLAG field. Can be specified in hex (`0x...`), octal (`0...`), decimal, or as a comma-separated list of flag names — type: `int`|`string` — program default: `0`
+
+---
 
 ### [bamCoverage](https://deeptools.readthedocs.io/en/develop/content/tools/bamCoverage.html)
 
@@ -227,6 +248,8 @@ Only biologically relevent parameters are shown. Please refere to original docum
 - `minFragmentLength=0` — Minimum fragment length required for read/pair inclusion. Useful for filtering mono-/di-nucleosome fragments in ATAC-seq — type: `int` — program default: `0`
 - `maxFragmentLength=600` — Maximum fragment length required for read/pair inclusion — type: `int` — program default: `0`
 
+---
+
 ### [MACS3 callpeak](https://macs3-project.github.io/MACS/docs/callpeak.html)
 
 - `gsize=hs` — Mappable/effective genome size (smaller than the raw genome size due to repeats). Precompiled shortcuts: `hs` (~2.9e9, human), `mm` (~2.65e9, mouse), `ce` (~1e8, C. elegans), `dm` (~1.4e8, fly). Check deepTools for other assemblies, or estimate by removing Ns and simple repeats from the genome — type: `string`|`int` — program default: `hs`
@@ -247,6 +270,8 @@ Only biologically relevent parameters are shown. Please refere to original docum
 - `scale-to=small` — When `large`, linearly scale the smaller dataset up to the larger dataset's depth; when `small` (default), scale the larger dataset down. Scaling up is more prone to false positives — type: `enum` — program default: `small`
 - `call-summits=f` — Reanalyze the signal shape within each peak to deconvolve overlapping subpeaks, useful for detecting adjacent binding events. Subpeaks share the parent peak's boundaries but get distinct summits/scores — type: `bool` — program default: `f`
 - `min_foldch=2.0` — Minimum fold-change (narrowPeak column 7) for a peak to be kept in `*_peaks_filt.narrowPeak`. This is a pipeline-level post-filter applied after callpeak, not a MACS3 option — type: `float` — program default: `2.0`
+
+---
 
 ### [MEME Motif](https://meme-suite.org/meme/doc/meme.html)
 
