@@ -6,6 +6,7 @@
 - compare results of bowtie2 and bwa-mem2
 - Export bigWigs for mappings of 5 fold enrichment 
 - Tune q value cutoff in MACS by analysing mapping with `--cutoff-analysis`
+- Think about IDR's
 
 ## Documentation
 
