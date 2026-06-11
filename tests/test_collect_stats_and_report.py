@@ -120,6 +120,54 @@ def test_gate_subsampled_max_frags_zero():
 
 
 # ---------------------------------------------------------------------------
+# collect_stats._parse_subsample_log
+# ---------------------------------------------------------------------------
+
+def _write_subsample_log(tmp_path, input_reads, output_reads, output_pct="100.00"):
+    """Write a minimal reformat.sh-style subsample log and return its path."""
+    log_path = tmp_path / "subsample.log"
+    log_path.write_text(
+        "Set INTERLEAVED to true\n"
+        "Input is being processed as paired\n"
+        f"Input:                  \t{input_reads} reads          \t0 bases\n"
+        f"Output:                 \t{output_reads} reads ({output_pct}%) \t0 bases ({output_pct}%)\n"
+    )
+    return str(log_path)
+
+
+def test_parse_subsample_log_pe_no_subsampling(tmp_path):
+    # Real CXXC01.subsample.log: Input/Output both 125671976 reads (R1+R2 combined).
+    log = _write_subsample_log(tmp_path, 125671976, 125671976)
+    total, subsampled = cs._parse_subsample_log(log, is_pe=True)
+    assert total == "125671976"
+    assert subsampled == "62835988"
+
+
+def test_parse_subsample_log_se_no_subsampling(tmp_path):
+    # Real DEL1.subsample.log: Input/Output both 3536279 reads.
+    log = _write_subsample_log(tmp_path, 3536279, 3536279)
+    total, subsampled = cs._parse_subsample_log(log, is_pe=False)
+    assert total == "3536279"
+    assert subsampled == "3536279"
+
+
+def test_parse_subsample_log_pe_with_subsampling(tmp_path):
+    log = _write_subsample_log(tmp_path, 125671976, 10000000, output_pct="7.96")
+    total, subsampled = cs._parse_subsample_log(log, is_pe=True)
+    assert total == "125671976"
+    assert subsampled == "5000000"
+
+
+def test_parse_subsample_log_total_not_halved_for_pe(tmp_path):
+    # Encodes the bug: total_reads must match the raw Input: count, not Input: // 2,
+    # so it stays in the same units as trimmed_reads/mapped_reads.
+    log = _write_subsample_log(tmp_path, 125671976, 125671976)
+    total, _ = cs._parse_subsample_log(log, is_pe=True)
+    assert total == "125671976"
+    assert total != "62835988"
+
+
+# ---------------------------------------------------------------------------
 # report.build_row passes mapping_pct through from stats CSV
 # ---------------------------------------------------------------------------
 

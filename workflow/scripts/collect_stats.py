@@ -21,8 +21,12 @@ NA = "NA"
 def _parse_subsample_log(path, is_pe):
     """Return (total_reads, subsampled_frags) from a reformat.sh subsample log.
 
-    reformat.sh logs 'Input: N reads' and 'Output: N reads'.
-    For PE, reformat.sh counts individual reads (not pairs), so divide by 2.
+    reformat.sh logs 'Input: N reads' and 'Output: N reads', counting
+    individual reads (R1+R2 combined for PE) -- the same units as
+    trimmed_reads and mapped_reads. total_reads is reported as-is so all
+    three columns share units. subsampled_frags represents fragment/pair
+    counts (compared against the fragment-based max_frags config), so it
+    is halved for PE.
     """
     total = NA
     subsampled = NA
@@ -32,7 +36,7 @@ def _parse_subsample_log(path, is_pe):
             m = re.match(r"^Input:\s+(\d[\d,]*)\s+reads", line)
             if m:
                 n = int(m.group(1).replace(",", ""))
-                total = str(n // 2 if is_pe else n)
+                total = str(n)
             m = re.match(r"^Output:\s+(\d[\d,]*)\s+reads", line)
             if m:
                 n = int(m.group(1).replace(",", ""))
