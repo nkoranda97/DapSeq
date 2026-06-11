@@ -85,7 +85,7 @@ macs3:
 
 ## Default Pipeline Parameters
 
-Only biologically relevent parameters are shown. Please refere to original documentation for additional parameters
+>Only biologically relevent parameters are shown. Please refere to original documentation for additional parameters
 
 ### [bbduk](https://bbmap.org/tools/bbduk)
 
@@ -188,7 +188,7 @@ Only biologically relevent parameters are shown. Please refere to original docum
 ---
 
 ### [bwa-mem2](https://bio-bwa.sourceforge.net/bwa.shtml)
->[!Note]
+
 >bwa-mem2 has identical parameters and output but is optimized for parallelization via SIMD. Link is for bwa-mem1
 
 - `t=1` — Number of threads — type: `int` — program default: `1`
