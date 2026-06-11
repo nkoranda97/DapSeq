@@ -1,16 +1,20 @@
-## To do
+# To do
 
-## Functional Changes
+## Biology
 
-- filter for not chr contigs
-    - run both filtered and non filtered through the rest of the pipeline
+- Understand the impact of no-lambda on the dataset
+- compare results of bowtie2 and bwa-mem2
+- Export bigWigs for mappings of 5 fold enrichment 
+- Tune q value cutoff in MACS by analysing mapping with `--cutoff-analysis`
 
-- calculate FRiP for just
+## Documentation
+
+- Document every variable that is used and a description of what it means
+
+## Technical
+
+- Fix and refine the database
+- Create an easy and UI friendly interface for getting results from database
 
 
-
-## UI changes
-
-- Add motif images from factorbook/encode
-- fix sorting in html
 
