@@ -86,7 +86,7 @@ meme:
   mod: anr
   maxpeaks: 100
   maxsize: 10000000
-  summit_extend: 30
+  summit_extend: 50
   extra: ""
 
 fimo:
