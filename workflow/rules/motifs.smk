@@ -26,10 +26,13 @@ rule narrow_peak_to_fasta:
     output:
         OUT + "/fasta/{sample}.{peak_type}.fasta",
     params:
-        maxpeaks      = config["meme"]["maxpeaks"],
-        extend_bp     = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
-        fimocoords    = True,
-        filter_chroms = config.get("chrom_filter", []),
+        maxpeaks              = config["meme"]["maxpeaks"],
+        extend_bp             = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
+        fimocoords            = True,
+        filter_chroms         = config.get("chrom_filter", []),
+        tandem_filter_enabled = config.get("tandem_filter", {}).get("enabled", False),
+        tandem_k              = config.get("tandem_filter", {}).get("k", 6),
+        tandem_k_max          = config.get("tandem_filter", {}).get("k_max", 3),
     resources:
         mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
         runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],

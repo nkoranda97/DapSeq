@@ -83,6 +83,11 @@ blacklist_filter:
   enabled: false
   bed: null     # path to blacklist BED/BED.gz (e.g. blacklist/hg38-blacklist.v2.bed.gz); required when enabled: true
 
+tandem_filter:
+  enabled: false
+  k: 6          # k-mer length for repeat detection
+  k_max: 3      # max occurrences of top k-mer before a sequence is flagged as a repeat
+
 meme:
   nmotifs: 2
   minw: 8
