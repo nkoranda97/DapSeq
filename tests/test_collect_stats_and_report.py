@@ -74,6 +74,7 @@ def test_make_cols_order():
         "median_frag_size",
         "num_peaks",
         "num_peaks_filt",
+        "num_peaks_bl",
         "reads_in_peaks",
         "reads_in_peaks_5fold",
         "reads_in_peaks_filt",
@@ -226,3 +227,50 @@ def test_run_csv_excludes_mapping_rate_and_includes_renamed_frip(tmp_path):
     assert "mapping_rate" not in reader.fieldnames
     assert "frip_filt" in reader.fieldnames
     assert rows[0]["frip_filt"] == "10.0"
+
+
+# ---------------------------------------------------------------------------
+# num_peaks_bl — blacklist filter stats
+# ---------------------------------------------------------------------------
+
+def test_make_cols_contains_num_peaks_bl():
+    assert "num_peaks_bl" in rp.make_cols()
+
+
+def test_num_peaks_bl_in_int_cols():
+    assert "num_peaks_bl" in rp.INT_COLS
+
+
+def test_collect_stats_columns_contains_num_peaks_bl():
+    assert "num_peaks_bl" in cs.COLUMNS
+
+
+def test_num_peaks_bl_after_num_peaks_filt_in_make_cols():
+    cols = rp.make_cols()
+    assert cols.index("num_peaks_bl") == cols.index("num_peaks_filt") + 1
+
+
+def test_num_peaks_bl_na_by_default(tmp_path):
+    """When blacklist filtering is disabled, num_peaks_bl should be NA in the report."""
+    stats_dir = _write_stats_csv(tmp_path, "s1")
+    row = rp.build_row("s1", stats_dir)
+    assert row.get("num_peaks_bl", "NA") == "NA"
+
+
+def test_num_peaks_bl_counted_when_enabled(tmp_path):
+    """When blacklist filtering is enabled, num_peaks_bl reflects the post-filter count."""
+    stats_dir = _write_stats_csv(tmp_path, "s1", extras={"num_peaks_bl": "42"})
+    row = rp.build_row("s1", stats_dir)
+    assert row["num_peaks_bl"] == "42"
+
+
+def test_count_lines_empty_file(tmp_path):
+    f = tmp_path / "empty.narrowPeak"
+    f.write_text("")
+    assert cs._count_lines(str(f)) == "0"
+
+
+def test_count_lines_ten_peaks(tmp_path):
+    f = tmp_path / "peaks.narrowPeak"
+    f.write_text("\n".join([f"chr1\t{i}\t{i+100}" for i in range(10)]) + "\n")
+    assert cs._count_lines(str(f)) == "10"

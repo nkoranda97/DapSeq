@@ -36,6 +36,13 @@ def is_pe(wc):
     return "true" if wc.sample in PE_SAMPLES else "false"
 
 
+def get_final_filtered_peaks(wc):
+    """Return _peaks_filt_bl.narrowPeak when blacklist filtering is enabled, else _peaks_filt.narrowPeak."""
+    if config.get("blacklist_filter", {}).get("enabled", False):
+        return OUT + f"/MACS/{wc.sample}_peaks_filt_bl.narrowPeak"
+    return OUT + f"/MACS/{wc.sample}_peaks_filt.narrowPeak"
+
+
 wildcard_constraints:
     sample    = "[^/.]+",
     read      = "R[12]",
@@ -51,8 +58,9 @@ rule mapped:
 
 rule peaked:
     input:
-        expand(OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
-               sample=TREATMENT_SAMPLES),
+        expand(OUT + "/MACS/{sample}_peaks_filt_bl.narrowPeak", sample=TREATMENT_SAMPLES)
+        if config.get("blacklist_filter", {}).get("enabled", False)
+        else expand(OUT + "/MACS/{sample}_peaks_filt.narrowPeak", sample=TREATMENT_SAMPLES),
 
 
 rule motifs_done:

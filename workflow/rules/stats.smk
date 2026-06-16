@@ -8,14 +8,20 @@ rule sample_stats_treatment:
         fimo         = OUT + "/fimo/{sample}/peaks/fimo.tsv",
         subsample_log= OUT + "/logs/bbduk/{sample}.subsample.log",
         trim_log     = OUT + "/logs/bbduk/{sample}.trim.log",
+        peaks_bl     = lambda wc: (
+            [OUT + f"/MACS/{wc.sample}_peaks_filt_bl.narrowPeak"]
+            if config.get("blacklist_filter", {}).get("enabled", False)
+            else []
+        ),
     output:
         stats_csv = OUT + "/stats/{sample}.stats.csv",
     wildcard_constraints:
         sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
     params:
-        is_pe        = lambda wc: wc.sample in PE_SAMPLES,
-        is_treatment = True,
-        max_frags    = config["bbduk"].get("max_frags"),
+        is_pe             = lambda wc: wc.sample in PE_SAMPLES,
+        is_treatment      = True,
+        max_frags         = config["bbduk"].get("max_frags"),
+        blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],

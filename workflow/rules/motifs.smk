@@ -21,7 +21,7 @@ rule factorbook_logo:
 
 rule narrow_peak_to_fasta:
     input:
-        narrowpeak = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+        narrowpeak = get_final_filtered_peaks,
         genome     = config["genome_ref"],
     output:
         OUT + "/fasta/{sample}.{peak_type}.fasta",

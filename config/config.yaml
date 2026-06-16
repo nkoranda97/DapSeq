@@ -79,6 +79,10 @@ macs3:
 #   - chrEBV
 chrom_filter: []
 
+blacklist_filter:
+  enabled: false
+  bed: null     # path to blacklist BED/BED.gz (e.g. blacklist/hg38-blacklist.v2.bed.gz); required when enabled: true
+
 meme:
   nmotifs: 2
   minw: 8
@@ -135,6 +139,9 @@ resources:
     runtime: 60
   filter_peaks:
     mem_mb: 64000
+    runtime: 10
+  blacklist_filter_peaks:
+    mem_mb: 8000
     runtime: 10
   narrow_peak_to_fasta:
     mem_mb: 64000
