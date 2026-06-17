@@ -1,11 +1,6 @@
 # Snakemake profile for local (non-SLURM) execution.
 # Run with: pixi run snakemake --profile profiles/local --configfile /path/to/config.yaml
 
-# Explicitly select the built-in local executor.
-# This overrides executor: slurm from profiles/default, which Snakemake
-# auto-loads as the workflow-level profile when --profile profiles/local is used.
-executor: local
-
 # Run every rule inside the Apptainer container (same SIF as HPC).
 # Build the SIF once with:
 #   pixi run apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def

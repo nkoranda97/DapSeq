@@ -16,7 +16,7 @@ curl -fsSL https://pixi.sh/install.sh | sh
 
 ```sh
 module load apptainer
-pixi run snakemake --configfile /path/to/your/config.yaml
+pixi run snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
 ```
 
 Set `slurm_partition` and `slurm_account` in your config file.
