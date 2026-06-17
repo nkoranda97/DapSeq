@@ -41,9 +41,11 @@ aligner: bowtie2  # bowtie2 | bwa_mem2
 # ── Compute ──────────────────────────────────────────────────────────────────
 threads: 16
 
-# ── SLURM ────────────────────────────────────────────────────────────────────
-slurm_partition: "caslake"
-slurm_account: "pi-yourlab"
+# ── SLURM (HPC only) ─────────────────────────────────────────────────────────
+# Required when running with --profile profiles/default (SLURM cluster).
+# Ignored when running with --profile profiles/local.
+slurm_partition: null   # e.g. "caslake"
+slurm_account: null     # e.g. "pi-yourlab"
 
 bbduk:
   adapters: null
