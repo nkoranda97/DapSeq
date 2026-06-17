@@ -1,6 +1,6 @@
 # DAP-seq Pipeline
 
-Snakemake implementation of the JGI DAP-seq analysis pipeline, designed to run on SLURM clusters using Apptainer.
+Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clusters or local workstations via Apptainer.
 
 ## Setup
 
@@ -12,10 +12,30 @@ curl -fsSL https://pixi.sh/install.sh | sh
 
 ## Running
 
+### HPC (SLURM cluster)
+
 ```sh
 module load apptainer
-pixi run snakemake --configfile /path/to/your/config.yaml \
+pixi run snakemake --configfile /path/to/your/config.yaml
 ```
+
+Set `slurm_partition` and `slurm_account` in your config file.
+
+### Local workstation
+
+Build the Apptainer SIF once (requires the pixi environment):
+
+```sh
+pixi run apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
+```
+
+Then run using the local profile (no SLURM, 4 parallel jobs by default):
+
+```sh
+pixi run snakemake --profile profiles/local --configfile /path/to/your/config.yaml
+```
+
+`slurm_partition` and `slurm_account` can be omitted or left as `null` in your config when using the local profile. Override parallelism with `--jobs N`.
 
 ## Configuration
 
