@@ -191,7 +191,6 @@ macs3:
 
 >bwa-mem2 has identical parameters and output but is optimized for parallelization via SIMD. Link is for bwa-mem1
 
-- `t=1` — Number of threads — type: `int` — program default: `1`
 - `k=19` — Minimum seed length. Matches shorter than this will be missed. Alignment speed is usually insensitive to this value unless it significantly deviates from 20 — type: `int` — program default: `19`
 - `w=100` — Band width. Gaps longer than this will not be found, though the maximum gap length is also affected by the scoring matrix and hit length — type: `int` — program default: `100`
 - `d=100` — Off-diagonal X-dropoff (Z-dropoff). Stop extension when the difference between the best and current extension score exceeds |i-j|*A+d — type: `int` — program default: `100`

@@ -21,15 +21,18 @@ rule factorbook_logo:
 
 rule narrow_peak_to_fasta:
     input:
-        narrowpeak = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+        narrowpeak = get_final_filtered_peaks,
         genome     = config["genome_ref"],
     output:
         OUT + "/fasta/{sample}.{peak_type}.fasta",
     params:
-        maxpeaks      = config["meme"]["maxpeaks"],
-        extend_bp     = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
-        fimocoords    = True,
-        filter_chroms = config.get("chrom_filter", []),
+        maxpeaks              = config["meme"]["maxpeaks"],
+        extend_bp             = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
+        fimocoords            = True,
+        filter_chroms         = config.get("chrom_filter", []),
+        tandem_filter_enabled = config.get("tandem_filter", {}).get("enabled", False),
+        tandem_k              = config.get("tandem_filter", {}).get("k", 6),
+        tandem_k_max          = config.get("tandem_filter", {}).get("k_max", 3),
     resources:
         mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
         runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],

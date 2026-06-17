@@ -17,7 +17,7 @@ import sys
 INT_COLS = {
     "total_reads", "trimmed_reads", "mapped_reads",
     "reads_in_peaks", "reads_in_peaks_5fold", "reads_in_peaks_filt",
-    "motif_peaks", "subsampled_frags", "num_peaks", "num_peaks_filt",
+    "motif_peaks", "subsampled_frags", "num_peaks", "num_peaks_filt", "num_peaks_bl",
 }
 PCT_COLS = {"frip", "frip_filt", "mapping_pct"}
 
@@ -33,6 +33,7 @@ def make_cols():
         "median_frag_size",
         "num_peaks",
         "num_peaks_filt",
+        "num_peaks_bl",
         "reads_in_peaks",
         "reads_in_peaks_5fold",
         "reads_in_peaks_filt",

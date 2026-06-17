@@ -92,6 +92,15 @@ macs3:
 
 chrom_filter: []  # e.g. [chrEBV] — chromosomes excluded from peaks before MEME
 
+blacklist_filter:
+  enabled: false
+  bed: null     # set to path of blacklist BED/BED.gz when enabled: true (e.g. blacklist/hg38-blacklist.v2.bed.gz)
+
+tandem_filter:
+  enabled: false
+  k: 6          # k-mer length for repeat detection
+  k_max: 3      # max occurrences of top k-mer before a sequence is flagged as a repeat
+
 meme:
   nmotifs: 2
   minw: 8
@@ -151,6 +160,9 @@ resources:
   filter_peaks:
     mem_mb: 32000
     runtime: 120
+  blacklist_filter_peaks:
+    mem_mb: 8000
+    runtime: 10
   narrow_peak_to_fasta:
     mem_mb: 32000
     runtime: 120

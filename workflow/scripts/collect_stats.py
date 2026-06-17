@@ -173,6 +173,7 @@ COLUMNS = [
     "median_frag_size",
     "num_peaks",
     "num_peaks_filt",
+    "num_peaks_bl",
     "reads_in_peaks",
     "reads_in_peaks_5fold",
     "reads_in_peaks_filt",
@@ -222,6 +223,8 @@ def main():
         )
         row["num_peaks"]      = _count_lines(sm.input.peaks)
         row["num_peaks_filt"] = _count_lines(sm.input.peaks_filt)
+        if sm.params.blacklist_enabled and sm.input.peaks_bl:
+            row["num_peaks_bl"] = _count_lines(sm.input.peaks_bl[0])
         row["max_peak_score"] = _narrowpeak_max_score(sm.input.peaks_filt)
         row["motif_peaks"]    = _fimo_motif_peaks(sm.input.fimo)
 

@@ -34,6 +34,28 @@ rule macs3:
         """
 
 
+if config.get("blacklist_filter", {}).get("enabled", False):
+    rule blacklist_filter_peaks:
+        input:
+            peaks     = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+            blacklist = config["blacklist_filter"]["bed"],
+        output:
+            OUT + "/MACS/{sample}_peaks_filt_bl.narrowPeak",
+        resources:
+            mem_mb          = config["resources"]["blacklist_filter_peaks"]["mem_mb"],
+            runtime         = config["resources"]["blacklist_filter_peaks"]["runtime"],
+            slurm_partition = config["slurm_partition"],
+            slurm_account   = config["slurm_account"],
+        log:
+            OUT + "/logs/blacklist_filter/{sample}.log"
+        shell:
+            """
+            set -euo pipefail
+            bedtools intersect -v -a {input.peaks} -b {input.blacklist} \
+              > {output} 2>{log}
+            """
+
+
 rule filter_peaks:
     input:
         OUT + "/MACS/{sample}_peaks.narrowPeak",
