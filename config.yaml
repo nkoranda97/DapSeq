@@ -96,16 +96,17 @@ blacklist_filter:
   enabled: false
   bed: null     # set to path of blacklist BED/BED.gz when enabled: true (e.g. blacklist/hg38-blacklist.v2.bed.gz)
 
-tandem_filter:
+complexity_filter:
   enabled: false
-  k: 6          # k-mer length for repeat detection
-  k_max: 3      # max occurrences of top k-mer before a sequence is flagged as a repeat
+  min_entropy: 3.0   # 3-mer Shannon entropy in bits; drop sequences below this.
+                     # Lower = more permissive; higher = more aggressive.
 
 meme:
   nmotifs: 2
   minw: 8
   maxw: 32
   mod: anr
+  markov_order: 0   # set to 2 to suppress composition-driven repetitive motifs
   maxpeaks: 100
   maxsize: 10000000
   summit_extend: 30

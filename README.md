@@ -62,15 +62,22 @@ slurm_account: "pi-yourlab"
 | `bamcoverage.max_fragment_length` | `600` | Max fragment length for PE read/pair inclusion (program default: `0`, no limit) |
 | `bamcoverage.ignore_duplicates` | `true` | Count duplicate reads only once (program default: `f`) |
 | `chrom_filter` | `[]` | Chromosomes excluded from peaks before MEME (e.g. `[chrEBV]`) |
+| `complexity_filter.enabled` | `false` | Drop low-complexity peak FASTA sequences before MEME |
+| `complexity_filter.min_entropy` | `3.0` | Minimum 3-mer Shannon entropy in bits when `complexity_filter.enabled: true`; lower is more permissive, max possible is `6.0` |
 | `macs3.min_foldch` | `2.0` | Peak fold-change filter |
 | `macs3.format` | `BAMPE` | Set to `BAM` for single-end data |
 | `meme.nmotifs` | `2` | Number of motifs to search for (program default: `1`) |
 | `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
 | `meme.mod` | `anr` | Motif site distribution model (program default: `zoops`) |
+| `meme.markov_order` | `0` | Background Markov model order built from input sequences; try `2` to suppress composition-driven repeats |
 | `meme.maxsize` | `10000000` | Max total size (bp) of input sequences searched for motifs (`searchsize`; program default: sampling above `100000`) |
 | `meme.summit_extend` | `50` | bp around the peak summit used for motif search in "summits" mode |
 | `meme.base_colors` | unset | Optional hex color overrides for sequence logos |
 | `fimo.thresh` | `1.0e-5` | p-value threshold for FIMO motif scanning |
+
+### Migration note
+
+The old `tandem_filter` block (`enabled`, `k`, `k_max`) has been renamed and replaced by `complexity_filter` (`enabled`, `min_entropy`). Existing user config files that still use `tandem_filter` must be updated; the old key is ignored and the filter will stay off.
 
 ### Extra arguments
 
@@ -320,3 +327,5 @@ macs3:
 - `cons=` — (May be repeated.) Seed a starting point from this consensus sequence instead of sampling, suppressing sampling for that many motifs. Pad short DNA/RNA consensus sequences with `N`s to width 6 — type: `string` — program default: unset
 - `maxpeaks=100` — Maximum number of peaks written to the input FASTA, keeping those with the highest fold-change. This is a pipeline-level option for `narrow_peak_to_fasta.py`, not a MEME option — type: `int` — program default: `100`
 - `summit_extend=50` — Number of bp on each side of the peak summit to include in the input FASTA for the "summits" mode (use `all` to use the full peak instead). This is a pipeline-level option for `narrow_peak_to_fasta.py`, not a MEME option — type: `int`|`enum` — program default: `50`
+- `complexity_filter.enabled=false` — Enable low-complexity filtering of peak FASTA sequences before MEME. This is a pipeline-level option for `narrow_peak_to_fasta.py`, not a MEME option — type: `bool` — program default: `false`
+- `complexity_filter.min_entropy=3.0` — Minimum 3-mer Shannon entropy in bits for retained peak FASTA sequences when `complexity_filter.enabled` is true. Lower values keep more repetitive sequence; higher values are more aggressive. Max possible is `6.0`; calibrate against your own data — type: `float` — program default: `3.0`
