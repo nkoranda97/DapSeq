@@ -55,6 +55,7 @@ rule meme_summits:
         minw       = config["meme"]["minw"],
         maxw       = config["meme"]["maxw"],
         mod        = config["meme"]["mod"],
+        markov_order = config["meme"].get("markov_order", 0),
         maxsize    = config["meme"].get("maxsize", 10000000),
         extra      = config["meme"].get("extra", ""),
         has_custom = lambda wc: "1" if config["meme"].get("base_colors") else "",
@@ -87,6 +88,7 @@ rule meme_summits:
             meme {input} -oc {params.outdir} $ALPH -revcomp \
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
+                -markov_order {params.markov_order} \
                 -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
                 2>{log}
         fi
@@ -124,6 +126,7 @@ rule meme_peaks:
         minw       = config["meme"]["minw"],
         maxw       = config["meme"]["maxw"],
         mod        = config["meme"]["mod"],
+        markov_order = config["meme"].get("markov_order", 0),
         maxsize    = config["meme"].get("maxsize", 10000000),
         extra      = config["meme"].get("extra", ""),
         has_custom = lambda wc: "1" if config["meme"].get("base_colors") else "",
@@ -156,6 +159,7 @@ rule meme_peaks:
             meme {input} -oc {params.outdir} $ALPH -revcomp \
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
+                -markov_order {params.markov_order} \
                 -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
                 2>{log}
         fi
