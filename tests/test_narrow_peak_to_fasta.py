@@ -1,6 +1,6 @@
 """
-Tests for narrow_peak_to_fasta._is_tandem_repeat and the integrated tandem
-filter inside narrow_peak_to_fasta().
+Tests for narrow_peak_to_fasta._triplet_entropy and the integrated
+low-complexity filter inside narrow_peak_to_fasta().
 
 conftest.py adds workflow/scripts/ to sys.path so the module imports directly.
 """
@@ -47,62 +47,67 @@ def _read_fasta_seqs(path: Path) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# _is_tandem_repeat unit tests
+# _triplet_entropy unit tests
 # ---------------------------------------------------------------------------
 
-def test_is_tandem_repeat_flags_kmer_repeat():
-    """A sequence dominated by a single 6-mer (>= k_max occurrences) is flagged."""
-    tandem = "ACGTAC" * 10   # "ACGTAC" appears 10 times — well above k_max=3
-    assert m._is_tandem_repeat(tandem, k=6, k_max=3) is True
+
+def test_triplet_entropy_flags_perfect_repeat_as_low_complexity():
+    """A perfect repeat uses few 3-mers and has low entropy."""
+    assert m._triplet_entropy("ACGTAC" * 10) < 3.0
 
 
-def test_is_tandem_repeat_clean_sequence():
-    """A diverse sequence with no dominant k-mer passes."""
+def test_triplet_entropy_clean_sequence_is_higher_complexity():
+    """A diverse sequence has clearly higher 3-mer entropy."""
     clean = "ATCGATCGGCTAGCTAGCTAGCTAGCTAGCATGCATGCATGCATGCATGC"
-    assert m._is_tandem_repeat(clean, k=6, k_max=20) is False
+    assert m._triplet_entropy(clean) >= 3.0
 
 
-def test_is_tandem_repeat_two_ns_flagged():
-    """A sequence with more than one N is flagged regardless of k-mer counts."""
-    seq = "ACGTNNACGT"
-    assert m._is_tandem_repeat(seq, k=4, k_max=100) is True
+def test_triplet_entropy_degenerate_repeats_are_low_complexity():
+    """Fuzzy GA/GGA repeats still score low by triplet entropy."""
+    assert m._triplet_entropy("GA" * 60) < 2.0
+    assert m._triplet_entropy("GGA" * 40) < 2.0
 
 
-def test_is_tandem_repeat_one_n_allowed():
-    """Exactly one N is below the threshold and is not flagged."""
-    seq = "ACGTNACGT"
-    assert m._is_tandem_repeat(seq, k=4, k_max=100) is False
+def test_triplet_entropy_all_n_window_scores_zero():
+    """Triplets containing Ns are ignored; an all-N window scores 0."""
+    assert m._triplet_entropy("N" * 100) == 0.0
 
 
-def test_is_tandem_repeat_case_insensitive():
+def test_triplet_entropy_ignores_n_without_hard_n_count_filter():
+    """Multiple Ns do not automatically fail when remaining triplets are diverse."""
+    clean = "AGTCTCGATACTTTTCCATAGAGGCACAAAGTGGGGTCACCTAAGCATGGGCCGAGGTAAATCAACGTCCGGGAAACACGGACGTGCCTGTATACCGTCTTGCGGACTCGCTACTGCTAC"
+    clean_with_ns = clean[:40] + "NN" + clean[42:]
+    assert m._triplet_entropy(clean_with_ns) >= 3.0
+
+
+def test_triplet_entropy_case_insensitive():
     """Lowercase input is normalised to uppercase before checking."""
-    tandem = ("acgtac" * 10).lower()
-    assert m._is_tandem_repeat(tandem, k=6, k_max=3) is True
+    assert m._triplet_entropy(("acgtac" * 10).lower()) < 3.0
 
 
 # ---------------------------------------------------------------------------
-# narrow_peak_to_fasta integration tests with tandem filter
+# narrow_peak_to_fasta integration tests with complexity filter
 # ---------------------------------------------------------------------------
 
 # Shared genome: chr1 has ~444 bp.
-# First 102 bp  → tandem ("ACGTAC" * 17) — flagged with k=6, k_max=3 (17 occurrences)
-# Next  102 bp  → also tandem
+# First 102 bp  → low-complexity ("ACGTAC" * 17)
+# Next  102 bp  → also low-complexity
 # Next  120 bp  → truly non-repetitive (SHA256-derived; verified max 6-mer count = 1)
 # Next  120 bp  → truly non-repetitive (SHA256-derived; verified max 6-mer count = 1)
 
-_TANDEM_SEQ  = "ACGTAC" * 17
+_LOW_COMPLEXITY_SEQ = "ACGTAC" * 17
 _CLEAN_SEQ_A = "AGTCTCGATACTTTTCCATAGAGGCACAAAGTGGGGTCACCTAAGCATGGGCCGAGGTAAATCAACGTCCGGGAAACACGGACGTGCCTGTATACCGTCTTGCGGACTCGCTACTGCTAC"
 _CLEAN_SEQ_B = "ATCGACCAATACAAAGGTTGATAAATGCCAGTTGTAGGTTAGCTGTTCCGCCACCCAGGATTCTCGTGACTATCAAACTCTAGTGCACACAATCAATAAACATTATCGTGTGTGTAAGTT"
 
-_GENOME = [("chr1", _TANDEM_SEQ + _TANDEM_SEQ + _CLEAN_SEQ_A + _CLEAN_SEQ_B)]
+_GENOME = [("chr1", _LOW_COMPLEXITY_SEQ + _LOW_COMPLEXITY_SEQ + _CLEAN_SEQ_A + _CLEAN_SEQ_B)]
 
 
 def _make_peaks_and_genome(tmp_path):
     """Return (genome_path, narrowpeak_path) for a 4-peak test set.
 
     Peak layout on chr1 (extend_bp=50 around summit):
-      peak1: summit=51   → coords [1, 101]   → tandem segment (fc=10, highest)
-      peak2: summit=153  → coords [103, 203] → tandem segment (fc=9)
+      peak1: summit=51   → coords [1, 101]   → low-complexity segment (fc=10, highest)
+      peak2: summit=153  → coords [103, 203] → low-complexity segment (fc=9)
       peak3: summit=255  → coords [205, 305] → clean segment A (fc=8)
       peak4: summit=357  → coords [307, 407] → clean segment B (fc=7)
     """
@@ -119,10 +124,10 @@ def _make_peaks_and_genome(tmp_path):
     return str(genome), str(peaks)
 
 
-def test_tandem_filter_fills_to_maxpeaks(tmp_path):
-    """With tandem filter enabled, skipped repeats are replaced by subsequent clean peaks.
+def test_complexity_filter_fills_to_maxpeaks(tmp_path):
+    """With complexity filter enabled, skipped repeats are replaced by subsequent clean peaks.
 
-    The top 2 peaks are tandem repeats; peaks 3 and 4 are clean.
+    The top 2 peaks are low-complexity repeats; peaks 3 and 4 are clean.
     With maxpeaks=2 and filter enabled, output should contain exactly 2 clean sequences.
     """
     genome, peaks = _make_peaks_and_genome(tmp_path)
@@ -131,7 +136,7 @@ def test_tandem_filter_fills_to_maxpeaks(tmp_path):
     m.narrow_peak_to_fasta(
         peaks, genome, out,
         maxpeaks=2, extend_bp=50, fimocoords=False,
-        tandem_filter_enabled=True, tandem_k=6, tandem_k_max=3,
+        complexity_filter_enabled=True, min_entropy=3.0,
     )
 
     names = _read_fasta_names(Path(out))
@@ -142,28 +147,28 @@ def test_tandem_filter_fills_to_maxpeaks(tmp_path):
     assert not any("peak1" in n or "peak2" in n for n in names)
 
 
-def test_tandem_filter_disabled_keeps_top_peaks(tmp_path):
-    """With tandem filter disabled, the top maxpeaks by fold-change are always taken."""
+def test_complexity_filter_disabled_keeps_top_peaks(tmp_path):
+    """With complexity filter disabled, the top maxpeaks by fold-change are always taken."""
     genome, peaks = _make_peaks_and_genome(tmp_path)
     out = str(tmp_path / "out.fasta")
 
     m.narrow_peak_to_fasta(
         peaks, genome, out,
         maxpeaks=2, extend_bp=50, fimocoords=False,
-        tandem_filter_enabled=False,
+        complexity_filter_enabled=False,
     )
 
     names = _read_fasta_names(Path(out))
     assert len(names) == 2
     assert all("peak1" in n or "peak2" in n for n in names), (
-        f"Expected top-2 peaks (tandem), got: {names}"
+        f"Expected top-2 peaks (low-complexity), got: {names}"
     )
 
 
-def test_tandem_filter_all_tandem_produces_empty_fasta(tmp_path):
-    """If all peaks are tandem repeats, output is an empty FASTA with no crash."""
+def test_complexity_filter_all_low_complexity_produces_empty_fasta(tmp_path):
+    """If all peaks are low-complexity repeats, output is an empty FASTA with no crash."""
     genome = tmp_path / "genome.fa"
-    _write_genome(genome, [("chr1", _TANDEM_SEQ * 4)])
+    _write_genome(genome, [("chr1", _LOW_COMPLEXITY_SEQ * 4)])
 
     peaks = tmp_path / "peaks.narrowPeak"
     _write_narrowpeak(peaks, [
@@ -175,21 +180,21 @@ def test_tandem_filter_all_tandem_produces_empty_fasta(tmp_path):
     m.narrow_peak_to_fasta(
         str(peaks), str(genome), out,
         maxpeaks=2, extend_bp=50, fimocoords=False,
-        tandem_filter_enabled=True, tandem_k=6, tandem_k_max=3,
+        complexity_filter_enabled=True, min_entropy=3.0,
     )
 
     assert _read_fasta_names(Path(out)) == []
 
 
-def test_tandem_filter_no_maxpeaks_cap(tmp_path):
-    """With maxpeaks=None and tandem filter enabled, all clean peaks are kept."""
+def test_complexity_filter_no_maxpeaks_cap(tmp_path):
+    """With maxpeaks=None and complexity filter enabled, all clean peaks are kept."""
     genome, peaks = _make_peaks_and_genome(tmp_path)
     out = str(tmp_path / "out.fasta")
 
     m.narrow_peak_to_fasta(
         peaks, genome, out,
         maxpeaks=None, extend_bp=50, fimocoords=False,
-        tandem_filter_enabled=True, tandem_k=6, tandem_k_max=3,
+        complexity_filter_enabled=True, min_entropy=3.0,
     )
 
     names = _read_fasta_names(Path(out))

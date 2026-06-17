@@ -11,17 +11,16 @@ Snakemake output:
     snakemake.output[0]         — output FASTA file
 
 Snakemake params:
-    snakemake.params.maxpeaks            — max peaks to use (prioritizes highest fold-change)
-    snakemake.params.extend_bp           — bp around summit (int), or "all" for full peak
-    snakemake.params.fimocoords          — bool; write chr:start-end headers for FIMO
-    snakemake.params.tandem_filter_enabled — bool; skip sequences with tandem repeats
-    snakemake.params.tandem_k            — k-mer length for tandem repeat detection (default 6)
-    snakemake.params.tandem_k_max        — max occurrences of top k-mer before flagging (default 3)
+    snakemake.params.maxpeaks                  — max peaks to use (prioritizes highest fold-change)
+    snakemake.params.extend_bp                 — bp around summit (int), or "all" for full peak
+    snakemake.params.fimocoords                — bool; write chr:start-end headers for FIMO
+    snakemake.params.complexity_filter_enabled — bool; skip low-complexity sequences
+    snakemake.params.min_entropy               — minimum 3-mer Shannon entropy in bits
 """
 
-import itertools
-import re
 import sys
+from collections import Counter
+from math import log2
 
 import pandas as pd
 from Bio import SeqIO
@@ -31,14 +30,25 @@ def get_peak_seq(start, stop, record):
     return str(record[start:stop].seq)
 
 
-def _is_tandem_repeat(seq: str, k: int = 6, k_max: int = 3) -> bool:
-    """Return True if seq is dominated by a single k-mer or contains multiple Ns."""
+def _triplet_entropy(seq: str) -> float:
+    """Shannon entropy (bits) of the 3-mer distribution.
+
+    Length-stable and bounded [0, log2(64)=6]. Low values indicate
+    low-complexity / repetitive sequence (perfect OR degenerate),
+    because few distinct triplets dominate. Triplets containing
+    non-ACGT characters (e.g. N) are ignored; an all-N window
+    therefore scores 0 and is filtered.
+    """
     seq = seq.upper()
-    kmers = ["".join(c) for c in itertools.product("ACGT", repeat=k)]
-    counts = [seq.count(kmer) for kmer in kmers]
-    top_kmer = kmers[counts.index(max(counts))]
-    n_occurrences = len(re.findall(top_kmer, seq))
-    return n_occurrences >= k_max or seq.count("N") > 1
+    counts = Counter(
+        seq[i:i + 3]
+        for i in range(len(seq) - 2)
+        if set(seq[i:i + 3]) <= set("ACGT")
+    )
+    total = sum(counts.values())
+    if total == 0:
+        return 0.0
+    return -sum((c / total) * log2(c / total) for c in counts.values())
 
 
 def narrow_peak_to_fasta(
@@ -49,9 +59,8 @@ def narrow_peak_to_fasta(
     extend_bp,
     fimocoords,
     filter_chroms=None,
-    tandem_filter_enabled=False,
-    tandem_k=6,
-    tandem_k_max=3,
+    complexity_filter_enabled=False,
+    min_entropy=3.0,
 ):
     chr_records = SeqIO.to_dict(SeqIO.parse(genome, "fasta"))
 
@@ -88,13 +97,13 @@ def narrow_peak_to_fasta(
         foldch_maxes = peaks.groupby(["chromosome", "start", "stop"])["fold-change"].transform(max)
         peaks = peaks.loc[peaks["fold-change"] == foldch_maxes]
 
-    # When tandem filtering is disabled, pre-limit to maxpeaks as before.
+    # When complexity filtering is disabled, pre-limit to maxpeaks as before.
     # When enabled, defer limiting so we can fill up to maxpeaks after skipping repeats.
-    if not tandem_filter_enabled and maxpeaks is not None:
+    if not complexity_filter_enabled and maxpeaks is not None:
         peaks = peaks.head(maxpeaks)
 
     accepted = 0
-    tandem_removed = 0
+    low_complexity_removed = 0
 
     with open(outfile, "w", encoding="utf-8") as f:
         for i in peaks.index:
@@ -134,9 +143,9 @@ def narrow_peak_to_fasta(
 
             SEQ = get_peak_seq(start=start_bp, stop=stop_bp, record=chr_record)
 
-            if tandem_filter_enabled and _is_tandem_repeat(SEQ, tandem_k, tandem_k_max):
-                tandem_removed += 1
-                print(f"Tandem repeat filtered: {peak_name}", file=sys.stderr)
+            if complexity_filter_enabled and _triplet_entropy(SEQ) < min_entropy:
+                low_complexity_removed += 1
+                print(f"Low-complexity filtered: {peak_name}", file=sys.stderr)
                 continue
 
             if fimocoords:
@@ -147,8 +156,12 @@ def narrow_peak_to_fasta(
             f.write(header + "\n" + SEQ + "\n")
             accepted += 1
 
-    if tandem_filter_enabled:
-        print(f"Tandem filter: {tandem_removed} removed, {accepted} kept", file=sys.stderr)
+    if complexity_filter_enabled:
+        print(
+            f"Complexity filter: {low_complexity_removed} removed, "
+            f"{accepted} kept",
+            file=sys.stderr,
+        )
 
 
 if "snakemake" in dir():
@@ -161,7 +174,6 @@ if "snakemake" in dir():
         snakemake.params.extend_bp,                   # noqa: F821
         snakemake.params.fimocoords,                  # noqa: F821
         snakemake.params.filter_chroms,               # noqa: F821
-        snakemake.params.tandem_filter_enabled,       # noqa: F821
-        snakemake.params.tandem_k,                    # noqa: F821
-        snakemake.params.tandem_k_max,                # noqa: F821
+        snakemake.params.complexity_filter_enabled,   # noqa: F821
+        snakemake.params.min_entropy,                 # noqa: F821
     )
