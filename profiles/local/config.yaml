@@ -6,7 +6,9 @@
 #   pixi run apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
 use-apptainer: true
 
-# No apptainer-args: the HPC bind paths (/project/...) don't exist locally.
+# Bind the full home directory so data/output paths outside the pipeline directory
+# are visible inside the container (Apptainer's --home only mounts the pipeline dir).
+apptainer-args: "--bind /home/nkoranda"
 
 # Conservative parallel-job limit for a workstation; override with --jobs N.
 jobs: 4
