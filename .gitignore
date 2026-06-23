@@ -22,6 +22,7 @@ __pycache__/
 !.pixi/config.toml
 *.sif
 sunbeam/
+apptainer_build/dapseq_sandbox/
 
 # data
 bam_data/

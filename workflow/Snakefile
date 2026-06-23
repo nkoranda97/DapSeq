@@ -3,7 +3,7 @@ min_version("8.0")
 
 configfile: "config/config.yaml"
 
-container: "apptainer_build/dapseq.sif"
+container: config.get("container", "apptainer_build/dapseq.sif")
 
 include: "rules/common.smk"
 include: "rules/ref.smk"

@@ -40,34 +40,50 @@ rule trim_se:
 
         MAXFRAGS={params.max_frags}
         if [ "$MAXFRAGS" = "None" ] || [ -z "$MAXFRAGS" ]; then
-          SUB_FRAC=1
+          printf "Input:\t%s reads\nOutput:\t%s reads (100.00%%)\n" "$TOTAL_FRAGS" "$TOTAL_FRAGS" > {log.subsample}
+
+          (
+            for fq in "${{R1_FILES[@]}}"; do
+              if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
+            done
+          ) \
+          | bbduk.sh \
+            -Xmx{params.mem_gb}g \
+            threads={threads} \
+            int=f \
+            in=stdin.fq out={output.r1} \
+            ref={params.adapters} \
+            k={params.k} mink={params.mink} ktrim={params.ktrim} qtrim={params.qtrim} \
+            trimq={params.trimq} maq={params.maq} ow={params.ow} \
+            {params.extra} \
+            2>{log.trim}
         else
           SUB_FRAC=$(echo "$MAXFRAGS / $TOTAL_FRAGS" | bc -l)
           if (( $(echo "$SUB_FRAC > 1" | bc -l) )); then SUB_FRAC=1; fi
-        fi
 
-        (
-          for fq in "${{R1_FILES[@]}}"; do
-            if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
-          done
-        ) \
-        | reformat.sh \
-          in=stdin.fq out=stdout.fq \
-          int=f \
-          -Xmx{params.mem_gb}g \
-          samplerate=$SUB_FRAC \
-          sampleseed=9 \
-          2>{log.subsample} \
-        | bbduk.sh \
-          -Xmx{params.mem_gb}g \
-          threads={threads} \
-          int=f \
-          in=stdin.fq out={output.r1} \
-          ref={params.adapters} \
-          k={params.k} mink={params.mink} ktrim={params.ktrim} qtrim={params.qtrim} \
-          trimq={params.trimq} maq={params.maq} ow={params.ow} \
-          {params.extra} \
-          2>{log.trim}
+          (
+            for fq in "${{R1_FILES[@]}}"; do
+              if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
+            done
+          ) \
+          | reformat.sh \
+            in=stdin.fq out=stdout.fq \
+            int=f \
+            -Xmx{params.mem_gb}g \
+            samplerate=$SUB_FRAC \
+            sampleseed=9 \
+            2>{log.subsample} \
+          | bbduk.sh \
+            -Xmx{params.mem_gb}g \
+            threads={threads} \
+            int=f \
+            in=stdin.fq out={output.r1} \
+            ref={params.adapters} \
+            k={params.k} mink={params.mink} ktrim={params.ktrim} qtrim={params.qtrim} \
+            trimq={params.trimq} maq={params.maq} ow={params.ow} \
+            {params.extra} \
+            2>{log.trim}
+        fi
 
         """
 
@@ -116,28 +132,39 @@ rule trim_pe:
 
         MAXFRAGS={params.max_frags}
         if [ "$MAXFRAGS" = "None" ] || [ -z "$MAXFRAGS" ]; then
-          SUB_FRAC=1
+          TOTAL_READS=$((TOTAL_FRAGS * 2))
+          printf "Input:\t%s reads\nOutput:\t%s reads (100.00%%)\n" "$TOTAL_READS" "$TOTAL_READS" > {log.subsample}
+
+          bbduk.sh \
+            -Xmx{params.mem_gb}g \
+            threads={threads} \
+            int=t \
+            in1=$R1 in2=$R2 out1={output.r1} out2={output.r2} \
+            ref={params.adapters} \
+            k={params.k} mink={params.mink} ktrim={params.ktrim} tbo tpe qtrim={params.qtrim} trimq={params.trimq} maq={params.maq} ow={params.ow} \
+            {params.extra} \
+            2>{log.trim}
         else
           SUB_FRAC=$(echo "$MAXFRAGS / $TOTAL_FRAGS" | bc -l)
           if (( $(echo "$SUB_FRAC > 1" | bc -l) )); then SUB_FRAC=1; fi
-        fi
 
-        reformat.sh \
-          in1=$R1 in2=$R2 \
-          out=stdout.fq \
-          -Xmx{params.mem_gb}g \
-          int=t \
-          samplerate=$SUB_FRAC \
-          sampleseed=9 \
-          2>{log.subsample} \
-        | bbduk.sh \
-          -Xmx{params.mem_gb}g \
-          threads={threads} \
-          int=t \
-          in=stdin.fq out1={output.r1} out2={output.r2} \
-          ref={params.adapters} \
-          k={params.k} mink={params.mink} ktrim={params.ktrim} tbo tpe qtrim={params.qtrim} trimq={params.trimq} maq={params.maq} ow={params.ow} \
-          {params.extra} \
-          2>{log.trim}
+          reformat.sh \
+            in1=$R1 in2=$R2 \
+            out=stdout.fq \
+            -Xmx{params.mem_gb}g \
+            int=t \
+            samplerate=$SUB_FRAC \
+            sampleseed=9 \
+            2>{log.subsample} \
+          | bbduk.sh \
+            -Xmx{params.mem_gb}g \
+            threads={threads} \
+            int=t \
+            in=stdin.fq out1={output.r1} out2={output.r2} \
+            ref={params.adapters} \
+            k={params.k} mink={params.mink} ktrim={params.ktrim} tbo tpe qtrim={params.qtrim} trimq={params.trimq} maq={params.maq} ow={params.ow} \
+            {params.extra} \
+            2>{log.trim}
+        fi
 
         """
