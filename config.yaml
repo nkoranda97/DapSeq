@@ -88,7 +88,8 @@ bamcompare:
 
 macs3:
   format: BAMPE
-  min_foldch: 2.0
+  foldch_levels: [2, 5, 15]   # three enrichment filter thresholds; must be strictly increasing
+  meme_foldch_level: 2         # 1-based index into foldch_levels for MEME input (1=low, 2=mid, 3=high)
   keep_dup: 1
   extra: ""
 

@@ -32,7 +32,8 @@ COLS = [
     "mapq",
     "max_frags",
     "macs3_format",
-    "macs3_min_foldch",
+    "macs3_foldch_levels",
+    "macs3_meme_foldch_level",
     "meme_nmotifs",
     "meme_minw",
     "meme_maxw",
@@ -47,15 +48,18 @@ COLS = [
     "mapped_reads",
     "alignment_rate",
     "reads_in_peaks",
-    "reads_5fold",
-    "reads_nfold",
+    "reads_in_peaks_fold1",
+    "reads_in_peaks_fold2",
+    "reads_in_peaks_fold3",
     "max_peak_score",
     "mapping_pct",
     "motif_peaks",
     "subsampled_frags",
     "median_frag_size",
     "num_peaks",
-    "num_peaks_filt",
+    "num_peaks_fold1",
+    "num_peaks_fold2",
+    "num_peaks_fold3",
 ]
 
 META_COLS = [
@@ -79,7 +83,7 @@ META_COLS = [
     "bigwig",
     # generated paths — peaks (treatment only)
     "peaks_narrowpeak",
-    "peaks_filt_narrowpeak",
+    "peaks_meme_narrowpeak",
     "summits_bed",
     # generated paths — fasta (treatment only)
     "summits_fasta",
@@ -202,7 +206,7 @@ def _build_meta_paths(output_dir, sample, is_treatment):
     if is_treatment:
         paths.update({
             "peaks_narrowpeak":      f"{o}/MACS/{sample}_peaks.narrowPeak",
-            "peaks_filt_narrowpeak": f"{o}/MACS/{sample}_peaks_filt.narrowPeak",
+            "peaks_meme_narrowpeak": "",  # set dynamically in main() from meme_foldch_level
             "summits_bed":           f"{o}/MACS/{sample}_summits.bed",
             "summits_fasta":         f"{o}/fasta/{sample}.summits.fasta",
             "peaks_fasta":           f"{o}/fasta/{sample}.peaks.fasta",
@@ -214,7 +218,7 @@ def _build_meta_paths(output_dir, sample, is_treatment):
         })
     else:
         paths.update({k: "" for k in [
-            "peaks_narrowpeak", "peaks_filt_narrowpeak", "summits_bed",
+            "peaks_narrowpeak", "peaks_meme_narrowpeak", "summits_bed",
             "summits_fasta", "peaks_fasta",
             "meme_summits_dir", "meme_peaks_dir",
             "fimo_summits_tsv", "fimo_peaks_tsv",
@@ -237,22 +241,24 @@ def main():
 
     qc_stats = read_report(sm.input.report)
 
+    meme_fold_idx = sm.params.macs3_meme_foldch_level
     shared = {
-        "run_date":          run_date,
-        "output_dir":        output_dir,
-        "genome_ref":        sm.params.genome_ref,
-        "genome_size":       sm.params.genome_size,
-        "input_control":     sm.params.input_control or "",
-        "threads":           sm.params.threads,
-        "mapq":              sm.params.mapq,
-        "max_frags":         sm.params.max_frags or "",
-        "macs3_format":      sm.params.macs3_format,
-        "macs3_min_foldch":  sm.params.macs3_min_foldch,
-        "meme_nmotifs":      sm.params.meme_nmotifs,
-        "meme_minw":         sm.params.meme_minw,
-        "meme_maxw":         sm.params.meme_maxw,
-        "meme_maxpeaks":     sm.params.meme_maxpeaks,
-        "fimo_thresh":       sm.params.fimo_thresh,
+        "run_date":                 run_date,
+        "output_dir":               output_dir,
+        "genome_ref":               sm.params.genome_ref,
+        "genome_size":              sm.params.genome_size,
+        "input_control":            sm.params.input_control or "",
+        "threads":                  sm.params.threads,
+        "mapq":                     sm.params.mapq,
+        "max_frags":                sm.params.max_frags or "",
+        "macs3_format":             sm.params.macs3_format,
+        "macs3_foldch_levels":      str(sm.params.macs3_foldch_levels),
+        "macs3_meme_foldch_level":  str(meme_fold_idx),
+        "meme_nmotifs":             sm.params.meme_nmotifs,
+        "meme_minw":                sm.params.meme_minw,
+        "meme_maxw":                sm.params.meme_maxw,
+        "meme_maxpeaks":            sm.params.meme_maxpeaks,
+        "fimo_thresh":              sm.params.fimo_thresh,
     }
 
     new_rows = []
@@ -274,20 +280,28 @@ def main():
         row["trimmed_reads"] = stats.get("trimmed_reads", "NA")
         row["mapped_reads"]  = stats.get("mapped_reads", "NA")
         row["alignment_rate"]       = stats.get("alignment_rate", "NA")
-        row["reads_in_peaks"]  = stats.get("reads_in_peaks", "NA")
-        row["reads_5fold"]     = stats.get("reads_5fold", "NA")
-        row["reads_nfold"]     = stats.get("reads_nfold", "NA")
-        row["max_peak_score"]    = stats.get("max_peak_score", "NA")
-        row["mapping_pct"]       = stats.get("mapping_pct", "NA")
-        row["motif_peaks"]       = stats.get("motif_peaks", "NA")
-        row["subsampled_frags"]  = stats.get("subsampled_frags", "NA")
-        row["median_frag_size"]  = stats.get("median_frag_size", "NA")
-        row["num_peaks"]         = stats.get("num_peaks", "NA")
-        row["num_peaks_filt"]    = stats.get("num_peaks_filt", "NA")
+        row["reads_in_peaks"]       = stats.get("reads_in_peaks", "NA")
+        row["reads_in_peaks_fold1"] = stats.get("reads_in_peaks_fold1", "NA")
+        row["reads_in_peaks_fold2"] = stats.get("reads_in_peaks_fold2", "NA")
+        row["reads_in_peaks_fold3"] = stats.get("reads_in_peaks_fold3", "NA")
+        row["max_peak_score"]       = stats.get("max_peak_score", "NA")
+        row["mapping_pct"]          = stats.get("mapping_pct", "NA")
+        row["motif_peaks"]          = stats.get("motif_peaks", "NA")
+        row["subsampled_frags"]     = stats.get("subsampled_frags", "NA")
+        row["median_frag_size"]     = stats.get("median_frag_size", "NA")
+        row["num_peaks"]            = stats.get("num_peaks", "NA")
+        row["num_peaks_fold1"]      = stats.get("num_peaks_fold1", "NA")
+        row["num_peaks_fold2"]      = stats.get("num_peaks_fold2", "NA")
+        row["num_peaks_fold3"]      = stats.get("num_peaks_fold3", "NA")
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 
         generated = _build_meta_paths(output_dir, sample, is_treatment)
+        if is_treatment:
+            o = output_dir.rstrip("/")
+            generated["peaks_meme_narrowpeak"] = (
+                f"{o}/MACS/{sample}_peaks_fold{meme_fold_idx}.narrowPeak"
+            )
         meta = {
             "output_dir":      output_dir,
             "sample":          sample,

@@ -171,12 +171,18 @@ COLUMNS = [
     "mapped_reads",
     "mapping_pct",
     "median_frag_size",
+    "foldch_level1",
+    "foldch_level2",
+    "foldch_level3",
     "num_peaks",
-    "num_peaks_filt",
+    "num_peaks_fold1",
+    "num_peaks_fold2",
+    "num_peaks_fold3",
     "num_peaks_bl",
     "reads_in_peaks",
-    "reads_in_peaks_5fold",
-    "reads_in_peaks_filt",
+    "reads_in_peaks_fold1",
+    "reads_in_peaks_fold2",
+    "reads_in_peaks_fold3",
     "max_peak_score",
     "motif_peaks",
 ]
@@ -212,20 +218,33 @@ def main():
 
     # --- Treatment-only stats ---
     if is_treatment:
+        foldch_levels     = sm.params.foldch_levels
+        meme_foldch_level = sm.params.meme_foldch_level
+
+        row["foldch_level1"] = str(foldch_levels[0])
+        row["foldch_level2"] = str(foldch_levels[1])
+        row["foldch_level3"] = str(foldch_levels[2])
+
         row["reads_in_peaks"] = _bedtools_intersect_count(
             sm.input.bam, sm.input.peaks
         )
-        row["reads_in_peaks_5fold"] = _bedtools_intersect_count(
-            sm.input.bam, sm.input.peaks_5fold
+        row["reads_in_peaks_fold1"] = _bedtools_intersect_count(
+            sm.input.bam, sm.input.peaks_fold1
         )
-        row["reads_in_peaks_filt"] = _bedtools_intersect_count(
-            sm.input.bam, sm.input.peaks_filt
+        row["reads_in_peaks_fold2"] = _bedtools_intersect_count(
+            sm.input.bam, sm.input.peaks_fold2
         )
-        row["num_peaks"]      = _count_lines(sm.input.peaks)
-        row["num_peaks_filt"] = _count_lines(sm.input.peaks_filt)
+        row["reads_in_peaks_fold3"] = _bedtools_intersect_count(
+            sm.input.bam, sm.input.peaks_fold3
+        )
+        row["num_peaks"]       = _count_lines(sm.input.peaks)
+        row["num_peaks_fold1"] = _count_lines(sm.input.peaks_fold1)
+        row["num_peaks_fold2"] = _count_lines(sm.input.peaks_fold2)
+        row["num_peaks_fold3"] = _count_lines(sm.input.peaks_fold3)
         if sm.params.blacklist_enabled and sm.input.peaks_bl:
             row["num_peaks_bl"] = _count_lines(sm.input.peaks_bl[0])
-        row["max_peak_score"] = _narrowpeak_max_score(sm.input.peaks_filt)
+        meme_peak_file        = getattr(sm.input, f"peaks_fold{meme_foldch_level}")
+        row["max_peak_score"] = _narrowpeak_max_score(meme_peak_file)
         row["motif_peaks"]    = _fimo_motif_peaks(sm.input.fimo)
 
     with open(sm.output.stats_csv, "w", newline="") as fh:

@@ -37,10 +37,10 @@ rule macs3:
 if config.get("blacklist_filter", {}).get("enabled", False):
     rule blacklist_filter_peaks:
         input:
-            peaks     = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+            peaks     = OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}.narrowPeak",
             blacklist = config["blacklist_filter"]["bed"],
         output:
-            OUT + "/MACS/{sample}_peaks_filt_bl.narrowPeak",
+            OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}_bl.narrowPeak",
         resources:
             mem_mb          = config["resources"]["blacklist_filter_peaks"]["mem_mb"],
             runtime         = config["resources"]["blacklist_filter_peaks"]["runtime"],
@@ -60,10 +60,13 @@ rule filter_peaks:
     input:
         OUT + "/MACS/{sample}_peaks.narrowPeak",
     output:
-        filt        = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
-        peaks_5fold = OUT + "/MACS/{sample}_peaks_5fold.narrowPeak",
+        fold1 = OUT + "/MACS/{sample}_peaks_fold1.narrowPeak",
+        fold2 = OUT + "/MACS/{sample}_peaks_fold2.narrowPeak",
+        fold3 = OUT + "/MACS/{sample}_peaks_fold3.narrowPeak",
     params:
-        min_foldch = config["macs3"]["min_foldch"],
+        fch1 = FOLD_LEVELS[0],
+        fch2 = FOLD_LEVELS[1],
+        fch3 = FOLD_LEVELS[2],
     resources:
         mem_mb          = config["resources"]["filter_peaks"]["mem_mb"],
         runtime         = config["resources"]["filter_peaks"]["runtime"],
@@ -74,6 +77,7 @@ rule filter_peaks:
     shell:
         """
         set -euo pipefail
-        awk -v FCH={params.min_foldch} '$7 >= FCH' {input} > {output.filt}  2>{log}
-        awk '$7 >= 5.0'                              {input} > {output.peaks_5fold}
+        awk -v FCH={params.fch1} '$7 >= FCH' {input} > {output.fold1} 2>{log}
+        awk -v FCH={params.fch2} '$7 >= FCH' {input} > {output.fold2}
+        awk -v FCH={params.fch3} '$7 >= FCH' {input} > {output.fold3}
         """

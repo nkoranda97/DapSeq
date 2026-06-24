@@ -31,16 +31,27 @@ PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
 
 SCRIPTS = os.path.join(workflow.basedir, "scripts")
 
+# --- Fold-change filter config validation ---
+_fold_levels = config["macs3"]["foldch_levels"]
+_meme_idx    = config["macs3"].get("meme_foldch_level", 2)
+if len(_fold_levels) != 3:
+    raise ValueError(f"macs3.foldch_levels must have exactly 3 values, got {len(_fold_levels)}")
+if not (_fold_levels[0] < _fold_levels[1] < _fold_levels[2]):
+    raise ValueError(f"macs3.foldch_levels must be strictly increasing, got {_fold_levels}")
+if _meme_idx not in (1, 2, 3):
+    raise ValueError(f"macs3.meme_foldch_level must be 1, 2, or 3, got {_meme_idx}")
+FOLD_LEVELS   = _fold_levels
+MEME_FOLD_IDX = _meme_idx
+
 
 def is_pe(wc):
     return "true" if wc.sample in PE_SAMPLES else "false"
 
 
 def get_final_filtered_peaks(wc):
-    """Return _peaks_filt_bl.narrowPeak when blacklist filtering is enabled, else _peaks_filt.narrowPeak."""
     if config.get("blacklist_filter", {}).get("enabled", False):
-        return OUT + f"/MACS/{wc.sample}_peaks_filt_bl.narrowPeak"
-    return OUT + f"/MACS/{wc.sample}_peaks_filt.narrowPeak"
+        return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}_bl.narrowPeak"
+    return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}.narrowPeak"
 
 
 wildcard_constraints:
@@ -58,9 +69,11 @@ rule mapped:
 
 rule peaked:
     input:
-        expand(OUT + "/MACS/{sample}_peaks_filt_bl.narrowPeak", sample=TREATMENT_SAMPLES)
+        expand(OUT + "/MACS/{sample}_peaks_fold{level}_bl.narrowPeak",
+               sample=TREATMENT_SAMPLES, level=MEME_FOLD_IDX)
         if config.get("blacklist_filter", {}).get("enabled", False)
-        else expand(OUT + "/MACS/{sample}_peaks_filt.narrowPeak", sample=TREATMENT_SAMPLES),
+        else expand(OUT + "/MACS/{sample}_peaks_fold{level}.narrowPeak",
+                    sample=TREATMENT_SAMPLES, level=MEME_FOLD_IDX),
 
 
 rule motifs_done:

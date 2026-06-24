@@ -3,13 +3,14 @@ rule sample_stats_treatment:
         bam          = OUT + "/bam/{sample}.bam",
         bai          = OUT + "/bam/{sample}.bam.bai",
         peaks        = OUT + "/MACS/{sample}_peaks.narrowPeak",
-        peaks_filt   = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
-        peaks_5fold  = OUT + "/MACS/{sample}_peaks_5fold.narrowPeak",
+        peaks_fold1  = OUT + "/MACS/{sample}_peaks_fold1.narrowPeak",
+        peaks_fold2  = OUT + "/MACS/{sample}_peaks_fold2.narrowPeak",
+        peaks_fold3  = OUT + "/MACS/{sample}_peaks_fold3.narrowPeak",
         fimo         = OUT + "/fimo/{sample}/peaks/fimo.tsv",
         subsample_log= OUT + "/logs/bbduk/{sample}.subsample.log",
         trim_log     = OUT + "/logs/bbduk/{sample}.trim.log",
         peaks_bl     = lambda wc: (
-            [OUT + f"/MACS/{wc.sample}_peaks_filt_bl.narrowPeak"]
+            [OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}_bl.narrowPeak"]
             if config.get("blacklist_filter", {}).get("enabled", False)
             else []
         ),
@@ -22,6 +23,8 @@ rule sample_stats_treatment:
         is_treatment      = True,
         max_frags         = config["bbduk"].get("max_frags"),
         blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
+        foldch_levels     = FOLD_LEVELS,
+        meme_foldch_level = MEME_FOLD_IDX,
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],
@@ -86,6 +89,8 @@ rule report:
     params:
         treatment_samples = TREATMENT_SAMPLES,
         stats_dir         = OUT + "/stats",
+        foldch_levels     = FOLD_LEVELS,
+        meme_foldch_level = MEME_FOLD_IDX,
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],

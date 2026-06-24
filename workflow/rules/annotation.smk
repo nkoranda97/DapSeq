@@ -1,7 +1,7 @@
 if config.get("gene_annotation"):
     rule homer_annotate:
         input:
-            peaks  = OUT + "/MACS/{sample}_peaks_filt.narrowPeak",
+            peaks  = OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}.narrowPeak",
             genome = config["genome_ref"],
             gtf    = config["gene_annotation"],
         output:
