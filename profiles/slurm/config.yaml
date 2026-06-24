@@ -1,7 +1,7 @@
 executor: slurm
 
 # jobscript runs before every SLURM job — loads Apptainer module
-jobscript: "profiles/default/slurm-jobscript.sh"
+jobscript: "profiles/slurm/slurm-jobscript.sh"
 
 # Maximum number of jobs submitted to SLURM at once
 jobs: 100
