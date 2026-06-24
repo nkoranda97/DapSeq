@@ -30,8 +30,6 @@ rule narrow_peak_to_fasta:
         extend_bp             = lambda wc: config["meme"]["summit_extend"] if wc.peak_type == "summits" else "all",
         fimocoords            = True,
         filter_chroms         = config.get("chrom_filter", []),
-        complexity_filter_enabled = config.get("complexity_filter", {}).get("enabled", False),
-        min_entropy               = config.get("complexity_filter", {}).get("min_entropy", 3.0),
     resources:
         mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
         runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],

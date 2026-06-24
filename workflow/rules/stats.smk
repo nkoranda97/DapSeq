@@ -14,6 +14,11 @@ rule sample_stats_treatment:
             if config.get("blacklist_filter", {}).get("enabled", False)
             else []
         ),
+        peaks_rmsk   = lambda wc: (
+            [OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}{PEAKS_FILTER_SUFFIX}.narrowPeak"]
+            if config.get("rmsk_filter", {}).get("enabled", False)
+            else []
+        ),
     output:
         stats_csv = OUT + "/stats/{sample}.stats.csv",
     wildcard_constraints:
@@ -23,6 +28,7 @@ rule sample_stats_treatment:
         is_treatment      = True,
         max_frags         = config["bbduk"].get("max_frags"),
         blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
+        rmsk_enabled      = config.get("rmsk_filter",     {}).get("enabled", False),
         foldch_levels     = FOLD_LEVELS,
         meme_foldch_level = MEME_FOLD_IDX,
     resources:

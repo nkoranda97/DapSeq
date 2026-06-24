@@ -56,6 +56,31 @@ if config.get("blacklist_filter", {}).get("enabled", False):
             """
 
 
+if config.get("rmsk_filter", {}).get("enabled", False):
+    _RMSK_IN_SUFFIX = ("_bl" if config.get("blacklist_filter", {}).get("enabled", False) else "")
+    rule rmsk_filter_peaks:
+        input:
+            peaks = get_pre_rmsk_peaks,
+            rmsk  = config["rmsk_filter"]["txt"],
+        output:
+            OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}{_RMSK_IN_SUFFIX}_rmsk.narrowPeak",
+        resources:
+            mem_mb          = config["resources"]["rmsk_filter_peaks"]["mem_mb"],
+            runtime         = config["resources"]["rmsk_filter_peaks"]["runtime"],
+            slurm_partition = config["slurm_partition"],
+            slurm_account   = config["slurm_account"],
+        log:
+            OUT + "/logs/rmsk_filter/{sample}.log"
+        shell:
+            """
+            set -euo pipefail
+            zcat {input.rmsk} \
+              | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' \
+              | bedtools intersect -v -a {input.peaks} -b stdin \
+              > {output} 2>{log}
+            """
+
+
 rule filter_peaks:
     input:
         OUT + "/MACS/{sample}_peaks.narrowPeak",

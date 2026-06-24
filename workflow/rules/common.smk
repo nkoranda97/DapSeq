@@ -43,15 +43,24 @@ if _meme_idx not in (1, 2, 3):
 FOLD_LEVELS   = _fold_levels
 MEME_FOLD_IDX = _meme_idx
 
+# Compute combined filter suffix for the MEME-level peaks file
+_BL_ENABLED   = config.get("blacklist_filter", {}).get("enabled", False)
+_RMSK_ENABLED = config.get("rmsk_filter",     {}).get("enabled", False)
+PEAKS_FILTER_SUFFIX = ("_bl" if _BL_ENABLED else "") + ("_rmsk" if _RMSK_ENABLED else "")
+
 
 def is_pe(wc):
     return "true" if wc.sample in PE_SAMPLES else "false"
 
 
 def get_final_filtered_peaks(wc):
-    if config.get("blacklist_filter", {}).get("enabled", False):
-        return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}_bl.narrowPeak"
-    return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}.narrowPeak"
+    return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}{PEAKS_FILTER_SUFFIX}.narrowPeak"
+
+
+def get_pre_rmsk_peaks(wc):
+    """Peaks file fed into rmsk filtering (post-blacklist if enabled, else post-fold)."""
+    pre = "_bl" if _BL_ENABLED else ""
+    return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}{pre}.narrowPeak"
 
 
 wildcard_constraints:
@@ -69,11 +78,10 @@ rule mapped:
 
 rule peaked:
     input:
-        expand(OUT + "/MACS/{sample}_peaks_fold{level}_bl.narrowPeak",
-               sample=TREATMENT_SAMPLES, level=MEME_FOLD_IDX)
-        if config.get("blacklist_filter", {}).get("enabled", False)
-        else expand(OUT + "/MACS/{sample}_peaks_fold{level}.narrowPeak",
-                    sample=TREATMENT_SAMPLES, level=MEME_FOLD_IDX),
+        expand(
+            OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}{PEAKS_FILTER_SUFFIX}.narrowPeak",
+            sample=TREATMENT_SAMPLES,
+        ),
 
 
 rule motifs_done:

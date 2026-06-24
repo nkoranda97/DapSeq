@@ -99,10 +99,9 @@ blacklist_filter:
   enabled: false
   bed: null     # set to path of blacklist BED/BED.gz when enabled: true (e.g. blacklist/hg38-blacklist.v2.bed.gz)
 
-complexity_filter:
+rmsk_filter:
   enabled: false
-  min_entropy: 3.0   # 3-mer Shannon entropy in bits; drop sequences below this.
-                     # Lower = more permissive; higher = more aggressive.
+  txt: null     # path to UCSC rmsk.txt.gz when enabled: true (e.g. blacklist/rmsk.txt.gz)
 
 meme:
   nmotifs: 2
@@ -167,6 +166,9 @@ resources:
   blacklist_filter_peaks:
     mem_mb: 8000
     runtime: 10
+  rmsk_filter_peaks:
+    mem_mb: 8000
+    runtime: 30
   narrow_peak_to_fasta:
     mem_mb: 32000
     runtime: 120

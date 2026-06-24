@@ -19,7 +19,7 @@ INT_COLS = {
     "reads_in_peaks",
     "reads_in_peaks_fold1", "reads_in_peaks_fold2", "reads_in_peaks_fold3",
     "motif_peaks", "subsampled_frags",
-    "num_peaks", "num_peaks_fold1", "num_peaks_fold2", "num_peaks_fold3", "num_peaks_bl",
+    "num_peaks", "num_peaks_fold1", "num_peaks_fold2", "num_peaks_fold3", "num_peaks_bl", "num_peaks_rmsk",
 }
 PCT_COLS = {"frip", "frip_fold1", "frip_fold2", "frip_fold3", "mapping_pct"}
 
@@ -41,6 +41,7 @@ def make_cols():
         "num_peaks_fold2",
         "num_peaks_fold3",
         "num_peaks_bl",
+        "num_peaks_rmsk",
         "reads_in_peaks",
         "reads_in_peaks_fold1",
         "reads_in_peaks_fold2",

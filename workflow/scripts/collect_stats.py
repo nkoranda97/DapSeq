@@ -179,6 +179,7 @@ COLUMNS = [
     "num_peaks_fold2",
     "num_peaks_fold3",
     "num_peaks_bl",
+    "num_peaks_rmsk",
     "reads_in_peaks",
     "reads_in_peaks_fold1",
     "reads_in_peaks_fold2",
@@ -243,6 +244,8 @@ def main():
         row["num_peaks_fold3"] = _count_lines(sm.input.peaks_fold3)
         if sm.params.blacklist_enabled and sm.input.peaks_bl:
             row["num_peaks_bl"] = _count_lines(sm.input.peaks_bl[0])
+        if sm.params.rmsk_enabled and sm.input.peaks_rmsk:
+            row["num_peaks_rmsk"] = _count_lines(sm.input.peaks_rmsk[0])
         meme_peak_file        = getattr(sm.input, f"peaks_fold{meme_foldch_level}")
         row["max_peak_score"] = _narrowpeak_max_score(meme_peak_file)
         row["motif_peaks"]    = _fimo_motif_peaks(sm.input.fimo)
