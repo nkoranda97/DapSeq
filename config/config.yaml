@@ -81,12 +81,12 @@ macs3:
 chrom_filter: []
 
 blacklist_filter:
-  enabled: false
-  bed: null     # path to blacklist BED/BED.gz (e.g. blacklist/hg38-blacklist.v2.bed.gz); required when enabled: true
+  enabled: true
+  bed: blacklist/hg38-blacklist.v2.bed.gz
 
 rmsk_filter:
-  enabled: false
-  txt: null     # path to UCSC rmsk.txt.gz when enabled: true (e.g. blacklist/rmsk.txt.gz)
+  enabled: true
+  txt: blacklist/rmsk.txt.gz
 
 meme:
   nmotifs: 2
