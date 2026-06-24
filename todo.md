@@ -2,15 +2,15 @@
 
 ## Biology
 
-- Understand the impact of no-lambda on the dataset
-- compare results of bowtie2 and bwa-mem2
-- Export bigWigs for mappings of 5 fold enrichment 
-- Tune q value cutoff in MACS by analysing mapping with `--cutoff-analysis`
+- 2 fold, 5 fold, and 15 fold filtering after peak calling
+- Only 5 fold goes through MEME
+- Filter with UCSC repeat blacklist + encode hg38 blacklist
+- Remove entropy filtering
+- Run two sets through MEME, filtered and unfiltered
 - Think about IDR's
 
 ## Documentation
 
-- Document every variable that is used and a description of what it means
 
 ## Technical
 
