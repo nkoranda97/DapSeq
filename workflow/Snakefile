@@ -22,6 +22,7 @@ rule all:
     input:
         rules.mapped.input,
         rules.peaked.input,
+        rules.control_peaked.input,
         rules.motifs_done.input,
         rules.qc_done.input,
         rules.update_db.output.flag,

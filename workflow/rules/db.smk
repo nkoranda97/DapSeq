@@ -7,7 +7,7 @@ rule update_db:
         db_path          = os.path.join(os.path.dirname(workflow.basedir), "pipeline_db.db"),
         output_dir       = OUT,
         samples_cfg      = config["samples"],
-        input_control    = config.get("input_control"),
+        control          = config.get("control"),
         genome_ref       = config["genome_ref"],
         genome_size      = config["genome_size"],
         threads          = config["threads"],

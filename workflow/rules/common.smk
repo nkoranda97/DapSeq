@@ -1,5 +1,24 @@
 import os
 
+import yaml
+
+# --- Top-level config key validation (catch typos, e.g. silently-ignored
+# keys like the old 'input_control' name) ---
+_repo_root = os.path.dirname(workflow.basedir)
+_expected_keys = set()
+for _rel in ("config/config.yaml", "config.yaml"):
+    with open(os.path.join(_repo_root, _rel)) as _f:
+        _expected_keys |= set(yaml.safe_load(_f).keys())
+_expected_keys |= {"container"}  # bare config.get(), no YAML default anywhere
+
+_unexpected_keys = set(config.keys()) - _expected_keys
+if _unexpected_keys:
+    _hint = (
+        " The control field is now named 'control', not 'input_control'."
+        if "input_control" in _unexpected_keys else ""
+    )
+    raise ValueError(f"Unrecognized config key(s): {sorted(_unexpected_keys)}.{_hint}")
+
 
 def get_r1(sample):
     r1 = config["samples"][sample]["r1"]
@@ -10,13 +29,24 @@ def get_r1(sample):
 
 SAMPLES     = [s for s in config["samples"] if get_r1(s)]
 
-_ctrl_cfg = config.get("input_control") or None
+_ctrl_cfg = config.get("control") or None
 if _ctrl_cfg is None:
     CONTROL_SAMPLES = []
 elif isinstance(_ctrl_cfg, list):
-    CONTROL_SAMPLES = [s for s in _ctrl_cfg if s in SAMPLES]
+    _missing_ctrl = [s for s in _ctrl_cfg if s not in SAMPLES]
+    if _missing_ctrl:
+        raise ValueError(
+            f"control references unknown sample(s) {_missing_ctrl} -- "
+            "must match a key under 'samples:' that has a valid r1."
+        )
+    CONTROL_SAMPLES = list(_ctrl_cfg)
 else:
-    CONTROL_SAMPLES = [_ctrl_cfg] if _ctrl_cfg in SAMPLES else []
+    if _ctrl_cfg not in SAMPLES:
+        raise ValueError(
+            f"control '{_ctrl_cfg}' does not match any sample under 'samples:' "
+            "(or it has no r1 set)."
+        )
+    CONTROL_SAMPLES = [_ctrl_cfg]
 
 CONTROL = (
     "merged_control" if len(CONTROL_SAMPLES) > 1
@@ -82,6 +112,11 @@ rule peaked:
             OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}{PEAKS_FILTER_SUFFIX}.narrowPeak",
             sample=TREATMENT_SAMPLES,
         ),
+
+
+rule control_peaked:
+    input:
+        expand(OUT + "/MACS/{sample}_control_peaks.narrowPeak", sample=CONTROL_SAMPLES),
 
 
 rule motifs_done:

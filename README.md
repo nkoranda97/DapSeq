@@ -54,7 +54,7 @@ samples:
     r1: /path/to/control.R1.fastq.gz
     r2: null
 
-input_control: control  # must match a key in samples; null to run without control
+control: control  # must match a key in samples; null to run without control
 
 output_dir: /path/to/output/
 genome_ref: /path/to/genome.fa

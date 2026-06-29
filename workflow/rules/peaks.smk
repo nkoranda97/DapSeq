@@ -34,6 +34,42 @@ rule macs3:
         """
 
 
+rule macs3_control:
+    input:
+        sample_bam = OUT + "/bam/{sample}.bam",
+    output:
+        summits    = OUT + "/MACS/{sample}_control_summits.bed",
+        narrowpeak = OUT + "/MACS/{sample}_control_peaks.narrowPeak",
+    wildcard_constraints:
+        sample = "|".join(CONTROL_SAMPLES) if CONTROL_SAMPLES else "(?!)",
+    params:
+        outdir      = OUT + "/MACS",
+        name        = lambda wc: f"{wc.sample}_control",
+        keep_dup    = config["macs3"].get("keep_dup", 1),
+        extra       = config["macs3"].get("extra", ""),
+        tmpdir      = OUT + "/temp",
+        macs3_format = config["macs3"]["format"],
+        genome_size  = config["genome_size"],
+    resources:
+        mem_mb          = config["resources"]["macs3"]["mem_mb"],
+        runtime         = config["resources"]["macs3"]["runtime"],
+        slurm_partition = config["slurm_partition"],
+        slurm_account   = config["slurm_account"],
+    log:
+        OUT + "/logs/macs3_control/{sample}.log"
+    shell:
+        """
+        set -euo pipefail
+        mkdir -p {params.tmpdir}
+        export TMPDIR={params.tmpdir}
+        macs3 callpeak \
+          -t {input.sample_bam} \
+          -f {params.macs3_format} --outdir {params.outdir} \
+          -g {params.genome_size} -n {params.name} \
+          --call-summits --keep-dup {params.keep_dup} {params.extra} --verbose=0 2>{log}
+        """
+
+
 if config.get("blacklist_filter", {}).get("enabled", False):
     rule blacklist_filter_peaks:
         input:

@@ -9,7 +9,7 @@ samples:
     r1: null
     r2: null
 
-input_control: null
+control: null
 output_dir: null
 
 # genome

@@ -18,9 +18,9 @@ samples:
     r1: null
     r2: null
 
-# Input/control sample name — must match a key in samples above.
+# Control sample name — must match a key in samples above.
 # Set to null to run without a control.
-input_control: control
+control: control
 
 # please put output folder in a directory outside of the pipeline folder
 output_dir: null
