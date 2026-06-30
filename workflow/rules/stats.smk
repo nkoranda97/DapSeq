@@ -22,7 +22,7 @@ rule sample_stats_treatment:
     output:
         stats_csv = OUT + "/stats/{sample}.stats.csv",
     wildcard_constraints:
-        sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
+        sample = TREATMENT_SAMPLE_CONSTRAINT,
     params:
         is_pe             = lambda wc: wc.sample in PE_SAMPLES,
         is_treatment      = True,
@@ -51,7 +51,7 @@ rule sample_stats_control:
     output:
         stats_csv = OUT + "/stats/{sample}.stats.csv",
     wildcard_constraints:
-        sample = "|".join(CONTROL_SAMPLES) if CONTROL_SAMPLES else "(?!)",
+        sample = CONTROL_SAMPLE_CONSTRAINT,
     params:
         is_pe        = lambda wc: wc.sample in PE_SAMPLES,
         is_treatment = False,

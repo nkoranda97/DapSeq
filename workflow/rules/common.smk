@@ -1,17 +1,17 @@
 import os
 
-import yaml
+# Known top-level config keys — union of config.yaml and config/config.yaml,
+# plus keys that have no YAML default but are accessed via config.get().
+_KNOWN_CONFIG_KEYS = frozenset({
+    "aligner", "author", "bamcompare", "bamcoverage", "bbduk",
+    "blacklist_filter", "bowtie2", "bwa_mem2", "chrom_filter", "container",
+    "control", "fastqc", "fimo", "gene_annotation", "genome_ref", "genome_size",
+    "homer", "macs3", "meme", "multiqc", "output_dir", "resources",
+    "rmsk_filter", "samples", "samtools", "slurm_account", "slurm_partition",
+    "threads",
+})
 
-# --- Top-level config key validation (catch typos, e.g. silently-ignored
-# keys like the old 'input_control' name) ---
-_repo_root = os.path.dirname(workflow.basedir)
-_expected_keys = set()
-for _rel in ("config/config.yaml", "config.yaml"):
-    with open(os.path.join(_repo_root, _rel)) as _f:
-        _expected_keys |= set(yaml.safe_load(_f).keys())
-_expected_keys |= {"container"}  # bare config.get(), no YAML default anywhere
-
-_unexpected_keys = set(config.keys()) - _expected_keys
+_unexpected_keys = set(config.keys()) - _KNOWN_CONFIG_KEYS
 if _unexpected_keys:
     _hint = (
         " The control field is now named 'control', not 'input_control'."
@@ -55,6 +55,10 @@ CONTROL = (
 )
 TREATMENT_SAMPLES = [s for s in SAMPLES if s not in CONTROL_SAMPLES]
 OUT               = config["output_dir"]
+
+# Regex constraints for wildcard_constraints blocks; "(?!)" never matches (no samples).
+CONTROL_SAMPLE_CONSTRAINT   = "|".join(CONTROL_SAMPLES)   if CONTROL_SAMPLES   else "(?!)"
+TREATMENT_SAMPLE_CONSTRAINT = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)"
 
 SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
 PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}

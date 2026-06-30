@@ -1,3 +1,7 @@
+_MACS3_KEEP_DUP = config["macs3"].get("keep_dup", 1)
+_MACS3_EXTRA    = config["macs3"].get("extra", "")
+
+
 rule macs3:
     input:
         sample_bam  = OUT + "/bam/{sample}.bam",
@@ -9,8 +13,8 @@ rule macs3:
         ctrl        = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
         outdir      = OUT + "/MACS",
         name        = lambda wc: wc.sample,
-        keep_dup    = config["macs3"].get("keep_dup", 1),
-        extra       = config["macs3"].get("extra", ""),
+        keep_dup    = _MACS3_KEEP_DUP,
+        extra       = _MACS3_EXTRA,
         tmpdir      = OUT + "/temp",
         macs3_format = config["macs3"]["format"],
         genome_size  = config["genome_size"],
@@ -41,12 +45,12 @@ rule macs3_control:
         summits    = OUT + "/MACS/{sample}_control_summits.bed",
         narrowpeak = OUT + "/MACS/{sample}_control_peaks.narrowPeak",
     wildcard_constraints:
-        sample = "|".join(CONTROL_SAMPLES) if CONTROL_SAMPLES else "(?!)",
+        sample = CONTROL_SAMPLE_CONSTRAINT,
     params:
         outdir      = OUT + "/MACS",
         name        = lambda wc: f"{wc.sample}_control",
-        keep_dup    = config["macs3"].get("keep_dup", 1),
-        extra       = config["macs3"].get("extra", ""),
+        keep_dup    = _MACS3_KEEP_DUP,
+        extra       = _MACS3_EXTRA,
         tmpdir      = OUT + "/temp",
         macs3_format = config["macs3"]["format"],
         genome_size  = config["genome_size"],
