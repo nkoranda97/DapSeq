@@ -20,8 +20,6 @@ if _aligner == "bowtie2":
         resources:
             mem_mb          = config["resources"]["bowtie2_index"]["mem_mb"],
             runtime         = config["resources"]["bowtie2_index"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/bowtie2_index.log"
         shell:
@@ -51,8 +49,6 @@ elif _aligner == "bwa_mem2":
         resources:
             mem_mb          = config["resources"]["bwa_mem2_index"]["mem_mb"],
             runtime         = config["resources"]["bwa_mem2_index"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/bwa_mem2_index.log"
         shell:

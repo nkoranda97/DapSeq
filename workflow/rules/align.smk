@@ -26,8 +26,6 @@ if _aligner == "bowtie2":
         resources:
             mem_mb          = config["resources"]["trim_align"]["mem_mb"],
             runtime         = config["resources"]["trim_align"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             align       = OUT + "/logs/bowtie2/{sample}.log",
             bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
@@ -84,8 +82,6 @@ if _aligner == "bowtie2":
         resources:
             mem_mb          = config["resources"]["trim_align"]["mem_mb"],
             runtime         = config["resources"]["trim_align"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             align       = OUT + "/logs/bowtie2/{sample}.log",
             bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
@@ -141,8 +137,6 @@ elif _aligner == "bwa_mem2":
         resources:
             mem_mb          = config["resources"]["bwa_mem2_align"]["mem_mb"],
             runtime         = config["resources"]["bwa_mem2_align"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             align       = OUT + "/logs/bwa_mem2/{sample}.log",
             bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",
@@ -198,8 +192,6 @@ elif _aligner == "bwa_mem2":
         resources:
             mem_mb          = config["resources"]["bwa_mem2_align"]["mem_mb"],
             runtime         = config["resources"]["bwa_mem2_align"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             align       = OUT + "/logs/bwa_mem2/{sample}.log",
             bamcoverage = OUT + "/logs/bamcoverage/{sample}.log",

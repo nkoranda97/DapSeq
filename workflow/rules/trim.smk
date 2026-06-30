@@ -22,8 +22,6 @@ rule trim_se:
     resources:
         mem_mb          = config["resources"]["trim_align"]["mem_mb"],
         runtime         = config["resources"]["trim_align"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         subsample = OUT + "/logs/bbduk/{sample}.subsample.log",
         trim      = OUT + "/logs/bbduk/{sample}.trim.log",
@@ -115,8 +113,6 @@ rule trim_pe:
     resources:
         mem_mb          = config["resources"]["trim_align"]["mem_mb"],
         runtime         = config["resources"]["trim_align"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         subsample = OUT + "/logs/bbduk/{sample}.subsample.log",
         trim      = OUT + "/logs/bbduk/{sample}.trim.log",

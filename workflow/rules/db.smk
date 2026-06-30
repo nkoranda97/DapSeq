@@ -27,8 +27,6 @@ rule update_db:
     resources:
         mem_mb          = config["resources"]["update_db"]["mem_mb"],
         runtime         = config["resources"]["update_db"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/update_db.log"
     script:

@@ -9,8 +9,6 @@ rule fastqc:
     resources:
         mem_mb          = config["resources"]["fastqc"]["mem_mb"],
         runtime         = config["resources"]["fastqc"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/fastqc/{sample}.{read}.log"
     shell:
@@ -28,8 +26,6 @@ rule multiqc:
     resources:
         mem_mb          = config["resources"]["multiqc"]["mem_mb"],
         runtime         = config["resources"]["multiqc"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/multiqc.log"
     shell:

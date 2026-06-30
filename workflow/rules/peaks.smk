@@ -21,8 +21,6 @@ rule macs3:
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/macs3/{sample}.log"
     shell:
@@ -57,8 +55,6 @@ rule macs3_control:
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/macs3_control/{sample}.log"
     shell:
@@ -84,8 +80,6 @@ if config.get("blacklist_filter", {}).get("enabled", False):
         resources:
             mem_mb          = config["resources"]["blacklist_filter_peaks"]["mem_mb"],
             runtime         = config["resources"]["blacklist_filter_peaks"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/blacklist_filter/{sample}.log"
         shell:
@@ -107,8 +101,6 @@ if config.get("rmsk_filter", {}).get("enabled", False):
         resources:
             mem_mb          = config["resources"]["rmsk_filter_peaks"]["mem_mb"],
             runtime         = config["resources"]["rmsk_filter_peaks"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/rmsk_filter/{sample}.log"
         shell:
@@ -135,8 +127,6 @@ rule filter_peaks:
     resources:
         mem_mb          = config["resources"]["filter_peaks"]["mem_mb"],
         runtime         = config["resources"]["filter_peaks"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/filter_peaks/{sample}.log"
     shell:

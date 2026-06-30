@@ -13,8 +13,6 @@ if len(CONTROL_SAMPLES) > 1:
         resources:
             mem_mb          = config["resources"]["merge_control"]["mem_mb"],
             runtime         = config["resources"]["merge_control"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/samtools/merge_control.log"
         shell:
@@ -45,8 +43,6 @@ if CONTROL:
         resources:
             mem_mb          = config["resources"]["bamcompare"]["mem_mb"],
             runtime         = config["resources"]["bamcompare"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/bamcompare/{sample}.log"
         shell:

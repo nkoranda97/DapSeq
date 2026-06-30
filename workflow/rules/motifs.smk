@@ -9,8 +9,6 @@ rule factorbook_logo:
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = 20,
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     params:
         base_colors = config["meme"].get("base_colors") or {},
     log:
@@ -33,8 +31,6 @@ rule narrow_peak_to_fasta:
     resources:
         mem_mb          = config["resources"]["narrow_peak_to_fasta"]["mem_mb"],
         runtime         = config["resources"]["narrow_peak_to_fasta"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/narrow_peak_to_fasta/{sample}.{peak_type}.log"
     script:
@@ -66,8 +62,6 @@ rule meme_summits:
     resources:
         mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = config["resources"]["meme"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.summits.log"
     shell:
@@ -104,8 +98,6 @@ rule meme_logo_summits:
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = 10,
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.summits.logo.log"
     script:
@@ -137,8 +129,6 @@ rule meme_peaks:
     resources:
         mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = config["resources"]["meme"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.peaks.log"
     shell:
@@ -175,8 +165,6 @@ rule meme_logo_peaks:
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = 10,
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/meme/{sample}.peaks.logo.log"
     script:
@@ -196,8 +184,6 @@ rule fimo:
     resources:
         mem_mb          = config["resources"]["fimo"]["mem_mb"],
         runtime         = config["resources"]["fimo"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/fimo/{sample}.{peak_type}.log"
     shell:

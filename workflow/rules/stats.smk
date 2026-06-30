@@ -34,8 +34,6 @@ rule sample_stats_treatment:
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/sample_stats/{sample}.log"
     script:
@@ -59,8 +57,6 @@ rule sample_stats_control:
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/sample_stats/{sample}.log"
     script:
@@ -76,8 +72,6 @@ rule idxstats:
     resources:
         mem_mb          = config["resources"]["alignment_stats"]["mem_mb"],
         runtime         = config["resources"]["alignment_stats"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/idxstats/{sample}.log"
     shell:
@@ -100,8 +94,6 @@ rule report:
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/report.log"
     script:
@@ -123,8 +115,6 @@ rule report_html:
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],
-        slurm_partition = config["slurm_partition"],
-        slurm_account   = config["slurm_account"],
     log:
         OUT + "/logs/report_html.log"
     script:

@@ -13,8 +13,6 @@ if config.get("gene_annotation"):
         resources:
             mem_mb          = config["resources"]["homer_annotate"]["mem_mb"],
             runtime         = config["resources"]["homer_annotate"]["runtime"],
-            slurm_partition = config["slurm_partition"],
-            slurm_account   = config["slurm_account"],
         log:
             OUT + "/logs/homer_annotate/{sample}.log"
         shell:

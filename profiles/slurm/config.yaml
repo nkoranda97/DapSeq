@@ -12,7 +12,10 @@ use-apptainer: true
 # Bind HPC project directory into the container
 apptainer-args: "--bind /project/zhuzhuzhang,/project/gzy8899"
 
-# Default SLURM resources used when a rule does not specify its own
+# Default SLURM resources used when a rule does not specify its own.
+# Set slurm_partition and slurm_account to your cluster values before first use.
 default-resources:
   mem_mb: 8000
   runtime: 120          # minutes
+  slurm_partition: "FILL_IN"    # e.g. caslake
+  slurm_account: "FILL_IN"      # e.g. pi-yourlab

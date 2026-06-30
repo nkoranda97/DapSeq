@@ -7,16 +7,21 @@ _KNOWN_CONFIG_KEYS = frozenset({
     "blacklist_filter", "bowtie2", "bwa_mem2", "chrom_filter", "container",
     "control", "fastqc", "fimo", "gene_annotation", "genome_ref", "genome_size",
     "homer", "macs3", "meme", "multiqc", "output_dir", "resources",
-    "rmsk_filter", "samples", "samtools", "slurm_account", "slurm_partition",
+    "rmsk_filter", "samples", "samtools",
     "threads",
 })
 
 _unexpected_keys = set(config.keys()) - _KNOWN_CONFIG_KEYS
 if _unexpected_keys:
-    _hint = (
-        " The control field is now named 'control', not 'input_control'."
-        if "input_control" in _unexpected_keys else ""
-    )
+    _hint = ""
+    if "input_control" in _unexpected_keys:
+        _hint += " The control field is now named 'control', not 'input_control'."
+    if "slurm_partition" in _unexpected_keys or "slurm_account" in _unexpected_keys:
+        _hint += (
+            " 'slurm_partition' and 'slurm_account' have moved to"
+            " profiles/slurm/config.yaml under default-resources:"
+            " — remove them from config.yaml."
+        )
     raise ValueError(f"Unrecognized config key(s): {sorted(_unexpected_keys)}.{_hint}")
 
 

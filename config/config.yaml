@@ -20,8 +20,6 @@ aligner: bowtie2    # bowtie2 | bwa_mem2
 
 # compute
 threads: 8
-slurm_partition: null
-slurm_account: null
 
 bbduk:
   adapters: null
