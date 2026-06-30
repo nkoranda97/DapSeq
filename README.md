@@ -37,6 +37,21 @@ pixi run snakemake --profile profiles/local --configfile /path/to/your/config.ya
 
 `slurm_partition` and `slurm_account` can be omitted or left as `null` in your config when using the local profile. Override parallelism with `--jobs N`.
 
+### Shared installation (multi-user)
+
+The pipeline can be installed once on a shared filesystem and used by multiple users simultaneously. Each user:
+
+1. Copies `config.yaml` from the repo root to their own location and fills in their samples, paths, and parameters.
+2. Runs from the shared repo root, passing their own config with `--configfile`:
+
+```sh
+pixi run snakemake --profile profiles/slurm --configfile /home/youruser/my_experiment.yaml
+```
+
+Concurrent runs are safe as long as each user sets `output_dir` to a unique location. Snakemake's locks are keyed per output directory, so simultaneous runs do not interfere with each other.
+
+The shared database (`pipeline_db.db` in the repo root) accumulates results from all users' runs. Set `db_path` in your config to redirect to a private database if needed.
+
 ## Configuration
 
 Copy `config.yaml` from the repo root and fill in the required fields. Defaults for all tool parameters are in `config/config.yaml`.

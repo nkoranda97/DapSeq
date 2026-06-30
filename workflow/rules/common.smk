@@ -34,6 +34,23 @@ def get_r1(sample):
 
 SAMPLES     = [s for s in config["samples"] if get_r1(s)]
 
+# Fail early with a clear message if required user config fields are missing.
+# This happens when --configfile was not passed and only the pipeline defaults
+# (config/config.yaml) are loaded.
+_missing_fields = []
+if not config.get("output_dir"):
+    _missing_fields.append("output_dir")
+if not config.get("genome_ref"):
+    _missing_fields.append("genome_ref")
+if not SAMPLES:
+    _missing_fields.append("samples (at least one sample must have r1 set)")
+if _missing_fields:
+    raise ValueError(
+        f"Required config field(s) not set: {', '.join(_missing_fields)}.\n"
+        "Pass your experiment config with: --configfile /path/to/your/config.yaml\n"
+        "See the README for setup instructions."
+    )
+
 _ctrl_cfg = config.get("control") or None
 if _ctrl_cfg is None:
     CONTROL_SAMPLES = []
