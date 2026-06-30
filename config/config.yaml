@@ -107,6 +107,12 @@ homer:
 multiqc:
   extra: ""
 
+factorbook:
+  tsv: null   # null uses the default path (factorbook/ in repo root)
+  meme: null  # null uses the default path
+
+db_path: null  # null uses the default (pipeline_db.db in repo root)
+
 resources:
   bowtie2_index:
     mem_mb: 64000

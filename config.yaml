@@ -125,6 +125,17 @@ homer:
 multiqc:
   extra: ""
 
+# Paths to Factorbook motif reference files. Override if you store them
+# elsewhere; defaults point to the factorbook/ directory in the repo root.
+# factorbook:
+#   tsv:  /absolute/path/to/factorbook_chip_seq_meme_motifs.tsv
+#   meme: /absolute/path/to/factorbook_chip_seq_meme_motif_catalog.meme
+
+# Database path for the run-tracking SQLite DB.
+# Defaults to pipeline_db.db in the repo root; set to an absolute path to
+# store it elsewhere.
+# db_path: /absolute/path/to/pipeline_db.db
+
 # ── Per-rule resource overrides ───────────────────────────────────────────────
 resources:
   bowtie2_index:

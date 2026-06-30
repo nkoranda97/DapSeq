@@ -4,7 +4,8 @@ rule update_db:
     output:
         flag = OUT + "/stats/db_updated.flag",
     params:
-        db_path          = os.path.join(os.path.dirname(workflow.basedir), "pipeline_db.db"),
+        db_path          = (config.get("db_path") or
+                            os.path.join(os.path.dirname(workflow.basedir), "pipeline_db.db")),
         output_dir       = OUT,
         samples_cfg      = config["samples"],
         control          = config.get("control"),

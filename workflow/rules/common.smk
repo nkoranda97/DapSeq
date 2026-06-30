@@ -5,9 +5,9 @@ import os
 _KNOWN_CONFIG_KEYS = frozenset({
     "aligner", "author", "bamcompare", "bamcoverage", "bbduk",
     "blacklist_filter", "bowtie2", "bwa_mem2", "chrom_filter", "container",
-    "control", "fastqc", "fimo", "gene_annotation", "genome_ref", "genome_size",
-    "homer", "macs3", "meme", "multiqc", "output_dir", "resources",
-    "rmsk_filter", "samples", "samtools",
+    "control", "db_path", "factorbook", "fastqc", "fimo", "gene_annotation",
+    "genome_ref", "genome_size", "homer", "macs3", "meme", "multiqc",
+    "output_dir", "resources", "rmsk_filter", "samples", "samtools",
     "threads",
 })
 
@@ -146,6 +146,7 @@ rule qc_done:
         OUT + "/stats/report.csv",
         OUT + "/stats/report.html",
         OUT + "/multiqc_report.html",
+        expand(OUT + "/stats/{sample}.idxstats.txt", sample=SAMPLES),
 
 
 if config.get("gene_annotation"):

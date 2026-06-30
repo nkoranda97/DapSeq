@@ -1,7 +1,14 @@
+_FB_DIR  = os.path.join(workflow.basedir, "..", "factorbook")
+_FB_TSV  = (config.get("factorbook", {}).get("tsv") or
+            os.path.join(_FB_DIR, "factorbook_chip_seq_meme_motifs.tsv"))
+_FB_MEME = (config.get("factorbook", {}).get("meme") or
+            os.path.join(_FB_DIR, "factorbook_chip_seq_meme_motif_catalog.meme"))
+
+
 rule factorbook_logo:
     input:
-        tsv  = "factorbook/factorbook_chip_seq_meme_motifs.tsv",
-        meme = "factorbook/factorbook_chip_seq_meme_motif_catalog.meme",
+        tsv  = _FB_TSV,
+        meme = _FB_MEME,
     output:
         OUT + "/factorbook/{sample}.logo.png",
     wildcard_constraints:
