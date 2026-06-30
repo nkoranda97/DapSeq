@@ -70,6 +70,8 @@ PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
 
 SCRIPTS = os.path.join(workflow.basedir, "scripts")
 
+ALIGNER = config.get("aligner", "bowtie2")
+
 # --- Fold-change filter config validation ---
 _fold_levels = config["macs3"]["foldch_levels"]
 _meme_idx    = config["macs3"].get("meme_foldch_level", 2)

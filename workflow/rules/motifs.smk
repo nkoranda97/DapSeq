@@ -7,7 +7,7 @@ rule factorbook_logo:
     wildcard_constraints:
         sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
     resources:
-        mem_mb          = config["resources"]["report"]["mem_mb"],
+        mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = 20,
     params:
         base_colors = config["meme"].get("base_colors") or {},
@@ -52,11 +52,11 @@ rule meme_summits:
         markov_order = config["meme"].get("markov_order", 0),
         maxsize    = config["meme"].get("maxsize", 10000000),
         extra      = config["meme"].get("extra", ""),
-        has_custom = lambda wc: "1" if config["meme"].get("base_colors") else "",
-        a_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("A") or "008000").lstrip("#"),
-        c_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("C") or "0000FF").lstrip("#"),
-        g_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("G") or "FFB300").lstrip("#"),
-        t_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("T") or "FF0000").lstrip("#"),
+        has_custom = "1" if config["meme"].get("base_colors") else "",
+        a_color    = ((config["meme"].get("base_colors") or {}).get("A") or "008000").lstrip("#"),
+        c_color    = ((config["meme"].get("base_colors") or {}).get("C") or "0000FF").lstrip("#"),
+        g_color    = ((config["meme"].get("base_colors") or {}).get("G") or "FFB300").lstrip("#"),
+        t_color    = ((config["meme"].get("base_colors") or {}).get("T") or "FF0000").lstrip("#"),
     threads:
         config["threads"]
     resources:
@@ -96,7 +96,7 @@ rule meme_logo_summits:
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:
-        mem_mb          = config["resources"]["report"]["mem_mb"],
+        mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = 10,
     log:
         OUT + "/logs/meme/{sample}.summits.logo.log"
@@ -119,11 +119,11 @@ rule meme_peaks:
         markov_order = config["meme"].get("markov_order", 0),
         maxsize    = config["meme"].get("maxsize", 10000000),
         extra      = config["meme"].get("extra", ""),
-        has_custom = lambda wc: "1" if config["meme"].get("base_colors") else "",
-        a_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("A") or "008000").lstrip("#"),
-        c_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("C") or "0000FF").lstrip("#"),
-        g_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("G") or "FFB300").lstrip("#"),
-        t_color    = lambda wc: ((config["meme"].get("base_colors") or {}).get("T") or "FF0000").lstrip("#"),
+        has_custom = "1" if config["meme"].get("base_colors") else "",
+        a_color    = ((config["meme"].get("base_colors") or {}).get("A") or "008000").lstrip("#"),
+        c_color    = ((config["meme"].get("base_colors") or {}).get("C") or "0000FF").lstrip("#"),
+        g_color    = ((config["meme"].get("base_colors") or {}).get("G") or "FFB300").lstrip("#"),
+        t_color    = ((config["meme"].get("base_colors") or {}).get("T") or "FF0000").lstrip("#"),
     threads:
         config["threads"]
     resources:
@@ -163,7 +163,7 @@ rule meme_logo_peaks:
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:
-        mem_mb          = config["resources"]["report"]["mem_mb"],
+        mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = 10,
     log:
         OUT + "/logs/meme/{sample}.peaks.logo.log"

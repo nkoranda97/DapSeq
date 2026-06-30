@@ -1,6 +1,4 @@
-_aligner = config.get("aligner", "bowtie2")
-
-if _aligner == "bowtie2":
+if ALIGNER == "bowtie2":
     rule align_se:
         wildcard_constraints:
             sample = "|".join(sorted(SE_SAMPLES)) if SE_SAMPLES else "(?!)",
@@ -111,7 +109,7 @@ if _aligner == "bowtie2":
               2>{log.bamcoverage}
             """
 
-elif _aligner == "bwa_mem2":
+elif ALIGNER == "bwa_mem2":
     rule align_se:
         wildcard_constraints:
             sample = "|".join(sorted(SE_SAMPLES)) if SE_SAMPLES else "(?!)",
@@ -221,5 +219,5 @@ elif _aligner == "bwa_mem2":
 
 else:
     raise ValueError(
-        f"Unknown aligner: '{_aligner}'. Must be 'bowtie2' or 'bwa_mem2'."
+        f"Unknown aligner: '{ALIGNER}'. Must be 'bowtie2' or 'bwa_mem2'."
     )

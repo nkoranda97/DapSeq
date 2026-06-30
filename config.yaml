@@ -139,15 +139,6 @@ resources:
   multiqc:
     mem_mb: 2000
     runtime: 30
-  bowtie2:
-    mem_mb: 32000
-    runtime: 120
-  samtools_filter_sort:
-    mem_mb: 32000
-    runtime: 120
-  bamcoverage:
-    mem_mb: 32000
-    runtime: 120
   bamcompare:
     mem_mb: 32000
     runtime: 120
@@ -174,12 +165,6 @@ resources:
     runtime: 120
   alignment_stats:
     mem_mb: 8000
-    runtime: 120
-  filtered_stats:
-    mem_mb: 8000
-    runtime: 30
-  frip_macs:
-    mem_mb: 32000
     runtime: 120
   report:
     mem_mb: 8000

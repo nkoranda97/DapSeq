@@ -126,15 +126,6 @@ resources:
   multiqc:
     mem_mb: 32000
     runtime: 30
-  bowtie2:
-    mem_mb: 16000
-    runtime: 120
-  samtools_filter_sort:
-    mem_mb: 64000
-    runtime: 60
-  bamcoverage:
-    mem_mb: 64000
-    runtime: 60
   bamcompare:
     mem_mb: 64000
     runtime: 60
@@ -165,9 +156,6 @@ resources:
   sample_stats:
     mem_mb: 64000
     runtime: 60
-  qc_summary:
-    mem_mb: 64000
-    runtime: 10
   update_db:
     mem_mb: 64000
     runtime: 5

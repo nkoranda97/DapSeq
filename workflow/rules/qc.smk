@@ -5,14 +5,15 @@ rule fastqc:
         html = OUT + "/Fastqc/{sample}.{read}_fastqc.html",
         zip  = OUT + "/Fastqc/{sample}.{read}_fastqc.zip",
     params:
-        extra = config.get("fastqc", {}).get("extra", ""),
+        extra  = config.get("fastqc", {}).get("extra", ""),
+        outdir = OUT + "/Fastqc",
     resources:
         mem_mb          = config["resources"]["fastqc"]["mem_mb"],
         runtime         = config["resources"]["fastqc"]["runtime"],
     log:
         OUT + "/logs/fastqc/{sample}.{read}.log"
     shell:
-        "fastqc {params.extra} {input} --outdir={OUT}/Fastqc/ 2>{log}"
+        "fastqc {params.extra} {input} --outdir={params.outdir}/ 2>{log}"
 
 
 rule multiqc:
@@ -22,11 +23,13 @@ rule multiqc:
     output:
         OUT + "/multiqc_report.html"
     params:
-        extra = config.get("multiqc", {}).get("extra", ""),
+        extra  = config.get("multiqc", {}).get("extra", ""),
+        indir  = OUT + "/Fastqc",
+        outdir = OUT,
     resources:
         mem_mb          = config["resources"]["multiqc"]["mem_mb"],
         runtime         = config["resources"]["multiqc"]["runtime"],
     log:
         OUT + "/logs/multiqc.log"
     shell:
-        "multiqc {params.extra} {OUT}/Fastqc/ -o {OUT}/ 2>{log}"
+        "multiqc {params.extra} {params.indir}/ -o {params.outdir}/ 2>{log}"

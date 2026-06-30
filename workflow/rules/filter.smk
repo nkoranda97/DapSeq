@@ -1,8 +1,8 @@
 if len(CONTROL_SAMPLES) > 1:
     rule merge_control:
         input:
-            bams = lambda wc: expand(OUT + "/bam/{s}.bam", s=CONTROL_SAMPLES),
-            bais = lambda wc: expand(OUT + "/bam/{s}.bam.bai", s=CONTROL_SAMPLES),
+            bams = expand(OUT + "/bam/{s}.bam", s=CONTROL_SAMPLES),
+            bais = expand(OUT + "/bam/{s}.bam.bai", s=CONTROL_SAMPLES),
         output:
             bam = OUT + "/bam/merged_control.bam",
             bai = OUT + "/bam/merged_control.bam.bai",

@@ -1,6 +1,4 @@
-_aligner = config.get("aligner", "bowtie2")
-
-if _aligner == "bowtie2":
+if ALIGNER == "bowtie2":
     rule bowtie2_index:
         input:
             config["genome_ref"]
@@ -30,7 +28,7 @@ if _aligner == "bowtie2":
             cut -f1,2 {input}.fai > {output.sizes}
             """
 
-elif _aligner == "bwa_mem2":
+elif ALIGNER == "bwa_mem2":
     rule bwa_mem2_index:
         input:
             config["genome_ref"]
