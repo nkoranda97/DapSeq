@@ -8,7 +8,8 @@ use-apptainer: true
 
 # Bind the full home directory so data/output paths outside the pipeline directory
 # are visible inside the container (Apptainer's --home only mounts the pipeline dir).
-apptainer-args: "--bind /home/nkoranda"
+# $HOME is expanded by the shell before Apptainer sees it.
+apptainer-args: "--bind $HOME"
 
 # Conservative parallel-job limit for a workstation; override with --jobs N.
 jobs: 4
