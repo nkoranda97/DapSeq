@@ -143,6 +143,6 @@ rule filter_peaks:
         """
         set -euo pipefail
         awk -v FCH={params.fch1} '$7 >= FCH' {input} > {output.fold1} 2>{log}
-        awk -v FCH={params.fch2} '$7 >= FCH' {input} > {output.fold2}
-        awk -v FCH={params.fch3} '$7 >= FCH' {input} > {output.fold3}
+        awk -v FCH={params.fch2} '$7 >= FCH' {input} > {output.fold2} 2>>{log}
+        awk -v FCH={params.fch3} '$7 >= FCH' {input} > {output.fold3} 2>>{log}
         """

@@ -82,8 +82,8 @@ rule idxstats:
         OUT + "/logs/idxstats/{sample}.log"
     shell:
         """
-        exec 2>{log}
-        samtools idxstats {input.bam} > {output.idxstats}
+        set -euo pipefail
+        samtools idxstats {input.bam} > {output.idxstats} 2>{log}
         """
 
 

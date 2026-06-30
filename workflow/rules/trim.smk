@@ -29,6 +29,7 @@ rule trim_se:
         trim      = OUT + "/logs/bbduk/{sample}.trim.log",
     shell:
         """
+        set -euo pipefail
         R1_FILES=({input.r1})
 
         TOTAL_LINES=$(
@@ -121,6 +122,7 @@ rule trim_pe:
         trim      = OUT + "/logs/bbduk/{sample}.trim.log",
     shell:
         """
+        set -euo pipefail
         R1_FILES=({input.r1})
         R1="${{R1_FILES[0]}}"
         R2={input.r2}
