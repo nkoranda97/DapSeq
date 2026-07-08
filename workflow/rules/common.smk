@@ -106,6 +106,59 @@ _BL_ENABLED   = config.get("blacklist_filter", {}).get("enabled", False)
 _RMSK_ENABLED = config.get("rmsk_filter",     {}).get("enabled", False)
 PEAKS_FILTER_SUFFIX = ("_bl" if _BL_ENABLED else "") + ("_rmsk" if _RMSK_ENABLED else "")
 
+# --- File path existence validation ---
+_path_errors = []
+
+if not os.path.exists(config["genome_ref"]):
+    _path_errors.append(f"  genome_ref: '{config['genome_ref']}' does not exist")
+
+for _samp in SAMPLES:
+    for _p in get_r1(_samp):
+        if not os.path.exists(_p):
+            _path_errors.append(f"  samples.{_samp}.r1: '{_p}' does not exist")
+    _r2 = config["samples"][_samp].get("r2")
+    if _r2 is not None:
+        for _p in (_r2 if isinstance(_r2, list) else [_r2]):
+            if not os.path.exists(_p):
+                _path_errors.append(f"  samples.{_samp}.r2: '{_p}' does not exist")
+
+_adapters = config["bbduk"].get("adapters")
+if _adapters and not os.path.exists(_adapters):
+    _path_errors.append(f"  bbduk.adapters: '{_adapters}' does not exist")
+
+if _BL_ENABLED:
+    _bl_bed = config.get("blacklist_filter", {}).get("bed")
+    if not _bl_bed:
+        _path_errors.append("  blacklist_filter.bed: no path set (blacklist_filter.enabled is true)")
+    elif not os.path.exists(_bl_bed):
+        _path_errors.append(f"  blacklist_filter.bed: '{_bl_bed}' does not exist")
+
+if _RMSK_ENABLED:
+    _rmsk_txt = config.get("rmsk_filter", {}).get("txt")
+    if not _rmsk_txt:
+        _path_errors.append("  rmsk_filter.txt: no path set (rmsk_filter.enabled is true)")
+    elif not os.path.exists(_rmsk_txt):
+        _path_errors.append(f"  rmsk_filter.txt: '{_rmsk_txt}' does not exist")
+
+_gene_ann = config.get("gene_annotation")
+if _gene_ann and not os.path.exists(_gene_ann):
+    _path_errors.append(f"  gene_annotation: '{_gene_ann}' does not exist")
+
+_fb = config.get("factorbook") or {}
+_fb_tsv  = _fb.get("tsv")
+_fb_meme = _fb.get("meme")
+if _fb_tsv and not os.path.exists(_fb_tsv):
+    _path_errors.append(f"  factorbook.tsv: '{_fb_tsv}' does not exist")
+if _fb_meme and not os.path.exists(_fb_meme):
+    _path_errors.append(f"  factorbook.meme: '{_fb_meme}' does not exist")
+
+if _path_errors:
+    raise ValueError(
+        "The following file paths in your config do not exist:\n"
+        + "\n".join(_path_errors)
+        + "\nVerify that paths are absolute and the files are accessible from this machine."
+    )
+
 
 def is_pe(wc):
     return "true" if wc.sample in PE_SAMPLES else "false"

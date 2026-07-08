@@ -1,4 +1,7 @@
+import yaml
+from datetime import datetime
 from snakemake.utils import min_version
+
 min_version("8.0")
 
 configfile: "config/config.yaml"
@@ -16,6 +19,19 @@ include: "rules/motifs.smk"
 include: "rules/stats.smk"
 include: "rules/annotation.smk"
 include: "rules/db.smk"
+
+
+onstart:
+    os.makedirs(OUT, exist_ok=True)
+    _snapshot_path = os.path.join(OUT, "config_used.yaml")
+    _ts = datetime.now().isoformat(timespec="seconds")
+    _user_cfgs = [str(p) for p in workflow.configfiles if str(p) != "config/config.yaml"]
+    with open(_snapshot_path, "w") as _f:
+        _f.write("# DAP-seq pipeline configuration snapshot\n")
+        _f.write(f"# Run timestamp: {_ts}\n")
+        _f.write(f"# Source config: {', '.join(_user_cfgs)}\n")
+        _f.write("#\n")
+        yaml.dump(dict(config), _f, default_flow_style=False, sort_keys=True)
 
 
 rule all:
