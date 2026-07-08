@@ -113,6 +113,65 @@ if config.get("rmsk_filter", {}).get("enabled", False):
             """
 
 
+rule fold_reject_peaks:
+    input:
+        OUT + "/MACS/{sample}_peaks.narrowPeak",
+    output:
+        OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}_reject.narrowPeak",
+    params:
+        fch = FOLD_LEVELS[MEME_FOLD_IDX - 1],
+    resources:
+        mem_mb  = config["resources"]["filter_peaks"]["mem_mb"],
+        runtime = config["resources"]["filter_peaks"]["runtime"],
+    log:
+        OUT + "/logs/fold_reject_peaks/{sample}.log"
+    shell:
+        """
+        set -euo pipefail
+        awk -v FCH={params.fch} '$7 < FCH' {input} > {output} 2>{log}
+        """
+
+
+rule bl_reject_peaks:
+    input:
+        peaks     = OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}.narrowPeak",
+        blacklist = config["blacklist_filter"]["bed"],
+    output:
+        OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}_bl_reject.narrowPeak",
+    resources:
+        mem_mb  = config["resources"]["blacklist_filter_peaks"]["mem_mb"],
+        runtime = config["resources"]["blacklist_filter_peaks"]["runtime"],
+    log:
+        OUT + "/logs/bl_reject_peaks/{sample}.log"
+    shell:
+        """
+        set -euo pipefail
+        bedtools intersect -a {input.peaks} -b {input.blacklist} \
+          > {output} 2>{log}
+        """
+
+
+rule rmsk_reject_peaks:
+    input:
+        peaks = get_pre_rmsk_peaks,
+        rmsk  = config["rmsk_filter"]["txt"],
+    output:
+        OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}_bl_rmsk_reject.narrowPeak",
+    resources:
+        mem_mb  = config["resources"]["rmsk_filter_peaks"]["mem_mb"],
+        runtime = config["resources"]["rmsk_filter_peaks"]["runtime"],
+    log:
+        OUT + "/logs/rmsk_reject_peaks/{sample}.log"
+    shell:
+        """
+        set -euo pipefail
+        zcat {input.rmsk} \
+          | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' \
+          | bedtools intersect -a {input.peaks} -b stdin \
+          > {output} 2>{log}
+        """
+
+
 rule filter_peaks:
     input:
         OUT + "/MACS/{sample}_peaks.narrowPeak",

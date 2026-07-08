@@ -121,10 +121,34 @@ def get_pre_rmsk_peaks(wc):
     return OUT + f"/MACS/{wc.sample}_peaks_fold{MEME_FOLD_IDX}{pre}.narrowPeak"
 
 
+BRANCH_STAGES = [
+    "all_peaks",
+    "fold_reject",
+    "fold_pass",
+    "bl_reject",
+    "bl_pass",
+    "rmsk_reject",
+]
+
+
+def get_branch_peak_file(wc):
+    i = MEME_FOLD_IDX
+    mapping = {
+        "all_peaks":   OUT + f"/MACS/{wc.sample}_peaks.narrowPeak",
+        "fold_reject": OUT + f"/MACS/{wc.sample}_peaks_fold{i}_reject.narrowPeak",
+        "fold_pass":   OUT + f"/MACS/{wc.sample}_peaks_fold{i}.narrowPeak",
+        "bl_reject":   OUT + f"/MACS/{wc.sample}_peaks_fold{i}_bl_reject.narrowPeak",
+        "bl_pass":     OUT + f"/MACS/{wc.sample}_peaks_fold{i}_bl.narrowPeak",
+        "rmsk_reject": OUT + f"/MACS/{wc.sample}_peaks_fold{i}_bl_rmsk_reject.narrowPeak",
+    }
+    return mapping[wc.filter_stage]
+
+
 wildcard_constraints:
-    sample    = "[^/.]+",
-    read      = "R[12]",
-    peak_type = "summits|peaks",
+    sample       = "[^/.]+",
+    read         = "R[12]",
+    peak_type    = "summits|peaks",
+    filter_stage = "all_peaks|fold_pass|fold_reject|bl_pass|bl_reject|rmsk_reject",
 
 
 rule mapped:
@@ -156,6 +180,18 @@ rule motifs_done:
         expand(OUT + "/meme/{sample}/peaks/logo1.png",       sample=TREATMENT_SAMPLES),
         expand(OUT + "/meme/{sample}/peaks/logo_rc1.png",    sample=TREATMENT_SAMPLES),
         expand(OUT + "/factorbook/{sample}.logo.png",        sample=TREATMENT_SAMPLES),
+
+
+rule motifs_branches_done:
+    input:
+        expand(
+            OUT + "/meme/{sample}/{filter_stage}/{peak_type}/logo1.png",
+            sample=TREATMENT_SAMPLES, filter_stage=BRANCH_STAGES, peak_type=["summits", "peaks"],
+        ),
+        expand(
+            OUT + "/fimo/{sample}/{filter_stage}/{peak_type}/fimo.tsv",
+            sample=TREATMENT_SAMPLES, filter_stage=BRANCH_STAGES, peak_type=["summits", "peaks"],
+        ),
 
 
 rule qc_done:

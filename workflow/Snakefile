@@ -24,5 +24,6 @@ rule all:
         rules.peaked.input,
         rules.control_peaked.input,
         rules.motifs_done.input,
+        rules.motifs_branches_done.input,
         rules.qc_done.input,
         rules.update_db.output.flag,
