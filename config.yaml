@@ -103,9 +103,9 @@ meme:
   maxw: 32
   mod: anr
   markov_order: 0   # set to 2 to suppress composition-driven repetitive motifs
-  maxpeaks: 100
+  maxpeaks: 500
   maxsize: 10000000
-  summit_extend: 30
+  summit_extend: 50
   extra: ""
   # Optional: customize base colors in sequence logos.
   # Use hex codes with or without '#'. Omit or leave blank to use MEME defaults.
