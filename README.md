@@ -16,10 +16,11 @@ curl -fsSL https://pixi.sh/install.sh | sh
 
 ```sh
 module load apptainer
-pixi run snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
+pixi shell --frozen # activates the environment
+snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
 ```
 
-Set `slurm_partition` and `slurm_account` in your config file.
+Set `slurm_partition` and `slurm_account` in the slurm profile
 
 ### Local workstation
 
@@ -44,9 +45,6 @@ The pipeline can be installed once on a shared filesystem and used by multiple u
 1. Copies `config.yaml` from the repo root to their own location and fills in their samples, paths, and parameters.
 2. Runs from the shared repo root, passing their own config with `--configfile`:
 
-```sh
-pixi run snakemake --profile profiles/slurm --configfile /home/youruser/my_experiment.yaml
-```
 
 Concurrent runs are safe as long as each user sets `output_dir` to a unique location. Snakemake's locks are keyed per output directory, so simultaneous runs do not interfere with each other.
 
