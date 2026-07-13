@@ -146,7 +146,7 @@ rule bl_reject_peaks:
     shell:
         """
         set -euo pipefail
-        bedtools intersect -a {input.peaks} -b {input.blacklist} \
+        bedtools intersect -u -a {input.peaks} -b {input.blacklist} \
           > {output} 2>{log}
         """
 
@@ -167,7 +167,7 @@ rule rmsk_reject_peaks:
         set -euo pipefail
         zcat {input.rmsk} \
           | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' \
-          | bedtools intersect -a {input.peaks} -b stdin \
+          | bedtools intersect -u -a {input.peaks} -b stdin \
           > {output} 2>{log}
         """
 
