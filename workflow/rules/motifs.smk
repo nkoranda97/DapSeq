@@ -77,7 +77,7 @@ rule meme_summits:
             touch {output.txt} {output.xml}
         else
             mkdir -p {params.outdir}
-            MEME_IN=$(mktemp)
+            MEME_IN={params.outdir}/meme_input.fasta
             awk -v MINW={params.minw} '/^>/ {{h=$0; next}} length($0) >= MINW {{print h; print}}' {input} > "$MEME_IN"
             if [ ! -s "$MEME_IN" ]; then
                 touch {output.txt} {output.xml}
@@ -152,7 +152,7 @@ rule meme_peaks:
             touch {output.txt} {output.xml}
         else
             mkdir -p {params.outdir}
-            MEME_IN=$(mktemp)
+            MEME_IN={params.outdir}/meme_input.fasta
             awk -v MINW={params.minw} '/^>/ {{h=$0; next}} length($0) >= MINW {{print h; print}}' {input} > "$MEME_IN"
             if [ ! -s "$MEME_IN" ]; then
                 touch {output.txt} {output.xml}
