@@ -67,7 +67,7 @@ def narrow_peak_to_fasta(
         return
 
     if extend_bp == "all":
-        foldch_maxes = peaks.groupby(["chromosome", "start", "stop"])["fold-change"].transform(max)
+        foldch_maxes = peaks.groupby(["chromosome", "start", "stop"])["fold-change"].transform("max")
         peaks = peaks.loc[peaks["fold-change"] == foldch_maxes]
 
     if maxpeaks is not None:
