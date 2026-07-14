@@ -4,6 +4,11 @@
 
 author: "Your Name"
 
+# Experiment provenance (optional, experiment-wide). Recorded in the HTML
+# report header and the results database.
+experiment_date: null   # e.g. "2026-07-14" (free-form string)
+gdna_batch: null        # e.g. "batch-07" (free-form string)
+
 # rename sample_name to name sample will be identified as
 # Use full paths to the raw data for r1 and r2
 # If SE, leave r2 as null

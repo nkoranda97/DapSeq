@@ -12,6 +12,10 @@ samples:
 control: null
 output_dir: null
 
+# Experiment provenance (optional, experiment-wide)
+experiment_date: null
+gdna_batch: null
+
 # genome
 genome_ref: null
 genome_size: null

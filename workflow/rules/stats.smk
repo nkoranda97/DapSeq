@@ -29,7 +29,6 @@ rule sample_stats_treatment:
         max_frags         = config["bbduk"].get("max_frags"),
         blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
         rmsk_enabled      = config.get("rmsk_filter",     {}).get("enabled", False),
-        foldch_levels     = FOLD_LEVELS,
         meme_foldch_level = MEME_FOLD_IDX,
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
@@ -89,8 +88,6 @@ rule report:
     params:
         treatment_samples = TREATMENT_SAMPLES,
         stats_dir         = OUT + "/stats",
-        foldch_levels     = FOLD_LEVELS,
-        meme_foldch_level = MEME_FOLD_IDX,
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],
@@ -112,6 +109,9 @@ rule report_html:
         treatment_samples = TREATMENT_SAMPLES,
         meme_dir          = OUT + "/meme",
         factorbook_dir    = OUT + "/factorbook",
+        filter_foldch     = FOLD_LEVELS[MEME_FOLD_IDX - 1],
+        experiment_date   = config.get("experiment_date"),
+        gdna_batch        = config.get("gdna_batch"),
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],

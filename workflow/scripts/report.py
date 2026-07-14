@@ -16,12 +16,11 @@ import sys
 
 INT_COLS = {
     "total_reads", "trimmed_reads", "mapped_reads",
-    "reads_in_peaks",
-    "reads_in_peaks_fold1", "reads_in_peaks_fold2", "reads_in_peaks_fold3",
+    "reads_in_peaks", "reads_in_peaks_filt",
     "motif_peaks", "subsampled_frags",
-    "num_peaks", "num_peaks_fold1", "num_peaks_fold2", "num_peaks_fold3", "num_peaks_bl", "num_peaks_rmsk",
+    "num_peaks", "num_peaks_filt", "num_peaks_bl", "num_peaks_rmsk",
 }
-PCT_COLS = {"frip", "frip_fold1", "frip_fold2", "frip_fold3", "mapping_pct"}
+PCT_COLS = {"frip", "frip_filt", "mapping_pct"}
 
 
 def make_cols():
@@ -33,23 +32,14 @@ def make_cols():
         "mapped_reads",
         "mapping_pct",
         "median_frag_size",
-        "foldch_level1",
-        "foldch_level2",
-        "foldch_level3",
         "num_peaks",
-        "num_peaks_fold1",
-        "num_peaks_fold2",
-        "num_peaks_fold3",
+        "num_peaks_filt",
         "num_peaks_bl",
         "num_peaks_rmsk",
         "reads_in_peaks",
-        "reads_in_peaks_fold1",
-        "reads_in_peaks_fold2",
-        "reads_in_peaks_fold3",
+        "reads_in_peaks_filt",
         "frip",
-        "frip_fold1",
-        "frip_fold2",
-        "frip_fold3",
+        "frip_filt",
         "max_peak_score",
         "motif_peaks",
     ]
@@ -83,16 +73,8 @@ def build_row(sample, stats_dir):
         data.get("reads_in_peaks", "NA"),
         data.get("mapped_reads", "NA"),
     )
-    row["frip_fold1"] = _safe_frip(
-        data.get("reads_in_peaks_fold1", "NA"),
-        data.get("mapped_reads", "NA"),
-    )
-    row["frip_fold2"] = _safe_frip(
-        data.get("reads_in_peaks_fold2", "NA"),
-        data.get("mapped_reads", "NA"),
-    )
-    row["frip_fold3"] = _safe_frip(
-        data.get("reads_in_peaks_fold3", "NA"),
+    row["frip_filt"] = _safe_frip(
+        data.get("reads_in_peaks_filt", "NA"),
         data.get("mapped_reads", "NA"),
     )
     return row
@@ -193,34 +175,40 @@ def _fmt_html(col, val):
     return str(val)
 
 
-def _fold_summary_html(rows, meme_foldch_level=None):
-    """Return a <p> showing the fold-change threshold values from the first data row."""
-    if not rows:
-        return ""
-    first = rows[0]
-    l1 = first.get("foldch_level1", "NA")
-    l2 = first.get("foldch_level2", "NA")
-    l3 = first.get("foldch_level3", "NA")
-    parts = (
-        f"<strong>Fold-change thresholds:</strong> "
-        f"Level&nbsp;1&nbsp;=&nbsp;{l1}&times;, "
-        f"Level&nbsp;2&nbsp;=&nbsp;{l2}&times;, "
-        f"Level&nbsp;3&nbsp;=&nbsp;{l3}&times;"
-    )
-    if meme_foldch_level is not None:
-        parts += (
-            f"&nbsp;&nbsp;|&nbsp;&nbsp;"
-            f"<strong>MEME input:</strong> Level&nbsp;{meme_foldch_level}"
+def _report_header_html(filter_foldch=None, experiment_date=None, gdna_batch=None):
+    """Return header <p> block: experiment metadata and the _filt fold threshold.
+
+    Each element is emitted only when a value is supplied, so an unset field
+    simply does not appear (matching how the optional `author` field behaves).
+    """
+    parts = []
+    meta = []
+    if experiment_date:
+        meta.append(f"<strong>Experiment date:</strong> {experiment_date}")
+    if gdna_batch:
+        meta.append(f"<strong>gDNA batch:</strong> {gdna_batch}")
+    if meta:
+        parts.append("<p>" + "&nbsp;&nbsp;|&nbsp;&nbsp;".join(meta) + "</p>")
+    if filter_foldch is not None:
+        parts.append(
+            f"<p><strong>Filtered peaks</strong> "
+            f"(<code>num_peaks_filt</code>, <code>reads_in_peaks_filt</code>, "
+            f"<code>frip_filt</code>) use fold-change&nbsp;&ge;&nbsp;"
+            f"{filter_foldch}&times; — the peak set fed to MEME/FIMO.</p>"
         )
-    return f"<p>{parts}</p>"
+    return "\n".join(parts)
 
 
 def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, out_path,
-               meme_foldch_level=None):
+               filter_foldch=None, experiment_date=None, gdna_batch=None):
     """Write a self-contained HTML report table with embedded motif logos."""
     html_cols = cols + ["top motif", "top motif RC", "factorbook motif"]
 
-    fold_summary = _fold_summary_html(rows, meme_foldch_level=meme_foldch_level)
+    header = _report_header_html(
+        filter_foldch=filter_foldch,
+        experiment_date=experiment_date,
+        gdna_batch=gdna_batch,
+    )
 
     lines = [
         "<!DOCTYPE html>",
@@ -229,7 +217,7 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
         _HTML_STYLE,
         "</head><body>",
         "<h2>DAP-seq Report</h2>",
-        fold_summary,
+        header,
         "<table>",
         "<thead><tr>",
     ]
@@ -282,8 +270,33 @@ def run_csv(treatment_samples, stats_dir, csv_out):
     return rows
 
 
+def read_run_metadata(out_dir):
+    """Best-effort read of experiment metadata + the _filt fold value from
+    ``{out_dir}/config_used.yaml`` (written by the pipeline's onstart hook).
+
+    Returns (filter_foldch, experiment_date, gdna_batch); each element is None
+    when the snapshot is missing, unparseable, or lacks the value.
+    """
+    path = os.path.join(out_dir, "config_used.yaml")
+    if not os.path.exists(path):
+        return None, None, None
+    try:
+        import yaml
+        with open(path) as fh:
+            cfg = yaml.safe_load(fh) or {}
+    except Exception:
+        return None, None, None
+    macs3  = cfg.get("macs3") or {}
+    levels = macs3.get("foldch_levels")
+    idx    = macs3.get("meme_foldch_level", 2)
+    filt   = None
+    if isinstance(levels, (list, tuple)) and isinstance(idx, int) and 1 <= idx <= len(levels):
+        filt = levels[idx - 1]
+    return filt, cfg.get("experiment_date"), cfg.get("gdna_batch")
+
+
 def run_html(treatment_samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out,
-             meme_foldch_level=None):
+             filter_foldch=None, experiment_date=None, gdna_batch=None):
     """Write report.csv then render report.html from the same rows + logos."""
     rows = run_csv(treatment_samples, stats_dir, csv_out)
     cols = make_cols()
@@ -300,7 +313,8 @@ def run_html(treatment_samples, stats_dir, meme_dir, factorbook_dir, csv_out, ht
         for s in treatment_samples
     }
     write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out,
-               meme_foldch_level=meme_foldch_level)
+               filter_foldch=filter_foldch, experiment_date=experiment_date,
+               gdna_batch=gdna_batch)
 
 
 # ---------------------------------------------------------------------------
@@ -315,7 +329,6 @@ def main():
         stats_dir=sm.params.stats_dir,
         csv_out=sm.output.csv,
     )
-    # meme_foldch_level is available for future HTML generation via cli_main
 
 
 def cli_main():
@@ -324,10 +337,6 @@ def cli_main():
         description="Regenerate the DAP-seq stats report from completed pipeline output."
     )
     parser.add_argument("out_dir", help="Pipeline output directory (contains stats/, meme/, factorbook/)")
-    parser.add_argument(
-        "--meme-level", type=int, default=None,
-        help="1-based fold-change level used for MEME (default: inferred from data)",
-    )
     args = parser.parse_args()
 
     out_dir        = os.path.abspath(args.out_dir)
@@ -345,6 +354,8 @@ def cli_main():
     if not samples:
         sys.exit(f"No *.stats.csv files found in {stats_dir} — is the pipeline complete?")
 
+    filter_foldch, experiment_date, gdna_batch = read_run_metadata(out_dir)
+
     run_html(
         treatment_samples=samples,
         stats_dir=stats_dir,
@@ -352,7 +363,9 @@ def cli_main():
         factorbook_dir=factorbook_dir,
         csv_out=csv_out,
         html_out=html_out,
-        meme_foldch_level=args.meme_level,
+        filter_foldch=filter_foldch,
+        experiment_date=experiment_date,
+        gdna_batch=gdna_batch,
     )
     print(f"Wrote {csv_out}")
     print(f"Wrote {html_out}")

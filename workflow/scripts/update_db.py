@@ -48,18 +48,14 @@ COLS = [
     "mapped_reads",
     "alignment_rate",
     "reads_in_peaks",
-    "reads_in_peaks_fold1",
-    "reads_in_peaks_fold2",
-    "reads_in_peaks_fold3",
+    "reads_in_peaks_filt",
     "max_peak_score",
     "mapping_pct",
     "motif_peaks",
     "subsampled_frags",
     "median_frag_size",
     "num_peaks",
-    "num_peaks_fold1",
-    "num_peaks_fold2",
-    "num_peaks_fold3",
+    "num_peaks_filt",
 ]
 
 META_COLS = [
@@ -69,6 +65,8 @@ META_COLS = [
     # provenance
     "author",
     "run_date",
+    "experiment_date",
+    "gdna_batch",
     # reference paths (from config)
     "genome_ref",
     "gene_annotation",
@@ -83,7 +81,7 @@ META_COLS = [
     "bigwig",
     # generated paths — peaks (treatment only)
     "peaks_narrowpeak",
-    "peaks_meme_narrowpeak",
+    "peaks_filt_narrowpeak",
     "summits_bed",
     # generated paths — fasta (treatment only)
     "summits_fasta",
@@ -206,7 +204,7 @@ def _build_meta_paths(output_dir, sample, is_treatment):
     if is_treatment:
         paths.update({
             "peaks_narrowpeak":      f"{o}/MACS/{sample}_peaks.narrowPeak",
-            "peaks_meme_narrowpeak": "",  # set dynamically in main() from meme_foldch_level
+            "peaks_filt_narrowpeak": "",  # set dynamically in main() from meme_foldch_level
             "summits_bed":           f"{o}/MACS/{sample}_summits.bed",
             "summits_fasta":         f"{o}/fasta/{sample}.summits.fasta",
             "peaks_fasta":           f"{o}/fasta/{sample}.peaks.fasta",
@@ -218,7 +216,7 @@ def _build_meta_paths(output_dir, sample, is_treatment):
         })
     else:
         paths.update({k: "" for k in [
-            "peaks_narrowpeak", "peaks_meme_narrowpeak", "summits_bed",
+            "peaks_narrowpeak", "peaks_filt_narrowpeak", "summits_bed",
             "summits_fasta", "peaks_fasta",
             "meme_summits_dir", "meme_peaks_dir",
             "fimo_summits_tsv", "fimo_peaks_tsv",
@@ -237,6 +235,8 @@ def main():
     treatment_set    = set(sm.params.treatment_samples)
     run_date         = datetime.now().isoformat(timespec="seconds")
     author           = sm.params.author
+    experiment_date  = sm.params.experiment_date or ""
+    gdna_batch       = sm.params.gdna_batch or ""
     gene_annotation  = sm.params.gene_annotation or ""
 
     qc_stats = read_report(sm.input.report)
@@ -281,25 +281,21 @@ def main():
         row["mapped_reads"]  = stats.get("mapped_reads", "NA")
         row["alignment_rate"]       = stats.get("alignment_rate", "NA")
         row["reads_in_peaks"]       = stats.get("reads_in_peaks", "NA")
-        row["reads_in_peaks_fold1"] = stats.get("reads_in_peaks_fold1", "NA")
-        row["reads_in_peaks_fold2"] = stats.get("reads_in_peaks_fold2", "NA")
-        row["reads_in_peaks_fold3"] = stats.get("reads_in_peaks_fold3", "NA")
+        row["reads_in_peaks_filt"]  = stats.get("reads_in_peaks_filt", "NA")
         row["max_peak_score"]       = stats.get("max_peak_score", "NA")
         row["mapping_pct"]          = stats.get("mapping_pct", "NA")
         row["motif_peaks"]          = stats.get("motif_peaks", "NA")
         row["subsampled_frags"]     = stats.get("subsampled_frags", "NA")
         row["median_frag_size"]     = stats.get("median_frag_size", "NA")
         row["num_peaks"]            = stats.get("num_peaks", "NA")
-        row["num_peaks_fold1"]      = stats.get("num_peaks_fold1", "NA")
-        row["num_peaks_fold2"]      = stats.get("num_peaks_fold2", "NA")
-        row["num_peaks_fold3"]      = stats.get("num_peaks_fold3", "NA")
+        row["num_peaks_filt"]       = stats.get("num_peaks_filt", "NA")
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 
         generated = _build_meta_paths(output_dir, sample, is_treatment)
         if is_treatment:
             o = output_dir.rstrip("/")
-            generated["peaks_meme_narrowpeak"] = (
+            generated["peaks_filt_narrowpeak"] = (
                 f"{o}/MACS/{sample}_peaks_fold{meme_fold_idx}.narrowPeak"
             )
         meta = {
@@ -307,6 +303,8 @@ def main():
             "sample":          sample,
             "author":          author,
             "run_date":        run_date,
+            "experiment_date": experiment_date,
+            "gdna_batch":      gdna_batch,
             "genome_ref":      sm.params.genome_ref,
             "gene_annotation": gene_annotation,
             "r1":              r1,

@@ -59,6 +59,9 @@ Copy `config.yaml` from the repo root and fill in the required fields. Defaults 
 ```yaml
 author: "Your Name"  # optional
 
+experiment_date: "2026-07-14"  # optional, experiment-wide (free-form)
+gdna_batch: "batch-07"         # optional, experiment-wide (free-form)
+
 samples:
   sample_name:
     r1: /path/to/sample.R1.fastq.gz
@@ -82,6 +85,8 @@ slurm_account: "pi-yourlab"
 
 | Option | Default | Notes |
 |---|---|---|
+| `experiment_date` | `null` | Optional experiment-wide date (free-form); shown in the HTML report header and stored in the results database |
+| `gdna_batch` | `null` | Optional experiment-wide gDNA batch label (free-form); shown in the HTML report header and stored in the results database |
 | `aligner` | `bowtie2` | `bowtie2` or `bwa_mem2` |
 | `bbduk.k` | `21` | Kmer length for adapter/contaminant trimming (program default: `31`) |
 | `bbduk.mink` | `11` | Enables short-kmer matching at read tips for adapter trimming (program default: `0`, disabled) |

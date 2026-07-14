@@ -11,10 +11,13 @@ import os
 import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
-from report import logo_to_base64, make_cols, write_html  # noqa: E402
+from report import (  # noqa: E402
+    logo_to_base64, make_cols, read_run_metadata, write_html,
+)
 
 
-def render(treatment_samples, report_csv, meme_dir, factorbook_dir, html_out):
+def render(treatment_samples, report_csv, meme_dir, factorbook_dir, html_out,
+           filter_foldch=None, experiment_date=None, gdna_batch=None):
     cols = make_cols()
 
     with open(report_csv, newline="") as fh:
@@ -32,7 +35,9 @@ def render(treatment_samples, report_csv, meme_dir, factorbook_dir, html_out):
         s: logo_to_base64(os.path.join(factorbook_dir, f"{s}.logo.png"))
         for s in treatment_samples
     }
-    write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out)
+    write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out,
+               filter_foldch=filter_foldch, experiment_date=experiment_date,
+               gdna_batch=gdna_batch)
 
 
 def main():
@@ -44,6 +49,9 @@ def main():
         meme_dir=sm.params.meme_dir,
         factorbook_dir=sm.params.factorbook_dir,
         html_out=str(sm.output.html),
+        filter_foldch=sm.params.filter_foldch,
+        experiment_date=sm.params.experiment_date,
+        gdna_batch=sm.params.gdna_batch,
     )
 
 
@@ -72,12 +80,17 @@ def cli_main():
     if not samples:
         sys.exit(f"No samples found in {report_csv}.")
 
+    filter_foldch, experiment_date, gdna_batch = read_run_metadata(out_dir)
+
     render(
         treatment_samples=samples,
         report_csv=report_csv,
         meme_dir=meme_dir,
         factorbook_dir=factorbook_dir,
         html_out=html_out,
+        filter_foldch=filter_foldch,
+        experiment_date=experiment_date,
+        gdna_batch=gdna_batch,
     )
     print(f"Wrote {html_out}")
 

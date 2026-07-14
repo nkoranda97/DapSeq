@@ -5,10 +5,10 @@ import os
 _KNOWN_CONFIG_KEYS = frozenset({
     "aligner", "author", "bamcompare", "bamcoverage", "bbduk",
     "blacklist_filter", "bowtie2", "bwa_mem2", "chrom_filter", "container",
-    "control", "db_path", "factorbook", "fastqc", "fimo", "gene_annotation",
-    "genome_ref", "genome_size", "homer", "macs3", "meme", "multiqc",
-    "output_dir", "resources", "rmsk_filter", "samples", "samtools",
-    "threads",
+    "control", "db_path", "experiment_date", "factorbook", "fastqc", "fimo",
+    "gdna_batch", "gene_annotation", "genome_ref", "genome_size", "homer",
+    "macs3", "meme", "multiqc", "output_dir", "resources", "rmsk_filter",
+    "samples", "samtools", "threads",
 })
 
 _unexpected_keys = set(config.keys()) - _KNOWN_CONFIG_KEYS

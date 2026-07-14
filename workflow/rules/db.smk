@@ -24,6 +24,8 @@ rule update_db:
         fimo_thresh      = config["fimo"]["thresh"],
         treatment_samples = TREATMENT_SAMPLES,
         author           = config.get("author", ""),
+        experiment_date  = config.get("experiment_date") or "",
+        gdna_batch       = config.get("gdna_batch") or "",
         gene_annotation  = config.get("gene_annotation") or "",
     resources:
         mem_mb          = config["resources"]["update_db"]["mem_mb"],

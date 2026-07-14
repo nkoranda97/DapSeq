@@ -75,8 +75,8 @@ def test_make_cols_order():
         "num_peaks",
         "num_peaks_filt",
         "num_peaks_bl",
+        "num_peaks_rmsk",
         "reads_in_peaks",
-        "reads_in_peaks_5fold",
         "reads_in_peaks_filt",
         "frip",
         "frip_filt",
@@ -92,12 +92,18 @@ def test_mapping_pct_before_reads_in_peaks():
 
 def test_renamed_columns_present():
     cols = rp.make_cols()
-    assert "reads_in_peaks_5fold" in cols
     assert "reads_in_peaks_filt" in cols
     assert "frip_filt" in cols
-    assert "reads_5fold" not in cols
-    assert "reads_nfold" not in cols
-    assert "frip_top_n_fold" not in cols
+    assert "num_peaks_filt" in cols
+    # legacy / per-fold-level names must be gone from the reporting surface
+    assert "reads_in_peaks_5fold" not in cols
+    for legacy in (
+        "foldch_level1", "foldch_level2", "foldch_level3",
+        "num_peaks_fold1", "num_peaks_fold2", "num_peaks_fold3",
+        "reads_in_peaks_fold1", "reads_in_peaks_fold2", "reads_in_peaks_fold3",
+        "frip_fold1", "frip_fold2", "frip_fold3",
+    ):
+        assert legacy not in cols
 
 
 # ---------------------------------------------------------------------------
@@ -274,3 +280,109 @@ def test_count_lines_ten_peaks(tmp_path):
     f = tmp_path / "peaks.narrowPeak"
     f.write_text("\n".join([f"chr1\t{i}\t{i+100}" for i in range(10)]) + "\n")
     assert cs._count_lines(str(f)) == "10"
+
+
+# ---------------------------------------------------------------------------
+# collect_stats.COLUMNS is simplified to a single filtered set
+# ---------------------------------------------------------------------------
+
+def test_collect_stats_columns_simplified():
+    assert cs.COLUMNS == [
+        "sample",
+        "total_reads",
+        "subsampled_frags",
+        "trimmed_reads",
+        "mapped_reads",
+        "mapping_pct",
+        "median_frag_size",
+        "num_peaks",
+        "num_peaks_filt",
+        "num_peaks_bl",
+        "num_peaks_rmsk",
+        "reads_in_peaks",
+        "reads_in_peaks_filt",
+        "max_peak_score",
+        "motif_peaks",
+    ]
+
+
+def test_collect_stats_columns_drop_per_fold_level():
+    for legacy in (
+        "foldch_level1", "num_peaks_fold1", "num_peaks_fold3",
+        "reads_in_peaks_fold1", "reads_in_peaks_fold2", "reads_in_peaks_fold3",
+    ):
+        assert legacy not in cs.COLUMNS
+
+
+# ---------------------------------------------------------------------------
+# report.build_row derives frip_filt (and no per-fold frip)
+# ---------------------------------------------------------------------------
+
+def test_build_row_frip_filt_derived(tmp_path):
+    stats_dir = _write_stats_csv(
+        tmp_path, "s1", extras={"reads_in_peaks_filt": "9000"}
+    )
+    row = rp.build_row("s1", stats_dir)
+    assert row["frip_filt"] == 10.0  # 9000 / 90000 * 100
+    for legacy in ("frip_fold1", "frip_fold2", "frip_fold3"):
+        assert legacy not in row
+
+
+# ---------------------------------------------------------------------------
+# HTML header renders experiment metadata + filter note only when provided
+# ---------------------------------------------------------------------------
+
+def _write_report_html(tmp_path, **kwargs):
+    out = tmp_path / "report.html"
+    rp.write_html(
+        rows=[{"sample": "s1"}],
+        cols=rp.make_cols(),
+        logo_b64_map={},
+        logo_rc_b64_map={},
+        factorbook_logo_map={},
+        out_path=str(out),
+        **kwargs,
+    )
+    return out.read_text()
+
+
+def test_html_header_shows_experiment_metadata(tmp_path):
+    html = _write_report_html(
+        tmp_path, experiment_date="2026-07-14", gdna_batch="batch-07"
+    )
+    assert "Experiment date" in html and "2026-07-14" in html
+    assert "gDNA batch" in html and "batch-07" in html
+
+
+def test_html_header_omits_metadata_when_unset(tmp_path):
+    html = _write_report_html(tmp_path)
+    assert "Experiment date" not in html
+    assert "gDNA batch" not in html
+
+
+def test_html_header_shows_filter_foldch(tmp_path):
+    html = _write_report_html(tmp_path, filter_foldch=5)
+    assert "Filtered peaks" in html
+    assert "5" in html
+
+
+# ---------------------------------------------------------------------------
+# report.read_run_metadata parses the config snapshot
+# ---------------------------------------------------------------------------
+
+def test_read_run_metadata_from_snapshot(tmp_path):
+    (tmp_path / "config_used.yaml").write_text(
+        "experiment_date: '2026-07-14'\n"
+        "gdna_batch: batch-07\n"
+        "macs3:\n"
+        "  foldch_levels: [2, 5, 15]\n"
+        "  meme_foldch_level: 2\n"
+    )
+    filt, exp, batch = rp.read_run_metadata(str(tmp_path))
+    assert filt == 5           # foldch_levels[meme_foldch_level - 1]
+    assert exp == "2026-07-14"
+    assert batch == "batch-07"
+
+
+def test_read_run_metadata_missing_snapshot(tmp_path):
+    assert rp.read_run_metadata(str(tmp_path)) == (None, None, None)

@@ -148,13 +148,23 @@ def test_meta_rerun_does_not_affect_other_dirs(tmp_path):
 
 # ── path builder unit tests ───────────────────────────────────────────────────
 
+# peaks_filt_narrowpeak is intentionally excluded: it is empty from
+# _build_meta_paths and filled dynamically in main() from meme_foldch_level.
 TREATMENT_ONLY_COLS = [
-    "peaks_narrowpeak", "peaks_filt_narrowpeak", "summits_bed",
+    "peaks_narrowpeak", "summits_bed",
     "summits_fasta", "peaks_fasta",
     "meme_summits_dir", "meme_peaks_dir",
     "fimo_summits_tsv", "fimo_peaks_tsv",
     "homer_annotations",
 ]
+
+
+def test_peaks_filt_narrowpeak_empty_from_builder():
+    """_build_meta_paths leaves peaks_filt_narrowpeak empty for both sample
+    kinds; main() fills the treatment value once meme_foldch_level is known."""
+    for is_treatment in (True, False):
+        paths = m._build_meta_paths("/out/test", "s1", is_treatment=is_treatment)
+        assert paths["peaks_filt_narrowpeak"] == ""
 
 
 def test_meta_control_paths_are_empty():
@@ -234,3 +244,66 @@ def test_concurrent_writes_no_data_loss(tmp_path):
     assert len(_meta_rows_for(db, "/out/P")) == 2
     assert len(_meta_rows_for(db, "/out/Q")) == 3
     assert _meta_row_count(db) == 5
+
+
+# ── simplified columns + experiment metadata ──────────────────────────────────
+
+def test_cols_use_single_filtered_set():
+    assert "num_peaks_filt" in m.COLS
+    assert "reads_in_peaks_filt" in m.COLS
+    for legacy in (
+        "num_peaks_fold1", "num_peaks_fold2", "num_peaks_fold3",
+        "reads_in_peaks_fold1", "reads_in_peaks_fold2", "reads_in_peaks_fold3",
+    ):
+        assert legacy not in m.COLS
+
+
+def test_meta_cols_include_experiment_metadata():
+    assert "experiment_date" in m.META_COLS
+    assert "gdna_batch" in m.META_COLS
+
+
+def test_experiment_metadata_lands_in_run_metadata(tmp_path):
+    db = tmp_path / "pipeline_db.db"
+    base = {c: "" for c in m.META_COLS}
+    base.update({
+        "output_dir": "/out/A", "sample": "s0",
+        "experiment_date": "2026-07-14", "gdna_batch": "batch-07",
+    })
+    m.write_meta_rows(db, "/out/A", [tuple(base[c] for c in m.META_COLS)])
+
+    con = sqlite3.connect(str(db))
+    row = dict(zip(
+        [d[0] for d in con.execute("SELECT * FROM run_metadata").description],
+        con.execute("SELECT * FROM run_metadata").fetchone(),
+    ))
+    con.close()
+    assert row["experiment_date"] == "2026-07-14"
+    assert row["gdna_batch"] == "batch-07"
+
+
+def test_write_rows_migrates_legacy_schema(tmp_path):
+    """A DB whose pipeline_runs predates the new columns must accept new rows.
+
+    _ensure_columns adds the missing columns; legacy fold columns are left in
+    place (unpopulated) — no destructive migration.
+    """
+    db = tmp_path / "pipeline_db.db"
+    con = sqlite3.connect(str(db))
+    con.execute(
+        'CREATE TABLE pipeline_runs '
+        '(id INTEGER PRIMARY KEY AUTOINCREMENT, '
+        '"output_dir" TEXT, "sample" TEXT, "reads_in_peaks_fold1" TEXT)'
+    )
+    con.commit()
+    con.close()
+
+    m.write_rows(db, "/out/A", _make_rows("/out/A", n=2))
+
+    con = sqlite3.connect(str(db))
+    cols = {r[1] for r in con.execute("PRAGMA table_info(pipeline_runs)")}
+    con.close()
+    assert "num_peaks_filt" in cols            # newly added
+    assert "reads_in_peaks_filt" in cols       # newly added
+    assert "reads_in_peaks_fold1" in cols      # legacy column preserved
+    assert len(_rows_for(db, "/out/A")) == 2
