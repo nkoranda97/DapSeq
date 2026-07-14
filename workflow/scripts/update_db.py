@@ -186,13 +186,16 @@ def write_meta_rows(db_path, output_dir, rows):
     con.close()
 
 
-def _build_meta_paths(output_dir, sample, is_treatment):
+def _build_meta_paths(output_dir, sample):
     """Return dict of generated file paths for one sample.
 
-    Treatment-only steps (peaks, MEME, FIMO, HOMER) are empty strings
-    for control samples since those rules are not run on controls.
-    trimmed_r2 is recorded as a path string even for SE samples — the file
-    may not exist, but the expected path is stored for reference.
+    Every sample — treatment and control alike — has peaks/MEME/FIMO/HOMER
+    outputs: controls are peak-called against themselves, so their generated
+    paths are recorded too. The treatment/control distinction is carried by the
+    ``is_treatment`` column in pipeline_runs, not by path presence. trimmed_r2
+    is recorded as a path string even for SE samples — the file may not exist,
+    but the expected path is stored for reference. peaks_filt_narrowpeak is set
+    dynamically in main() from meme_foldch_level.
     """
     o = output_dir.rstrip("/")
     paths = {
@@ -200,29 +203,18 @@ def _build_meta_paths(output_dir, sample, is_treatment):
         "trimmed_r2": f"{o}/trimmed/{sample}.R2.fastq.gz",
         "bam":    f"{o}/bam/{sample}.bam",
         "bigwig": f"{o}/bigWig/{sample}.bw",
+        "peaks_narrowpeak":      f"{o}/MACS/{sample}_peaks.narrowPeak",
+        "peaks_filt_narrowpeak": "",  # set dynamically in main() from meme_foldch_level
+        "summits_bed":           f"{o}/MACS/{sample}_summits.bed",
+        "summits_fasta":         f"{o}/fasta/{sample}.summits.fasta",
+        "peaks_fasta":           f"{o}/fasta/{sample}.peaks.fasta",
+        "meme_summits_dir":      f"{o}/meme/{sample}/summits",
+        "meme_peaks_dir":        f"{o}/meme/{sample}/peaks",
+        "fimo_summits_tsv":      f"{o}/fimo/{sample}/summits/fimo.tsv",
+        "fimo_peaks_tsv":        f"{o}/fimo/{sample}/peaks/fimo.tsv",
+        "homer_annotations":     f"{o}/annotations/{sample}.peak_annotations.txt",
+        "report_csv":            f"{o}/stats/report.csv",
     }
-    if is_treatment:
-        paths.update({
-            "peaks_narrowpeak":      f"{o}/MACS/{sample}_peaks.narrowPeak",
-            "peaks_filt_narrowpeak": "",  # set dynamically in main() from meme_foldch_level
-            "summits_bed":           f"{o}/MACS/{sample}_summits.bed",
-            "summits_fasta":         f"{o}/fasta/{sample}.summits.fasta",
-            "peaks_fasta":           f"{o}/fasta/{sample}.peaks.fasta",
-            "meme_summits_dir":      f"{o}/meme/{sample}/summits",
-            "meme_peaks_dir":        f"{o}/meme/{sample}/peaks",
-            "fimo_summits_tsv":      f"{o}/fimo/{sample}/summits/fimo.tsv",
-            "fimo_peaks_tsv":        f"{o}/fimo/{sample}/peaks/fimo.tsv",
-            "homer_annotations":     f"{o}/annotations/{sample}.peak_annotations.txt",
-        })
-    else:
-        paths.update({k: "" for k in [
-            "peaks_narrowpeak", "peaks_filt_narrowpeak", "summits_bed",
-            "summits_fasta", "peaks_fasta",
-            "meme_summits_dir", "meme_peaks_dir",
-            "fimo_summits_tsv", "fimo_peaks_tsv",
-            "homer_annotations",
-        ]})
-    paths["report_csv"] = f"{o}/stats/report.csv"
     return paths
 
 
@@ -292,12 +284,11 @@ def main():
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 
-        generated = _build_meta_paths(output_dir, sample, is_treatment)
-        if is_treatment:
-            o = output_dir.rstrip("/")
-            generated["peaks_filt_narrowpeak"] = (
-                f"{o}/MACS/{sample}_peaks_fold{meme_fold_idx}.narrowPeak"
-            )
+        generated = _build_meta_paths(output_dir, sample)
+        o = output_dir.rstrip("/")
+        generated["peaks_filt_narrowpeak"] = (
+            f"{o}/MACS/{sample}_peaks_fold{meme_fold_idx}.narrowPeak"
+        )
         meta = {
             "output_dir":      output_dir,
             "sample":          sample,

@@ -9,6 +9,10 @@ samples:
     r1: null
     r2: null
 
+# Control sample name (must match a key in samples). When set, the control is
+# peak-called twice — no-input self peak-call (QC) and against itself
+# (-t control -c control) — and the against-itself run appears as a flagged row
+# in the report with full treatment-style motif/stats treatment.
 control: null
 output_dir: null
 

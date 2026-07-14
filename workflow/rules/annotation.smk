@@ -7,7 +7,7 @@ if config.get("gene_annotation"):
         output:
             OUT + "/annotations/{sample}.peak_annotations.txt"
         wildcard_constraints:
-            sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
+            sample = REPORT_SAMPLE_CONSTRAINT,
         params:
             extra = config.get("homer", {}).get("extra", ""),
         resources:

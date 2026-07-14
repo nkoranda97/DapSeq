@@ -25,6 +25,11 @@ samples:
 
 # Control sample name — must match a key in samples above.
 # Set to null to run without a control.
+# When set, the control is peak-called twice in MACS: once with no input
+# control (QC self peak-call), and once against itself (-t control -c control,
+# expected to yield few/no peaks). The against-itself run gets the full
+# treatment-style pipeline (filtering, motifs, stats) and appears as a flagged
+# row in the report.
 control: control
 
 # please put output folder in a directory outside of the pipeline folder

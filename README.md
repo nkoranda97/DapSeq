@@ -85,6 +85,7 @@ slurm_account: "pi-yourlab"
 
 | Option | Default | Notes |
 |---|---|---|
+| `control` | `null` | Sample name used as the MACS3 `-c` background for treatment samples. When set, the control is also peak-called **twice**: once with no input control (QC self peak-call), and once **against itself** (`-t control -c control`, expected to yield few or no peaks). The against-itself run flows through the full treatment pipeline (filtering, MEME/FIMO motifs, stats) and appears as a flagged row in the report, so the control is treated like a sample except that it is its own background |
 | `experiment_date` | `null` | Optional experiment-wide date (free-form); shown in the HTML report header and stored in the results database |
 | `gdna_batch` | `null` | Optional experiment-wide gDNA batch label (free-form); shown in the HTML report header and stored in the results database |
 | `aligner` | `bowtie2` | `bowtie2` or `bwa_mem2` |

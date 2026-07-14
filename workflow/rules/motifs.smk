@@ -12,7 +12,7 @@ rule factorbook_logo:
     output:
         OUT + "/factorbook/{sample}.logo.png",
     wildcard_constraints:
-        sample = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)",
+        sample = REPORT_SAMPLE_CONSTRAINT,
     resources:
         mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = 20,

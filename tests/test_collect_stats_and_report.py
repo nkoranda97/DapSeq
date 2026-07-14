@@ -386,3 +386,80 @@ def test_read_run_metadata_from_snapshot(tmp_path):
 
 def test_read_run_metadata_missing_snapshot(tmp_path):
     assert rp.read_run_metadata(str(tmp_path)) == (None, None, None)
+
+
+# ---------------------------------------------------------------------------
+# Control row inclusion + flagging (control run against itself)
+# ---------------------------------------------------------------------------
+
+def test_run_csv_includes_control_row(tmp_path):
+    stats_dir = _write_stats_csv(tmp_path, "TF1")
+    _write_stats_csv(tmp_path, "control")
+    csv_out = str(tmp_path / "report.csv")
+    rp.run_csv(["TF1", "control"], stats_dir, csv_out)
+    with open(csv_out) as fh:
+        rows = list(csv.DictReader(fh))
+    # control is present and ordered last (see REPORT_SAMPLES ordering)
+    assert [r["sample"] for r in rows] == ["TF1", "control"]
+
+
+def _write_flag_html(tmp_path, rows, control_samples):
+    out = tmp_path / "report.html"
+    rp.write_html(
+        rows=rows,
+        cols=rp.make_cols(),
+        logo_b64_map={},
+        logo_rc_b64_map={},
+        factorbook_logo_map={},
+        out_path=str(out),
+        control_samples=control_samples,
+    )
+    return out.read_text()
+
+
+def test_write_html_flags_control_row(tmp_path):
+    html = _write_flag_html(
+        tmp_path, [{"sample": "TF1"}, {"sample": "control"}], ["control"]
+    )
+    assert 'class="control-row"' in html           # the control row is flagged
+    assert 'class="control-badge"' in html          # badge rendered
+    assert "expect few or no peaks" in html         # legend present
+
+
+def test_write_html_does_not_flag_treatment_row(tmp_path):
+    # control_samples names a sample with no row → no row gets the control-row class
+    html = _write_flag_html(tmp_path, [{"sample": "TF1"}], ["control"])
+    assert 'class="control-row"' not in html
+
+
+def test_write_html_no_flag_when_control_samples_empty(tmp_path):
+    for ctrl in ([], None):
+        html = _write_flag_html(
+            tmp_path, [{"sample": "TF1"}, {"sample": "control"}], ctrl
+        )
+        assert 'class="control-row"' not in html
+        assert 'class="control-badge"' not in html
+        assert "expect few or no peaks" not in html
+
+
+# ---------------------------------------------------------------------------
+# report.read_control parses the control field from the config snapshot
+# ---------------------------------------------------------------------------
+
+def test_read_control_scalar(tmp_path):
+    (tmp_path / "config_used.yaml").write_text("control: ctrlA\n")
+    assert rp.read_control(str(tmp_path)) == ["ctrlA"]
+
+
+def test_read_control_list(tmp_path):
+    (tmp_path / "config_used.yaml").write_text("control:\n  - c1\n  - c2\n")
+    assert rp.read_control(str(tmp_path)) == ["c1", "c2"]
+
+
+def test_read_control_null(tmp_path):
+    (tmp_path / "config_used.yaml").write_text("control: null\n")
+    assert rp.read_control(str(tmp_path)) == []
+
+
+def test_read_control_missing_snapshot(tmp_path):
+    assert rp.read_control(str(tmp_path)) == []

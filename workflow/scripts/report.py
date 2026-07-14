@@ -97,6 +97,14 @@ _HTML_STYLE = """
   tr:hover { background: #eaf4fb; }
   img.motif { max-width: 280px; max-height: 100px; height: auto; display: block; }
   .na { color: #aaa; font-style: italic; }
+  p.legend { color: #555; font-size: 12px; }
+  /* Control-row highlight. Placed last so these win specificity ties
+     against tr:nth-child(even) and tr:hover. */
+  tr.control-row { background: #fff4e5; }
+  tr.control-row:hover { background: #ffe9cc; }
+  .control-badge { display: inline-block; background: #e67e22; color: white;
+    font-size: 10px; padding: 1px 6px; border-radius: 3px; margin-left: 6px;
+    vertical-align: middle; }
 </style>
 """
 
@@ -200,8 +208,14 @@ def _report_header_html(filter_foldch=None, experiment_date=None, gdna_batch=Non
 
 
 def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, out_path,
-               filter_foldch=None, experiment_date=None, gdna_batch=None):
-    """Write a self-contained HTML report table with embedded motif logos."""
+               filter_foldch=None, experiment_date=None, gdna_batch=None,
+               control_samples=None):
+    """Write a self-contained HTML report table with embedded motif logos.
+
+    Rows whose sample is in *control_samples* are flagged (a highlighted row and
+    a "control" badge) — those controls were peak-called against themselves.
+    """
+    control_set = set(control_samples or [])
     html_cols = cols + ["top motif", "top motif RC", "factorbook motif"]
 
     header = _report_header_html(
@@ -209,6 +223,12 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
         experiment_date=experiment_date,
         gdna_batch=gdna_batch,
     )
+    if control_set:
+        header += (
+            '\n<p class="legend">Rows marked '
+            '<span class="control-badge">control</span> were peak-called against '
+            'themselves (expect few or no peaks).</p>'
+        )
 
     lines = [
         "<!DOCTYPE html>",
@@ -232,11 +252,18 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
 
     for row in rows:
         sample = row.get("sample", "")
-        lines.append("<tr>")
+        is_ctrl = sample in control_set
+        lines.append('<tr class="control-row">' if is_ctrl else "<tr>")
         for col in cols:
             val = row.get(col, "NA")
             css = ' class="na"' if val == "NA" else ""
-            lines.append(f"  <td{css}>{_fmt_html(col, val)}</td>")
+            if col == "sample" and is_ctrl:
+                lines.append(
+                    f'  <td{css}>{_fmt_html(col, val)} '
+                    f'<span class="control-badge">control</span></td>'
+                )
+            else:
+                lines.append(f"  <td{css}>{_fmt_html(col, val)}</td>")
         for logo_map, alt in (
             (logo_b64_map,        "motif logo"),
             (logo_rc_b64_map,     "motif RC logo"),
@@ -258,10 +285,10 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
 # Run functions
 # ---------------------------------------------------------------------------
 
-def run_csv(treatment_samples, stats_dir, csv_out):
+def run_csv(samples, stats_dir, csv_out):
     """Build per-sample rows and write report.csv."""
     cols = make_cols()
-    rows = [build_row(s, stats_dir) for s in treatment_samples]
+    rows = [build_row(s, stats_dir) for s in samples]
     with open(csv_out, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=cols, extrasaction="ignore")
         writer.writeheader()
@@ -270,22 +297,29 @@ def run_csv(treatment_samples, stats_dir, csv_out):
     return rows
 
 
+def _load_config_snapshot(out_dir):
+    """Best-effort load of ``{out_dir}/config_used.yaml`` (written by the
+    pipeline's onstart hook). Returns the parsed dict, or {} when the snapshot
+    is missing or unparseable."""
+    path = os.path.join(out_dir, "config_used.yaml")
+    if not os.path.exists(path):
+        return {}
+    try:
+        import yaml
+        with open(path) as fh:
+            return yaml.safe_load(fh) or {}
+    except Exception:
+        return {}
+
+
 def read_run_metadata(out_dir):
-    """Best-effort read of experiment metadata + the _filt fold value from
-    ``{out_dir}/config_used.yaml`` (written by the pipeline's onstart hook).
+    """Best-effort read of experiment metadata + the _filt fold value from the
+    config snapshot.
 
     Returns (filter_foldch, experiment_date, gdna_batch); each element is None
     when the snapshot is missing, unparseable, or lacks the value.
     """
-    path = os.path.join(out_dir, "config_used.yaml")
-    if not os.path.exists(path):
-        return None, None, None
-    try:
-        import yaml
-        with open(path) as fh:
-            cfg = yaml.safe_load(fh) or {}
-    except Exception:
-        return None, None, None
+    cfg    = _load_config_snapshot(out_dir)
     macs3  = cfg.get("macs3") or {}
     levels = macs3.get("foldch_levels")
     idx    = macs3.get("meme_foldch_level", 2)
@@ -295,26 +329,39 @@ def read_run_metadata(out_dir):
     return filt, cfg.get("experiment_date"), cfg.get("gdna_batch")
 
 
-def run_html(treatment_samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out,
-             filter_foldch=None, experiment_date=None, gdna_batch=None):
+def read_control(out_dir):
+    """Return the list of control sample names from the config snapshot.
+
+    Normalizes the ``control`` field (scalar / list / null) to a list; returns
+    [] when the snapshot is missing, unparseable, or has no control.
+    """
+    ctrl = _load_config_snapshot(out_dir).get("control")
+    if not ctrl:
+        return []
+    return list(ctrl) if isinstance(ctrl, (list, tuple)) else [ctrl]
+
+
+def run_html(samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out,
+             filter_foldch=None, experiment_date=None, gdna_batch=None,
+             control_samples=None):
     """Write report.csv then render report.html from the same rows + logos."""
-    rows = run_csv(treatment_samples, stats_dir, csv_out)
+    rows = run_csv(samples, stats_dir, csv_out)
     cols = make_cols()
     logo_b64_map = {
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo1.png"))
-        for s in treatment_samples
+        for s in samples
     }
     logo_rc_b64_map = {
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo_rc1.png"))
-        for s in treatment_samples
+        for s in samples
     }
     factorbook_logo_map = {
         s: logo_to_base64(os.path.join(factorbook_dir, f"{s}.logo.png"))
-        for s in treatment_samples
+        for s in samples
     }
     write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out,
                filter_foldch=filter_foldch, experiment_date=experiment_date,
-               gdna_batch=gdna_batch)
+               gdna_batch=gdna_batch, control_samples=control_samples)
 
 
 # ---------------------------------------------------------------------------
@@ -325,7 +372,7 @@ def main():
     """Snakemake entry point — writes report.csv only."""
     sm = snakemake  # noqa: F821 — injected by Snakemake
     run_csv(
-        treatment_samples=list(sm.params.treatment_samples),
+        samples=list(sm.params.report_samples),
         stats_dir=sm.params.stats_dir,
         csv_out=sm.output.csv,
     )
@@ -357,7 +404,7 @@ def cli_main():
     filter_foldch, experiment_date, gdna_batch = read_run_metadata(out_dir)
 
     run_html(
-        treatment_samples=samples,
+        samples=samples,
         stats_dir=stats_dir,
         meme_dir=meme_dir,
         factorbook_dir=factorbook_dir,
@@ -366,6 +413,7 @@ def cli_main():
         filter_foldch=filter_foldch,
         experiment_date=experiment_date,
         gdna_batch=gdna_batch,
+        control_samples=read_control(out_dir),
     )
     print(f"Wrote {csv_out}")
     print(f"Wrote {html_out}")

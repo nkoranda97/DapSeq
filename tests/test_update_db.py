@@ -150,7 +150,8 @@ def test_meta_rerun_does_not_affect_other_dirs(tmp_path):
 
 # peaks_filt_narrowpeak is intentionally excluded: it is empty from
 # _build_meta_paths and filled dynamically in main() from meme_foldch_level.
-TREATMENT_ONLY_COLS = [
+# Every sample now has these paths (controls are peak-called against themselves).
+PEAK_PATH_COLS = [
     "peaks_narrowpeak", "summits_bed",
     "summits_fasta", "peaks_fasta",
     "meme_summits_dir", "meme_peaks_dir",
@@ -160,34 +161,34 @@ TREATMENT_ONLY_COLS = [
 
 
 def test_peaks_filt_narrowpeak_empty_from_builder():
-    """_build_meta_paths leaves peaks_filt_narrowpeak empty for both sample
-    kinds; main() fills the treatment value once meme_foldch_level is known."""
-    for is_treatment in (True, False):
-        paths = m._build_meta_paths("/out/test", "s1", is_treatment=is_treatment)
-        assert paths["peaks_filt_narrowpeak"] == ""
+    """_build_meta_paths leaves peaks_filt_narrowpeak empty; main() fills it
+    once meme_foldch_level is known."""
+    paths = m._build_meta_paths("/out/test", "s1")
+    assert paths["peaks_filt_narrowpeak"] == ""
 
 
-def test_meta_control_paths_are_empty():
-    paths = m._build_meta_paths("/out/test", "ctrl", is_treatment=False)
-    for col in TREATMENT_ONLY_COLS:
-        assert paths[col] == "", f"{col} should be empty for control"
+def test_meta_control_paths_are_populated():
+    """Controls are peak-called against themselves, so their peak/MEME/FIMO/HOMER
+    paths are recorded like any other sample."""
+    paths = m._build_meta_paths("/out/test", "ctrl")
+    for col in PEAK_PATH_COLS:
+        assert paths[col] != "", f"{col} should be populated for control"
 
 
-def test_meta_treatment_paths_are_nonempty():
-    paths = m._build_meta_paths("/out/test", "treat1", is_treatment=True)
-    for col in TREATMENT_ONLY_COLS:
-        assert paths[col] != "", f"{col} should be non-empty for treatment"
+def test_meta_peak_paths_are_nonempty():
+    paths = m._build_meta_paths("/out/test", "treat1")
+    for col in PEAK_PATH_COLS:
+        assert paths[col] != "", f"{col} should be non-empty"
 
 
 def test_meta_shared_paths_always_present():
-    for is_treatment in (True, False):
-        paths = m._build_meta_paths("/out/test", "s1", is_treatment=is_treatment)
-        for col in ["bam", "bigwig", "trimmed_r1", "trimmed_r2"]:
-            assert paths[col] != "", f"{col} should always be set (is_treatment={is_treatment})"
+    paths = m._build_meta_paths("/out/test", "s1")
+    for col in ["bam", "bigwig", "trimmed_r1", "trimmed_r2"]:
+        assert paths[col] != "", f"{col} should always be set"
 
 
 def test_meta_paths_contain_sample_and_output_dir():
-    paths = m._build_meta_paths("/my/output", "sample_A", is_treatment=True)
+    paths = m._build_meta_paths("/my/output", "sample_A")
     assert "/my/output" in paths["bam"]
     assert "sample_A" in paths["bam"]
     assert "/my/output" in paths["peaks_narrowpeak"]

@@ -12,12 +12,13 @@ import sys
 
 sys.path.insert(0, os.path.dirname(__file__))
 from report import (  # noqa: E402
-    logo_to_base64, make_cols, read_run_metadata, write_html,
+    logo_to_base64, make_cols, read_control, read_run_metadata, write_html,
 )
 
 
-def render(treatment_samples, report_csv, meme_dir, factorbook_dir, html_out,
-           filter_foldch=None, experiment_date=None, gdna_batch=None):
+def render(samples, report_csv, meme_dir, factorbook_dir, html_out,
+           filter_foldch=None, experiment_date=None, gdna_batch=None,
+           control_samples=None):
     cols = make_cols()
 
     with open(report_csv, newline="") as fh:
@@ -25,26 +26,26 @@ def render(treatment_samples, report_csv, meme_dir, factorbook_dir, html_out,
 
     logo_b64_map = {
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo1.png"))
-        for s in treatment_samples
+        for s in samples
     }
     logo_rc_b64_map = {
         s: logo_to_base64(os.path.join(meme_dir, s, "summits", "logo_rc1.png"))
-        for s in treatment_samples
+        for s in samples
     }
     factorbook_logo_map = {
         s: logo_to_base64(os.path.join(factorbook_dir, f"{s}.logo.png"))
-        for s in treatment_samples
+        for s in samples
     }
     write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out,
                filter_foldch=filter_foldch, experiment_date=experiment_date,
-               gdna_batch=gdna_batch)
+               gdna_batch=gdna_batch, control_samples=control_samples)
 
 
 def main():
     """Snakemake entry point — writes report.html from report.csv + logos."""
     sm = snakemake  # noqa: F821 — injected by Snakemake
     render(
-        treatment_samples=list(sm.params.treatment_samples),
+        samples=list(sm.params.report_samples),
         report_csv=str(sm.input.report_csv),
         meme_dir=sm.params.meme_dir,
         factorbook_dir=sm.params.factorbook_dir,
@@ -52,6 +53,7 @@ def main():
         filter_foldch=sm.params.filter_foldch,
         experiment_date=sm.params.experiment_date,
         gdna_batch=sm.params.gdna_batch,
+        control_samples=list(sm.params.control_samples),
     )
 
 
@@ -83,7 +85,7 @@ def cli_main():
     filter_foldch, experiment_date, gdna_batch = read_run_metadata(out_dir)
 
     render(
-        treatment_samples=samples,
+        samples=samples,
         report_csv=report_csv,
         meme_dir=meme_dir,
         factorbook_dir=factorbook_dir,
@@ -91,6 +93,7 @@ def cli_main():
         filter_foldch=filter_foldch,
         experiment_date=experiment_date,
         gdna_batch=gdna_batch,
+        control_samples=read_control(out_dir),
     )
     print(f"Wrote {html_out}")
 

@@ -2,15 +2,25 @@ _MACS3_KEEP_DUP = config["macs3"].get("keep_dup", 1)
 _MACS3_EXTRA    = config["macs3"].get("extra", "")
 
 
+# Peak calling for every report sample. Treatment samples use CONTROL as the
+# -c background; control samples use *themselves* (control-against-itself run,
+# expected to yield few or no peaks) so the control flows through the same
+# downstream filtering/motif/stats/report path as treatments. control_bam is
+# resolved per-sample; params.ctrl emits -c only when a background bam exists.
 rule macs3:
     input:
         sample_bam  = OUT + "/bam/{sample}.bam",
-        control_bam = (OUT + f"/bam/{CONTROL}.bam" if CONTROL else []),
+        control_bam = lambda wc: (
+            OUT + f"/bam/{wc.sample}.bam" if wc.sample in CONTROL_SAMPLES
+            else (OUT + f"/bam/{CONTROL}.bam" if CONTROL else [])
+        ),
     output:
         summits    = OUT + "/MACS/{sample}_summits.bed",
         narrowpeak = OUT + "/MACS/{sample}_peaks.narrowPeak",
+    wildcard_constraints:
+        sample = REPORT_SAMPLE_CONSTRAINT,
     params:
-        ctrl        = lambda wc, input: f"-c {input.control_bam}" if CONTROL else "",
+        ctrl        = lambda wc, input: f"-c {input.control_bam}" if input.control_bam else "",
         outdir      = OUT + "/MACS",
         name        = lambda wc: wc.sample,
         keep_dup    = _MACS3_KEEP_DUP,

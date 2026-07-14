@@ -78,9 +78,15 @@ CONTROL = (
 TREATMENT_SAMPLES = [s for s in SAMPLES if s not in CONTROL_SAMPLES]
 OUT               = config["output_dir"]
 
+# Samples that get a report row and full peak/motif treatment: every treatment
+# sample plus each control (peak-called against itself, see rule macs3_self).
+# Controls are ordered last so they sort to the bottom of the report table.
+REPORT_SAMPLES = TREATMENT_SAMPLES + CONTROL_SAMPLES
+
 # Regex constraints for wildcard_constraints blocks; "(?!)" never matches (no samples).
 CONTROL_SAMPLE_CONSTRAINT   = "|".join(CONTROL_SAMPLES)   if CONTROL_SAMPLES   else "(?!)"
 TREATMENT_SAMPLE_CONSTRAINT = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)"
+REPORT_SAMPLE_CONSTRAINT    = "|".join(REPORT_SAMPLES)    if REPORT_SAMPLES    else "(?!)"
 
 SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
 PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
@@ -191,7 +197,7 @@ rule peaked:
     input:
         expand(
             OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}{PEAKS_FILTER_SUFFIX}.narrowPeak",
-            sample=TREATMENT_SAMPLES,
+            sample=REPORT_SAMPLES,
         ),
 
 
@@ -202,13 +208,13 @@ rule control_peaked:
 
 rule motifs_done:
     input:
-        expand(OUT + "/fimo/{sample}/summits/fimo.tsv",      sample=TREATMENT_SAMPLES),
-        expand(OUT + "/fimo/{sample}/peaks/fimo.tsv",        sample=TREATMENT_SAMPLES),
-        expand(OUT + "/meme/{sample}/summits/logo1.png",     sample=TREATMENT_SAMPLES),
-        expand(OUT + "/meme/{sample}/summits/logo_rc1.png",  sample=TREATMENT_SAMPLES),
-        expand(OUT + "/meme/{sample}/peaks/logo1.png",       sample=TREATMENT_SAMPLES),
-        expand(OUT + "/meme/{sample}/peaks/logo_rc1.png",    sample=TREATMENT_SAMPLES),
-        expand(OUT + "/factorbook/{sample}.logo.png",        sample=TREATMENT_SAMPLES),
+        expand(OUT + "/fimo/{sample}/summits/fimo.tsv",      sample=REPORT_SAMPLES),
+        expand(OUT + "/fimo/{sample}/peaks/fimo.tsv",        sample=REPORT_SAMPLES),
+        expand(OUT + "/meme/{sample}/summits/logo1.png",     sample=REPORT_SAMPLES),
+        expand(OUT + "/meme/{sample}/summits/logo_rc1.png",  sample=REPORT_SAMPLES),
+        expand(OUT + "/meme/{sample}/peaks/logo1.png",       sample=REPORT_SAMPLES),
+        expand(OUT + "/meme/{sample}/peaks/logo_rc1.png",    sample=REPORT_SAMPLES),
+        expand(OUT + "/factorbook/{sample}.logo.png",        sample=REPORT_SAMPLES),
 
 
 rule qc_done:
@@ -223,4 +229,4 @@ if config.get("gene_annotation"):
     rule annotate_done:
         input:
             expand(OUT + "/annotations/{sample}.peak_annotations.txt",
-                   sample=TREATMENT_SAMPLES),
+                   sample=REPORT_SAMPLES),
