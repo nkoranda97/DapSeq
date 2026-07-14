@@ -315,6 +315,52 @@ def test_collect_stats_columns_drop_per_fold_level():
 
 
 # ---------------------------------------------------------------------------
+# collect_stats.select_meme_peak_file — pure fold-peak selection helper
+# ---------------------------------------------------------------------------
+
+from types import SimpleNamespace
+
+
+def _fold_inputs():
+    return {
+        "peaks_fold1": "/out/MACS/s_peaks_fold1.narrowPeak",
+        "peaks_fold2": "/out/MACS/s_peaks_fold2.narrowPeak",
+        "peaks_fold3": "/out/MACS/s_peaks_fold3.narrowPeak",
+    }
+
+
+@pytest.mark.parametrize("level", [1, 2, 3])
+def test_select_meme_peak_file_happy_path_mapping(level):
+    inputs = _fold_inputs()
+    assert cs.select_meme_peak_file(inputs, level) == inputs[f"peaks_fold{level}"]
+
+
+@pytest.mark.parametrize("level", [1, 2, 3])
+def test_select_meme_peak_file_happy_path_attributes(level):
+    # Mirrors the Snakemake input object (attribute access).
+    inputs = SimpleNamespace(**_fold_inputs())
+    assert cs.select_meme_peak_file(inputs, level) == getattr(inputs, f"peaks_fold{level}")
+
+
+@pytest.mark.parametrize("level", [0, 4, -1])
+def test_select_meme_peak_file_out_of_range_level(level):
+    with pytest.raises(ValueError):
+        cs.select_meme_peak_file(_fold_inputs(), level)
+
+
+def test_select_meme_peak_file_missing_key_in_mapping():
+    # In-range level, but the mapping lacks that fold key.
+    with pytest.raises(KeyError):
+        cs.select_meme_peak_file({"peaks_fold1": "x"}, 2)
+
+
+def test_select_meme_peak_file_unexpected_input_type():
+    # Neither a mapping nor an object exposing peaks_fold{N}.
+    with pytest.raises(TypeError):
+        cs.select_meme_peak_file(42, 1)
+
+
+# ---------------------------------------------------------------------------
 # report.build_row derives frip_filt (and no per-fold frip)
 # ---------------------------------------------------------------------------
 

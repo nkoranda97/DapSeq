@@ -1,10 +1,9 @@
 # Per-sample stats for every report sample (treatment samples and controls
 # alike). Controls now have peaks from the against-itself MACS run (rule macs3
 # with the control as its own -c background), so they get the same full
-# peak/FRiP/motif stats as treatment samples. is_treatment=True here gates
-# peak-stat *computation* (all report samples have peaks); the semantic
-# treatment/control distinction lives in the report (flagged row) and the DB
-# (is_treatment column).
+# peak/FRiP/motif stats as treatment samples. All report samples have peaks, so
+# peak-stat computation runs unconditionally; the semantic treatment/control
+# distinction lives in the report (flagged row) and the DB (is_treatment column).
 rule sample_stats:
     input:
         bam          = OUT + "/bam/{sample}.bam",
@@ -32,7 +31,6 @@ rule sample_stats:
         sample = REPORT_SAMPLE_CONSTRAINT,
     params:
         is_pe             = lambda wc: wc.sample in PE_SAMPLES,
-        is_treatment      = True,
         max_frags         = config["bbduk"].get("max_frags"),
         blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
         rmsk_enabled      = config.get("rmsk_filter",     {}).get("enabled", False),

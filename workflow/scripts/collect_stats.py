@@ -2,16 +2,45 @@
 Compute all per-sample QC statistics and write {sample}.stats.csv.
 
 Called via Snakemake's script: directive. Uses snakemake.input, .output,
-and .params (is_pe: bool, is_treatment: bool).
+and .params (is_pe: bool).
 """
 
 import csv
 import os
 import re
 import subprocess
+from collections.abc import Mapping
 
 
 NA = "NA"
+
+# Fold-change levels for which the pipeline produces a peaks_fold{N} file.
+FOLD_PEAK_LEVELS = (1, 2, 3)
+
+
+def select_meme_peak_file(inputs, meme_foldch_level):
+    """Return the fold-peak file path for the configured MEME fold level.
+
+    ``inputs`` is either the Snakemake input object (attribute access,
+    e.g. ``inputs.peaks_fold2``) or a mapping keyed by ``peaks_fold{N}``.
+    The pipeline produces all of peaks_fold1/2/3; this selects the single one
+    fed to MEME/FIMO. Raises ValueError for a level outside FOLD_PEAK_LEVELS,
+    KeyError for a missing key in a mapping, and TypeError for an input of an
+    unexpected type.
+    """
+    if meme_foldch_level not in FOLD_PEAK_LEVELS:
+        raise ValueError(
+            f"meme_foldch_level must be one of {FOLD_PEAK_LEVELS}, "
+            f"got {meme_foldch_level!r}"
+        )
+    key = f"peaks_fold{meme_foldch_level}"
+    if hasattr(inputs, key):
+        return getattr(inputs, key)
+    if isinstance(inputs, Mapping):
+        return inputs[key]
+    raise TypeError(
+        f"cannot select {key!r} from input of type {type(inputs).__name__}"
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -190,7 +219,6 @@ def main():
     sm = snakemake  # noqa: F821 — injected by Snakemake
 
     is_pe         = bool(sm.params.is_pe)
-    is_treatment  = bool(sm.params.is_treatment)
     sample        = sm.wildcards.sample
 
     row = {c: NA for c in COLUMNS}
@@ -210,29 +238,26 @@ def main():
     if is_pe:
         row["median_frag_size"] = _bampe_median_frag(sm.input.bam)
 
-    # --- Treatment-only stats ---
-    if is_treatment:
-        meme_foldch_level = sm.params.meme_foldch_level
+    # --- Peak / FRiP / motif stats (all report samples have peaks) ---
+    # The "filtered" set reported (_filt) is the fold level MEME/FIMO actually
+    # consume, selected via meme_foldch_level. The pipeline still produces all
+    # three fold peak files; only this one is surfaced.
+    meme_peak_file = select_meme_peak_file(sm.input, sm.params.meme_foldch_level)
 
-        # The "filtered" set reported (_filt) is the fold level MEME/FIMO
-        # actually consume, selected via meme_foldch_level. The pipeline still
-        # produces all three fold peak files; only this one is surfaced.
-        meme_peak_file = getattr(sm.input, f"peaks_fold{meme_foldch_level}")
-
-        row["reads_in_peaks"] = _bedtools_intersect_count(
-            sm.input.bam, sm.input.peaks
-        )
-        row["reads_in_peaks_filt"] = _bedtools_intersect_count(
-            sm.input.bam, meme_peak_file
-        )
-        row["num_peaks"]      = _count_lines(sm.input.peaks)
-        row["num_peaks_filt"] = _count_lines(meme_peak_file)
-        if sm.params.blacklist_enabled and sm.input.peaks_bl:
-            row["num_peaks_bl"] = _count_lines(sm.input.peaks_bl[0])
-        if sm.params.rmsk_enabled and sm.input.peaks_rmsk:
-            row["num_peaks_rmsk"] = _count_lines(sm.input.peaks_rmsk[0])
-        row["max_peak_score"] = _narrowpeak_max_score(meme_peak_file)
-        row["motif_peaks"]    = _fimo_motif_peaks(sm.input.fimo)
+    row["reads_in_peaks"] = _bedtools_intersect_count(
+        sm.input.bam, sm.input.peaks
+    )
+    row["reads_in_peaks_filt"] = _bedtools_intersect_count(
+        sm.input.bam, meme_peak_file
+    )
+    row["num_peaks"]      = _count_lines(sm.input.peaks)
+    row["num_peaks_filt"] = _count_lines(meme_peak_file)
+    if sm.params.blacklist_enabled and sm.input.peaks_bl:
+        row["num_peaks_bl"] = _count_lines(sm.input.peaks_bl[0])
+    if sm.params.rmsk_enabled and sm.input.peaks_rmsk:
+        row["num_peaks_rmsk"] = _count_lines(sm.input.peaks_rmsk[0])
+    row["max_peak_score"] = _narrowpeak_max_score(meme_peak_file)
+    row["motif_peaks"]    = _fimo_motif_peaks(sm.input.fimo)
 
     with open(sm.output.stats_csv, "w", newline="") as fh:
         writer = csv.DictWriter(fh, fieldnames=COLUMNS)

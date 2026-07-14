@@ -79,7 +79,8 @@ TREATMENT_SAMPLES = [s for s in SAMPLES if s not in CONTROL_SAMPLES]
 OUT               = config["output_dir"]
 
 # Samples that get a report row and full peak/motif treatment: every treatment
-# sample plus each control (peak-called against itself, see rule macs3_self).
+# sample plus each control (peak-called against itself, see rule macs3 —
+# control samples use their own BAM as the -c background).
 # Controls are ordered last so they sort to the bottom of the report table.
 REPORT_SAMPLES = TREATMENT_SAMPLES + CONTROL_SAMPLES
 

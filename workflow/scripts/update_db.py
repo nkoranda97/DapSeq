@@ -227,8 +227,8 @@ def main():
     treatment_set    = set(sm.params.treatment_samples)
     run_date         = datetime.now().isoformat(timespec="seconds")
     author           = sm.params.author
-    experiment_date  = sm.params.experiment_date or ""
-    gdna_batch       = sm.params.gdna_batch or ""
+    experiment_date  = str(sm.params.experiment_date) if sm.params.experiment_date else ""
+    gdna_batch       = str(sm.params.gdna_batch) if sm.params.gdna_batch else ""
     gene_annotation  = sm.params.gene_annotation or ""
 
     qc_stats = read_report(sm.input.report)

@@ -9,6 +9,7 @@ from the CLI (CSV + HTML together).
 import argparse
 import base64
 import csv
+import html
 import io
 import os
 import sys
@@ -180,7 +181,7 @@ def _fmt_html(col, val):
         return f"{int(val):,}"
     if col in PCT_COLS:
         return f"{val}%"
-    return str(val)
+    return html.escape(str(val))
 
 
 def _report_header_html(filter_foldch=None, experiment_date=None, gdna_batch=None):
@@ -192,9 +193,9 @@ def _report_header_html(filter_foldch=None, experiment_date=None, gdna_batch=Non
     parts = []
     meta = []
     if experiment_date:
-        meta.append(f"<strong>Experiment date:</strong> {experiment_date}")
+        meta.append(f"<strong>Experiment date:</strong> {html.escape(str(experiment_date))}")
     if gdna_batch:
-        meta.append(f"<strong>gDNA batch:</strong> {gdna_batch}")
+        meta.append(f"<strong>gDNA batch:</strong> {html.escape(str(gdna_batch))}")
     if meta:
         parts.append("<p>" + "&nbsp;&nbsp;|&nbsp;&nbsp;".join(meta) + "</p>")
     if filter_foldch is not None:
