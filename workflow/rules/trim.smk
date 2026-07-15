@@ -18,7 +18,11 @@ rule trim_se:
         maq       = config["bbduk"].get("maq", 10),
         ow        = config["bbduk"].get("ow", "t"),
     threads:
-        config["threads"]
+        # bbmap 39.81's parallel FASTQ reader (FastqStreamer) has a thread-safety
+        # bug that deadlocks at high thread counts (>=12 observed) with spurious
+        # "missing plus" assertions on valid reads. Cap trimming at 8 threads;
+        # alignment keeps config["threads"].
+        min(config["threads"], 8)
     resources:
         mem_mb          = config["resources"]["trim_align"]["mem_mb"],
         runtime         = config["resources"]["trim_align"]["runtime"],
@@ -109,7 +113,11 @@ rule trim_pe:
         maq       = config["bbduk"].get("maq", 10),
         ow        = config["bbduk"].get("ow", "t"),
     threads:
-        config["threads"]
+        # bbmap 39.81's parallel FASTQ reader (FastqStreamer) has a thread-safety
+        # bug that deadlocks at high thread counts (>=12 observed) with spurious
+        # "missing plus" assertions on valid reads. Cap trimming at 8 threads;
+        # alignment keeps config["threads"].
+        min(config["threads"], 8)
     resources:
         mem_mb          = config["resources"]["trim_align"]["mem_mb"],
         runtime         = config["resources"]["trim_align"]["runtime"],
