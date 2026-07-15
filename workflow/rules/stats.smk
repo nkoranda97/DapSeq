@@ -35,6 +35,8 @@ rule sample_stats:
         blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
         rmsk_enabled      = config.get("rmsk_filter",     {}).get("enabled", False),
         meme_foldch_level = MEME_FOLD_IDX,
+        experiment_date   = lambda wc: config["samples"][wc.sample].get("experiment_date"),
+        gdna_batch        = lambda wc: config["samples"][wc.sample].get("gdna_batch"),
     resources:
         mem_mb          = config["resources"]["sample_stats"]["mem_mb"],
         runtime         = config["resources"]["sample_stats"]["runtime"],
@@ -93,8 +95,6 @@ rule report_html:
         meme_dir          = OUT + "/meme",
         factorbook_dir    = OUT + "/factorbook",
         filter_foldch     = FOLD_LEVELS[MEME_FOLD_IDX - 1],
-        experiment_date   = config.get("experiment_date"),
-        gdna_batch        = config.get("gdna_batch"),
     resources:
         mem_mb          = config["resources"]["report"]["mem_mb"],
         runtime         = config["resources"]["report"]["runtime"],

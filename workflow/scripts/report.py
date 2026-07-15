@@ -22,11 +22,15 @@ INT_COLS = {
     "num_peaks", "num_peaks_filt", "num_peaks_bl", "num_peaks_rmsk",
 }
 PCT_COLS = {"frip", "frip_filt", "mapping_pct"}
+# Columns rendered (and sorted) as free-form text rather than numeric.
+TEXT_COLS = {"sample", "experiment_date", "gdna_batch"}
 
 
 def make_cols():
     return [
         "sample",
+        "experiment_date",
+        "gdna_batch",
         "total_reads",
         "subsampled_frags",
         "trimmed_reads",
@@ -184,33 +188,25 @@ def _fmt_html(col, val):
     return html.escape(str(val))
 
 
-def _report_header_html(filter_foldch=None, experiment_date=None, gdna_batch=None):
-    """Return header <p> block: experiment metadata and the _filt fold threshold.
+def _report_header_html(filter_foldch=None):
+    """Return the header <p> block describing the _filt fold threshold.
 
-    Each element is emitted only when a value is supplied, so an unset field
-    simply does not appear (matching how the optional `author` field behaves).
+    Experiment metadata (experiment_date, gdna_batch) is per-sample and lives
+    in the table columns, not this header. The filter note is emitted only when
+    a fold value is supplied.
     """
-    parts = []
-    meta = []
-    if experiment_date:
-        meta.append(f"<strong>Experiment date:</strong> {html.escape(str(experiment_date))}")
-    if gdna_batch:
-        meta.append(f"<strong>gDNA batch:</strong> {html.escape(str(gdna_batch))}")
-    if meta:
-        parts.append("<p>" + "&nbsp;&nbsp;|&nbsp;&nbsp;".join(meta) + "</p>")
-    if filter_foldch is not None:
-        parts.append(
-            f"<p><strong>Filtered peaks</strong> "
-            f"(<code>num_peaks_filt</code>, <code>reads_in_peaks_filt</code>, "
-            f"<code>frip_filt</code>) use fold-change&nbsp;&ge;&nbsp;"
-            f"{filter_foldch}&times; — the peak set fed to MEME/FIMO.</p>"
-        )
-    return "\n".join(parts)
+    if filter_foldch is None:
+        return ""
+    return (
+        f"<p><strong>Filtered peaks</strong> "
+        f"(<code>num_peaks_filt</code>, <code>reads_in_peaks_filt</code>, "
+        f"<code>frip_filt</code>) use fold-change&nbsp;&ge;&nbsp;"
+        f"{filter_foldch}&times; — the peak set fed to MEME/FIMO.</p>"
+    )
 
 
 def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, out_path,
-               filter_foldch=None, experiment_date=None, gdna_batch=None,
-               control_samples=None):
+               filter_foldch=None, control_samples=None):
     """Write a self-contained HTML report table with embedded motif logos.
 
     Rows whose sample is in *control_samples* are flagged (a highlighted row and
@@ -219,11 +215,7 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
     control_set = set(control_samples or [])
     html_cols = cols + ["top motif", "top motif RC", "factorbook motif"]
 
-    header = _report_header_html(
-        filter_foldch=filter_foldch,
-        experiment_date=experiment_date,
-        gdna_batch=gdna_batch,
-    )
+    header = _report_header_html(filter_foldch=filter_foldch)
     if control_set:
         header += (
             '\n<p class="legend">Rows marked '
@@ -245,7 +237,7 @@ def write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, o
     for col in html_cols:
         if col in ("top motif", "top motif RC", "factorbook motif"):
             lines.append(f'  <th class="no-sort">{col}</th>')
-        elif col == "sample":
+        elif col in TEXT_COLS:
             lines.append(f'  <th data-col-type="text">{col}</th>')
         else:
             lines.append(f'  <th data-col-type="numeric">{col}</th>')
@@ -314,20 +306,20 @@ def _load_config_snapshot(out_dir):
 
 
 def read_run_metadata(out_dir):
-    """Best-effort read of experiment metadata + the _filt fold value from the
-    config snapshot.
+    """Best-effort read of the _filt fold value from the config snapshot.
 
-    Returns (filter_foldch, experiment_date, gdna_batch); each element is None
-    when the snapshot is missing, unparseable, or lacks the value.
+    Returns the fold-change threshold that the reported ``_filt`` columns
+    represent, or None when the snapshot is missing, unparseable, or lacks the
+    value. Experiment metadata is per-sample and comes from the report CSV, not
+    this snapshot.
     """
     cfg    = _load_config_snapshot(out_dir)
     macs3  = cfg.get("macs3") or {}
     levels = macs3.get("foldch_levels")
     idx    = macs3.get("meme_foldch_level", 2)
-    filt   = None
     if isinstance(levels, (list, tuple)) and isinstance(idx, int) and 1 <= idx <= len(levels):
-        filt = levels[idx - 1]
-    return filt, cfg.get("experiment_date"), cfg.get("gdna_batch")
+        return levels[idx - 1]
+    return None
 
 
 def read_control(out_dir):
@@ -343,8 +335,7 @@ def read_control(out_dir):
 
 
 def run_html(samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out,
-             filter_foldch=None, experiment_date=None, gdna_batch=None,
-             control_samples=None):
+             filter_foldch=None, control_samples=None):
     """Write report.csv then render report.html from the same rows + logos."""
     rows = run_csv(samples, stats_dir, csv_out)
     cols = make_cols()
@@ -361,8 +352,7 @@ def run_html(samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out,
         for s in samples
     }
     write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out,
-               filter_foldch=filter_foldch, experiment_date=experiment_date,
-               gdna_batch=gdna_batch, control_samples=control_samples)
+               filter_foldch=filter_foldch, control_samples=control_samples)
 
 
 # ---------------------------------------------------------------------------
@@ -402,7 +392,7 @@ def cli_main():
     if not samples:
         sys.exit(f"No *.stats.csv files found in {stats_dir} — is the pipeline complete?")
 
-    filter_foldch, experiment_date, gdna_batch = read_run_metadata(out_dir)
+    filter_foldch = read_run_metadata(out_dir)
 
     run_html(
         samples=samples,
@@ -412,8 +402,6 @@ def cli_main():
         csv_out=csv_out,
         html_out=html_out,
         filter_foldch=filter_foldch,
-        experiment_date=experiment_date,
-        gdna_batch=gdna_batch,
         control_samples=read_control(out_dir),
     )
     print(f"Wrote {csv_out}")

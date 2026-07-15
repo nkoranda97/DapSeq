@@ -1,13 +1,20 @@
+# experiment_date / gdna_batch are optional per-sample provenance (free-form).
 samples:
   TF1:
     r1: null
     r2: null
+    experiment_date: null
+    gdna_batch: null
   TF2:
     r1: null
     r2: null
+    experiment_date: null
+    gdna_batch: null
   input_DNA:
     r1: null
     r2: null
+    experiment_date: null
+    gdna_batch: null
 
 # Control sample name (must match a key in samples). When set, the control is
 # peak-called twice — no-input self peak-call (QC) and against itself
@@ -15,10 +22,6 @@ samples:
 # in the report with full treatment-style motif/stats treatment.
 control: null
 output_dir: null
-
-# Experiment provenance (optional, experiment-wide)
-experiment_date: null
-gdna_batch: null
 
 # genome
 genome_ref: null

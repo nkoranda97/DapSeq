@@ -194,6 +194,8 @@ def _fimo_motif_peaks(path):
 
 COLUMNS = [
     "sample",
+    "experiment_date",
+    "gdna_batch",
     "total_reads",
     "subsampled_frags",
     "trimmed_reads",
@@ -223,6 +225,14 @@ def main():
 
     row = {c: NA for c in COLUMNS}
     row["sample"] = sample
+
+    # --- Per-sample provenance (optional, from config) ---
+    row["experiment_date"] = (
+        str(sm.params.experiment_date) if sm.params.experiment_date else NA
+    )
+    row["gdna_batch"] = (
+        str(sm.params.gdna_batch) if sm.params.gdna_batch else NA
+    )
 
     # --- Log-parsed stats (all samples) ---
     total_reads, subsampled = _parse_subsample_log(sm.input.subsample_log, is_pe)

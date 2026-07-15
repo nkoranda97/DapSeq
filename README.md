@@ -59,13 +59,12 @@ Copy `config.yaml` from the repo root and fill in the required fields. Defaults 
 ```yaml
 author: "Your Name"  # optional
 
-experiment_date: "2026-07-14"  # optional, experiment-wide (free-form)
-gdna_batch: "batch-07"         # optional, experiment-wide (free-form)
-
 samples:
   sample_name:
     r1: /path/to/sample.R1.fastq.gz
     r2: /path/to/sample.R2.fastq.gz  # null for single-end
+    experiment_date: "2026-07-14"    # optional, per-sample (free-form)
+    gdna_batch: "batch-07"           # optional, per-sample (free-form)
   control:
     r1: /path/to/control.R1.fastq.gz
     r2: null
@@ -86,8 +85,8 @@ slurm_account: "pi-yourlab"
 | Option | Default | Notes |
 |---|---|---|
 | `control` | `null` | Sample name used as the MACS3 `-c` background for treatment samples. When set, the control is also peak-called **twice**: once with no input control (QC self peak-call), and once **against itself** (`-t control -c control`, expected to yield few or no peaks). The against-itself run flows through the full treatment pipeline (filtering, MEME/FIMO motifs, stats) and appears as a flagged row in the report, so the control is treated like a sample except that it is its own background |
-| `experiment_date` | `null` | Optional experiment-wide date (free-form); shown in the HTML report header and stored in the results database |
-| `gdna_batch` | `null` | Optional experiment-wide gDNA batch label (free-form); shown in the HTML report header and stored in the results database |
+| `samples.<name>.experiment_date` | `null` | Optional per-sample date (free-form); shown as a report column and stored per-sample in the results database |
+| `samples.<name>.gdna_batch` | `null` | Optional per-sample gDNA batch label (free-form); shown as a report column and stored per-sample in the results database |
 | `aligner` | `bowtie2` | `bowtie2` or `bwa_mem2` |
 | `bbduk.k` | `21` | Kmer length for adapter/contaminant trimming (program default: `31`) |
 | `bbduk.mink` | `11` | Enables short-kmer matching at read tips for adapter trimming (program default: `0`, disabled) |

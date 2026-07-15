@@ -66,6 +66,8 @@ def test_columns_does_not_contain_mapping_rate():
 def test_make_cols_order():
     assert rp.make_cols() == [
         "sample",
+        "experiment_date",
+        "gdna_batch",
         "total_reads",
         "subsampled_frags",
         "trimmed_reads",
@@ -236,6 +238,46 @@ def test_run_csv_excludes_mapping_rate_and_includes_renamed_frip(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+# Per-sample experiment_date / gdna_batch flow through stats CSV -> report CSV
+# ---------------------------------------------------------------------------
+
+def test_collect_stats_columns_contain_experiment_metadata():
+    assert cs.COLUMNS[1:3] == ["experiment_date", "gdna_batch"]
+
+
+def test_run_csv_carries_per_sample_metadata(tmp_path):
+    """Each sample's experiment_date/gdna_batch flows from its stats CSV into
+    the report CSV independently (per-sample, not a shared value)."""
+    stats_dir = _write_stats_csv(
+        tmp_path, "s1",
+        extras={"experiment_date": "2026-07-14", "gdna_batch": "batch-07"},
+    )
+    _write_stats_csv(
+        tmp_path, "s2",
+        extras={"experiment_date": "2026-07-15", "gdna_batch": "batch-08"},
+    )
+    csv_out = str(tmp_path / "report.csv")
+    rp.run_csv(["s1", "s2"], stats_dir, csv_out)
+    with open(csv_out) as fh:
+        rows = {r["sample"]: r for r in csv.DictReader(fh)}
+    assert rows["s1"]["experiment_date"] == "2026-07-14"
+    assert rows["s1"]["gdna_batch"] == "batch-07"
+    assert rows["s2"]["experiment_date"] == "2026-07-15"
+    assert rows["s2"]["gdna_batch"] == "batch-08"
+
+
+def test_run_csv_metadata_na_when_unset(tmp_path):
+    """Unset per-sample metadata surfaces as NA in the report CSV."""
+    stats_dir = _write_stats_csv(tmp_path, "s1")  # helper defaults these to NA
+    csv_out = str(tmp_path / "report.csv")
+    rp.run_csv(["s1"], stats_dir, csv_out)
+    with open(csv_out) as fh:
+        rows = list(csv.DictReader(fh))
+    assert rows[0]["experiment_date"] == "NA"
+    assert rows[0]["gdna_batch"] == "NA"
+
+
+# ---------------------------------------------------------------------------
 # num_peaks_bl — blacklist filter stats
 # ---------------------------------------------------------------------------
 
@@ -289,6 +331,8 @@ def test_count_lines_ten_peaks(tmp_path):
 def test_collect_stats_columns_simplified():
     assert cs.COLUMNS == [
         "sample",
+        "experiment_date",
+        "gdna_batch",
         "total_reads",
         "subsampled_frags",
         "trimmed_reads",
@@ -375,13 +419,13 @@ def test_build_row_frip_filt_derived(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# HTML header renders experiment metadata + filter note only when provided
+# HTML: per-sample experiment metadata columns + filter-note header
 # ---------------------------------------------------------------------------
 
-def _write_report_html(tmp_path, **kwargs):
+def _write_report_html(tmp_path, rows=None, **kwargs):
     out = tmp_path / "report.html"
     rp.write_html(
-        rows=[{"sample": "s1"}],
+        rows=rows if rows is not None else [{"sample": "s1"}],
         cols=rp.make_cols(),
         logo_b64_map={},
         logo_rc_b64_map={},
@@ -392,16 +436,24 @@ def _write_report_html(tmp_path, **kwargs):
     return out.read_text()
 
 
-def test_html_header_shows_experiment_metadata(tmp_path):
-    html = _write_report_html(
-        tmp_path, experiment_date="2026-07-14", gdna_batch="batch-07"
-    )
-    assert "Experiment date" in html and "2026-07-14" in html
-    assert "gDNA batch" in html and "batch-07" in html
-
-
-def test_html_header_omits_metadata_when_unset(tmp_path):
+def test_html_experiment_metadata_columns_are_text_sortable(tmp_path):
+    """experiment_date / gdna_batch render as text-sortable header cells."""
     html = _write_report_html(tmp_path)
+    assert '<th data-col-type="text">experiment_date</th>' in html
+    assert '<th data-col-type="text">gdna_batch</th>' in html
+
+
+def test_html_shows_per_sample_metadata_values(tmp_path):
+    """Two samples with different metadata render their own values (per-sample,
+    not a single shared header line)."""
+    rows = [
+        {"sample": "s1", "experiment_date": "2026-07-14", "gdna_batch": "batch-07"},
+        {"sample": "s2", "experiment_date": "2026-07-15", "gdna_batch": "batch-08"},
+    ]
+    html = _write_report_html(tmp_path, rows=rows)
+    assert "2026-07-14" in html and "batch-07" in html
+    assert "2026-07-15" in html and "batch-08" in html
+    # No run-wide header metadata line anymore.
     assert "Experiment date" not in html
     assert "gDNA batch" not in html
 
@@ -413,25 +465,20 @@ def test_html_header_shows_filter_foldch(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# report.read_run_metadata parses the config snapshot
+# report.read_run_metadata parses the _filt fold value from the config snapshot
 # ---------------------------------------------------------------------------
 
 def test_read_run_metadata_from_snapshot(tmp_path):
     (tmp_path / "config_used.yaml").write_text(
-        "experiment_date: '2026-07-14'\n"
-        "gdna_batch: batch-07\n"
         "macs3:\n"
         "  foldch_levels: [2, 5, 15]\n"
         "  meme_foldch_level: 2\n"
     )
-    filt, exp, batch = rp.read_run_metadata(str(tmp_path))
-    assert filt == 5           # foldch_levels[meme_foldch_level - 1]
-    assert exp == "2026-07-14"
-    assert batch == "batch-07"
+    assert rp.read_run_metadata(str(tmp_path)) == 5  # foldch_levels[meme_foldch_level - 1]
 
 
 def test_read_run_metadata_missing_snapshot(tmp_path):
-    assert rp.read_run_metadata(str(tmp_path)) == (None, None, None)
+    assert rp.read_run_metadata(str(tmp_path)) is None
 
 
 # ---------------------------------------------------------------------------

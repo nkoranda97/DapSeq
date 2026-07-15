@@ -4,24 +4,27 @@
 
 author: "Your Name"
 
-# Experiment provenance (optional, experiment-wide). Recorded in the HTML
-# report header and the results database.
-experiment_date: null   # e.g. "2026-07-14" (free-form string)
-gdna_batch: null        # e.g. "batch-07" (free-form string)
-
 # rename sample_name to name sample will be identified as
 # Use full paths to the raw data for r1 and r2
 # If SE, leave r2 as null
 # add as many samples as you'd like
+#
+# experiment_date / gdna_batch are optional per-sample provenance. They appear
+# as columns in the HTML report and are stored per-sample in the results
+# database. Leave as null to omit.
 
 samples:
   sample_1_name:
     r1: null
     r2: null
+    experiment_date: null   # optional, e.g. "2026-07-14" (free-form string)
+    gdna_batch: null        # optional, e.g. "batch-07" (free-form string)
 
   control:
     r1: null
     r2: null
+    experiment_date: null
+    gdna_batch: null
 
 # Control sample name — must match a key in samples above.
 # Set to null to run without a control.

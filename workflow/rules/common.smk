@@ -5,8 +5,8 @@ import os
 _KNOWN_CONFIG_KEYS = frozenset({
     "aligner", "author", "bamcompare", "bamcoverage", "bbduk",
     "blacklist_filter", "bowtie2", "bwa_mem2", "chrom_filter", "container",
-    "control", "db_path", "experiment_date", "factorbook", "fastqc", "fimo",
-    "gdna_batch", "gene_annotation", "genome_ref", "genome_size", "homer",
+    "control", "db_path", "factorbook", "fastqc", "fimo",
+    "gene_annotation", "genome_ref", "genome_size", "homer",
     "macs3", "meme", "multiqc", "output_dir", "resources", "rmsk_filter",
     "samples", "samtools", "threads",
 })
@@ -21,6 +21,11 @@ if _unexpected_keys:
             " 'slurm_partition' and 'slurm_account' have moved to"
             " profiles/slurm/config.yaml under default-resources:"
             " — remove them from config.yaml."
+        )
+    if "experiment_date" in _unexpected_keys or "gdna_batch" in _unexpected_keys:
+        _hint += (
+            " 'experiment_date' and 'gdna_batch' are now set per-sample under"
+            " samples: <name>: (alongside r1/r2), not as top-level keys."
         )
     raise ValueError(f"Unrecognized config key(s): {sorted(_unexpected_keys)}.{_hint}")
 

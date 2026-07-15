@@ -283,6 +283,36 @@ def test_experiment_metadata_lands_in_run_metadata(tmp_path):
     assert row["gdna_batch"] == "batch-07"
 
 
+def test_per_sample_experiment_metadata_distinct(tmp_path):
+    """Each sample's row carries its own experiment_date/gdna_batch — the values
+    are per-sample, not a single shared run-wide value."""
+    db = tmp_path / "pipeline_db.db"
+    base = {c: "" for c in m.META_COLS}
+    rows = []
+    for sample, date, batch in (
+        ("s0", "2026-07-14", "batch-07"),
+        ("s1", "2026-07-15", "batch-08"),
+    ):
+        r = dict(base)
+        r.update({
+            "output_dir": "/out/A", "sample": sample,
+            "experiment_date": date, "gdna_batch": batch,
+        })
+        rows.append(tuple(r[c] for c in m.META_COLS))
+    m.write_meta_rows(db, "/out/A", rows)
+
+    con = sqlite3.connect(str(db))
+    got = {
+        row[0]: (row[1], row[2])
+        for row in con.execute(
+            "SELECT sample, experiment_date, gdna_batch FROM run_metadata"
+        )
+    }
+    con.close()
+    assert got["s0"] == ("2026-07-14", "batch-07")
+    assert got["s1"] == ("2026-07-15", "batch-08")
+
+
 def test_write_rows_migrates_legacy_schema(tmp_path):
     """A DB whose pipeline_runs predates the new columns must accept new rows.
 

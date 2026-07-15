@@ -17,8 +17,7 @@ from report import (  # noqa: E402
 
 
 def render(samples, report_csv, meme_dir, factorbook_dir, html_out,
-           filter_foldch=None, experiment_date=None, gdna_batch=None,
-           control_samples=None):
+           filter_foldch=None, control_samples=None):
     cols = make_cols()
 
     with open(report_csv, newline="") as fh:
@@ -37,8 +36,7 @@ def render(samples, report_csv, meme_dir, factorbook_dir, html_out,
         for s in samples
     }
     write_html(rows, cols, logo_b64_map, logo_rc_b64_map, factorbook_logo_map, html_out,
-               filter_foldch=filter_foldch, experiment_date=experiment_date,
-               gdna_batch=gdna_batch, control_samples=control_samples)
+               filter_foldch=filter_foldch, control_samples=control_samples)
 
 
 def main():
@@ -51,8 +49,6 @@ def main():
         factorbook_dir=sm.params.factorbook_dir,
         html_out=str(sm.output.html),
         filter_foldch=sm.params.filter_foldch,
-        experiment_date=sm.params.experiment_date,
-        gdna_batch=sm.params.gdna_batch,
         control_samples=list(sm.params.control_samples),
     )
 
@@ -82,7 +78,7 @@ def cli_main():
     if not samples:
         sys.exit(f"No samples found in {report_csv}.")
 
-    filter_foldch, experiment_date, gdna_batch = read_run_metadata(out_dir)
+    filter_foldch = read_run_metadata(out_dir)
 
     render(
         samples=samples,
@@ -91,8 +87,6 @@ def cli_main():
         factorbook_dir=factorbook_dir,
         html_out=html_out,
         filter_foldch=filter_foldch,
-        experiment_date=experiment_date,
-        gdna_batch=gdna_batch,
         control_samples=read_control(out_dir),
     )
     print(f"Wrote {html_out}")
