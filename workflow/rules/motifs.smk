@@ -77,6 +77,12 @@ rule meme_summits:
             touch {output.txt} {output.xml}
         else
             mkdir -p {params.outdir}
+            MEME_IN={params.outdir}/meme_input.fasta
+            awk -v MINW={params.minw} '/^>/ {{h=$0; next}} length($0) >= MINW {{print h; print}}' {input} > "$MEME_IN"
+            if [ ! -s "$MEME_IN" ]; then
+                touch {output.txt} {output.xml}
+                rm -f "$MEME_IN"
+            else
             if [ -n "{params.has_custom}" ]; then
                 printf 'ALPHABET "DNA"\\nA ADENINE {params.a_color} ~ T THYMINE {params.t_color}\\nC CYTOSINE {params.c_color} ~ G GUANINE {params.g_color}\\nEND ALPHABET\\n' \
                     > {params.outdir}/custom_alph.txt
@@ -84,12 +90,14 @@ rule meme_summits:
             else
                 ALPH="-dna"
             fi
-            meme {input} -oc {params.outdir} $ALPH -revcomp \
+            meme "$MEME_IN" -oc {params.outdir} $ALPH -revcomp \
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
                 -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
                 2>{log}
+            rm -f "$MEME_IN"
+            fi
         fi
         """
 
@@ -144,6 +152,12 @@ rule meme_peaks:
             touch {output.txt} {output.xml}
         else
             mkdir -p {params.outdir}
+            MEME_IN={params.outdir}/meme_input.fasta
+            awk -v MINW={params.minw} '/^>/ {{h=$0; next}} length($0) >= MINW {{print h; print}}' {input} > "$MEME_IN"
+            if [ ! -s "$MEME_IN" ]; then
+                touch {output.txt} {output.xml}
+                rm -f "$MEME_IN"
+            else
             if [ -n "{params.has_custom}" ]; then
                 printf 'ALPHABET "DNA"\\nA ADENINE {params.a_color} ~ T THYMINE {params.t_color}\\nC CYTOSINE {params.c_color} ~ G GUANINE {params.g_color}\\nEND ALPHABET\\n' \
                     > {params.outdir}/custom_alph.txt
@@ -151,12 +165,14 @@ rule meme_peaks:
             else
                 ALPH="-dna"
             fi
-            meme {input} -oc {params.outdir} $ALPH -revcomp \
+            meme "$MEME_IN" -oc {params.outdir} $ALPH -revcomp \
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
                 -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
                 2>{log}
+            rm -f "$MEME_IN"
+            fi
         fi
         """
 

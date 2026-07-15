@@ -17,9 +17,6 @@ pytest = ">=8.0.0,<9"
 biopython = ">=1.80"
 samtools = ">=1.23.1,<2"
 jupyter = ">=1.1.1,<2"
-apptainer = ">=1.5.0,<2"
-squashfuse = ">=0.6.2,<0.7"
-squashfs-tools = ">=4.7.5,<5"
 
 [pypi-dependencies]
 snakemake-logger-plugin-rich = ">=0.4.1, <0.5"

@@ -28,6 +28,11 @@ rule macs3:
         tmpdir      = OUT + "/temp",
         macs3_format = config["macs3"]["format"],
         genome_size  = config["genome_size"],
+        # A no-enrichment control has too few paired peaks (<100) for MACS3 to
+        # build its shifting model, so model building aborts (exit 1). Skip it
+        # for control-against-itself; MACS3 then uses its defaults (extsize=200,
+        # shift=0). Real treatment samples keep their data-derived model.
+        nomodel      = lambda wc: "--nomodel" if wc.sample in CONTROL_SAMPLES else "",
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],
@@ -42,7 +47,7 @@ rule macs3:
           -t {input.sample_bam} {params.ctrl} \
           -f {params.macs3_format} --outdir {params.outdir} \
           -g {params.genome_size} -n {params.name} \
-          --call-summits --keep-dup {params.keep_dup} {params.extra} --verbose=0 2>{log}
+          --call-summits --keep-dup {params.keep_dup} {params.nomodel} {params.extra} --verbose=0 2>{log}
         """
 
 
@@ -76,7 +81,7 @@ rule macs3_control:
           -t {input.sample_bam} \
           -f {params.macs3_format} --outdir {params.outdir} \
           -g {params.genome_size} -n {params.name} \
-          --call-summits --keep-dup {params.keep_dup} {params.extra} --verbose=0 2>{log}
+          --call-summits --keep-dup {params.keep_dup} --nomodel {params.extra} --verbose=0 2>{log}
         """
 
 
