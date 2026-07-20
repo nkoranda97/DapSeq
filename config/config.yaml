@@ -1,26 +1,29 @@
+# control (optional, per-sample): name of another sample to use as this sample's
+# MACS3 -c background and bamCompare -b2. Exactly one control per sample; null
+# means no background. A sample named as a control by others is peak-called
+# against itself and shown as a flagged report row. Different controls on
+# different samples run several experiments in one invocation.
 # experiment_date / gdna_batch are optional per-sample provenance (free-form).
 samples:
   TF1:
     r1: null
     r2: null
+    control: input_DNA
     experiment_date: null
     gdna_batch: null
   TF2:
     r1: null
     r2: null
+    control: input_DNA
     experiment_date: null
     gdna_batch: null
   input_DNA:
     r1: null
     r2: null
+    control: null
     experiment_date: null
     gdna_batch: null
 
-# Control sample name (must match a key in samples). When set, the control is
-# peak-called twice — no-input self peak-call (QC) and against itself
-# (-t control -c control) — and the against-itself run appears as a flagged row
-# in the report with full treatment-style motif/stats treatment.
-control: null
 output_dir: null
 
 # genome
@@ -176,9 +179,6 @@ resources:
   update_db:
     mem_mb: 8000
     runtime: 5
-  merge_control:
-    mem_mb: 16000
-    runtime: 60
   homer_annotate:
     mem_mb: 16000
     runtime: 30

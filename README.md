@@ -63,13 +63,13 @@ samples:
   sample_name:
     r1: /path/to/sample.R1.fastq.gz
     r2: /path/to/sample.R2.fastq.gz  # null for single-end
+    control: input_DNA               # name of another sample; null for no background
     experiment_date: "2026-07-14"    # optional, per-sample (free-form)
     gdna_batch: "batch-07"           # optional, per-sample (free-form)
-  control:
+  input_DNA:
     r1: /path/to/control.R1.fastq.gz
     r2: null
-
-control: control  # must match a key in samples; null to run without control
+    control: null                    # a control declares no control of its own
 
 output_dir: /path/to/output/
 genome_ref: /path/to/genome.fa
@@ -80,11 +80,31 @@ slurm_partition: "caslake"
 slurm_account: "pi-yourlab"
 ```
 
+#### Running multiple experiments in one run
+
+Control is assigned **per sample** via each sample's `control:` key, so you can run
+several independent experiments in a single pipeline invocation — just point each
+sample at its own control:
+
+```yaml
+samples:
+  TF_A:    { r1: ..., control: input_A }   # experiment A
+  TF_B:    { r1: ..., control: input_B }   # experiment B
+  input_A: { r1: ..., control: null }
+  input_B: { r1: ..., control: null }
+```
+
+Each treatment is peak-called against its assigned control; each control is
+peak-called against itself and shown as a flagged report row. There is exactly one
+control per sample (the `control:` value is a single sample name, not a list). The
+previous multi-control **merge** behavior (a top-level `control:` list merged into
+one `merged_control`) is no longer supported.
+
 ### Notable options
 
 | Option | Default | Notes |
 |---|---|---|
-| `control` | `null` | Sample name used as the MACS3 `-c` background for treatment samples. When set, the control is also peak-called **twice**: once with no input control (QC self peak-call), and once **against itself** (`-t control -c control`, expected to yield few or no peaks). The against-itself run flows through the full treatment pipeline (filtering, MEME/FIMO motifs, stats) and appears as a flagged row in the report, so the control is treated like a sample except that it is its own background |
+| `samples.<name>.control` | `null` | Per-sample: name of another sample to use as this sample's MACS3 `-c` background and bamCompare `-b2`. Exactly one control per sample; `null` peak-calls the sample with no background. A sample named as a control by others is peak-called **twice**: once with no input control (QC self peak-call), and once **against itself** (`-t control -c control`, expected to yield few or no peaks). The against-itself run flows through the full treatment pipeline (filtering, MEME/FIMO motifs, stats) and appears as a flagged row in the report. Assign different controls to different samples to run several experiments in one pipeline invocation. **The old top-level `control:` field has been removed** — a config that still sets it fails fast with a migration message |
 | `samples.<name>.experiment_date` | `null` | Optional per-sample date (free-form); shown as a report column and stored per-sample in the results database |
 | `samples.<name>.gdna_batch` | `null` | Optional per-sample gDNA batch label (free-form); shown as a report column and stored per-sample in the results database |
 | `aligner` | `bowtie2` | `bowtie2` or `bwa_mem2` |

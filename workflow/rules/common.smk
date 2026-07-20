@@ -5,7 +5,7 @@ import os
 _KNOWN_CONFIG_KEYS = frozenset({
     "aligner", "author", "bamcompare", "bamcoverage", "bbduk",
     "blacklist_filter", "bowtie2", "bwa_mem2", "chrom_filter", "container",
-    "control", "db_path", "factorbook", "fastqc", "fimo",
+    "db_path", "factorbook", "fastqc", "fimo",
     "gene_annotation", "genome_ref", "genome_size", "homer",
     "macs3", "meme", "multiqc", "output_dir", "resources", "rmsk_filter",
     "samples", "samtools", "threads",
@@ -16,6 +16,11 @@ if _unexpected_keys:
     _hint = ""
     if "input_control" in _unexpected_keys:
         _hint += " The control field is now named 'control', not 'input_control'."
+    if "control" in _unexpected_keys:
+        _hint += (
+            " The top-level 'control' field has been removed. Assign a control"
+            " per sample under samples: <name>: control: <control_sample_name>."
+        )
     if "slurm_partition" in _unexpected_keys or "slurm_account" in _unexpected_keys:
         _hint += (
             " 'slurm_partition' and 'slurm_account' have moved to"
@@ -56,30 +61,44 @@ if _missing_fields:
         "See the README for setup instructions."
     )
 
-_ctrl_cfg = config.get("control") or None
-if _ctrl_cfg is None:
-    CONTROL_SAMPLES = []
-elif isinstance(_ctrl_cfg, list):
-    _missing_ctrl = [s for s in _ctrl_cfg if s not in SAMPLES]
-    if _missing_ctrl:
-        raise ValueError(
-            f"control references unknown sample(s) {_missing_ctrl} -- "
-            "must match a key under 'samples:' that has a valid r1."
-        )
-    CONTROL_SAMPLES = list(_ctrl_cfg)
-else:
-    if _ctrl_cfg not in SAMPLES:
-        raise ValueError(
-            f"control '{_ctrl_cfg}' does not match any sample under 'samples:' "
-            "(or it has no r1 set)."
-        )
-    CONTROL_SAMPLES = [_ctrl_cfg]
+def _control_of(sample):
+    """The control sample assigned to *sample* via its per-sample 'control:'
+    key, or None. Exactly one control per sample."""
+    return config["samples"].get(sample, {}).get("control")
 
-CONTROL = (
-    "merged_control" if len(CONTROL_SAMPLES) > 1
-    else CONTROL_SAMPLES[0] if CONTROL_SAMPLES
-    else None
-)
+
+# Per-sample control map: {treatment -> control} for every active sample that
+# declares a control. CONTROL_SAMPLES is the set of samples referenced as a
+# control by any active sample. Assigning different controls to different
+# samples runs several experiments in one pipeline invocation.
+SAMPLE_CONTROL  = {s: c for s in SAMPLES if (c := _control_of(s)) is not None}
+CONTROL_SAMPLES = sorted(set(SAMPLE_CONTROL.values()))
+
+# Validate per-sample control references.
+_ctrl_errors = []
+for _s, _c in SAMPLE_CONTROL.items():
+    if _c == _s:
+        _ctrl_errors.append(f"  sample '{_s}' names itself as its own control")
+    elif _c not in SAMPLES:
+        _ctrl_errors.append(
+            f"  sample '{_s}' control '{_c}' does not match any sample under "
+            "'samples:' (or it has no r1 set)"
+        )
+# A sample used as a control must not itself declare a control (a control is not
+# a treatment, so it has no background of its own). A control that declares one
+# is exactly a control that is also a key in SAMPLE_CONTROL; skip pure
+# self-references, already reported above with a clearer message.
+for _c in CONTROL_SAMPLES:
+    if _c in SAMPLE_CONTROL and SAMPLE_CONTROL[_c] != _c:
+        _ctrl_errors.append(
+            f"  sample '{_c}' is used as a control by another sample, so it "
+            "must not declare its own 'control:'"
+        )
+if _ctrl_errors:
+    raise ValueError(
+        "Invalid per-sample control assignment(s):\n" + "\n".join(_ctrl_errors)
+    )
+
 TREATMENT_SAMPLES = [s for s in SAMPLES if s not in CONTROL_SAMPLES]
 OUT               = config["output_dir"]
 
@@ -89,10 +108,14 @@ OUT               = config["output_dir"]
 # Controls are ordered last so they sort to the bottom of the report table.
 REPORT_SAMPLES = TREATMENT_SAMPLES + CONTROL_SAMPLES
 
+# Treatment samples that have an assigned control get a bamCompare .peaks.bw.
+CONTROL_TREATMENT_SAMPLES = [s for s in TREATMENT_SAMPLES if SAMPLE_CONTROL.get(s)]
+
 # Regex constraints for wildcard_constraints blocks; "(?!)" never matches (no samples).
-CONTROL_SAMPLE_CONSTRAINT   = "|".join(CONTROL_SAMPLES)   if CONTROL_SAMPLES   else "(?!)"
-TREATMENT_SAMPLE_CONSTRAINT = "|".join(TREATMENT_SAMPLES) if TREATMENT_SAMPLES else "(?!)"
-REPORT_SAMPLE_CONSTRAINT    = "|".join(REPORT_SAMPLES)    if REPORT_SAMPLES    else "(?!)"
+CONTROL_SAMPLE_CONSTRAINT     = "|".join(CONTROL_SAMPLES)           if CONTROL_SAMPLES           else "(?!)"
+TREATMENT_SAMPLE_CONSTRAINT   = "|".join(TREATMENT_SAMPLES)         if TREATMENT_SAMPLES         else "(?!)"
+REPORT_SAMPLE_CONSTRAINT      = "|".join(REPORT_SAMPLES)            if REPORT_SAMPLES            else "(?!)"
+CONTROL_TREATMENT_CONSTRAINT  = "|".join(CONTROL_TREATMENT_SAMPLES) if CONTROL_TREATMENT_SAMPLES else "(?!)"
 
 SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
 PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
@@ -174,6 +197,12 @@ if _path_errors:
 
 def is_pe(wc):
     return "true" if wc.sample in PE_SAMPLES else "false"
+
+
+def control_for(wc):
+    """Control sample assigned to a treatment sample, or None. Control samples
+    themselves have no entry (they are called against themselves in rule macs3)."""
+    return SAMPLE_CONTROL.get(wc.sample)
 
 
 def get_final_filtered_peaks(wc):

@@ -237,7 +237,6 @@ def main():
         "output_dir":               output_dir,
         "genome_ref":               sm.params.genome_ref,
         "genome_size":              sm.params.genome_size,
-        "control":                  sm.params.control or "",
         "threads":                  sm.params.threads,
         "mapq":                     sm.params.mapq,
         "max_frags":                sm.params.max_frags or "",
@@ -266,6 +265,9 @@ def main():
         row["r1"]           = r1
         row["r2"]           = get_r2(scfg) or ""
         row["is_treatment"] = is_treatment
+        # Per-sample control: the treatment's assigned control name, or "" for
+        # control samples (and treatments with no control).
+        row["control"]      = scfg.get("control") or ""
         row["total_reads"]   = stats.get("total_reads", "NA")
         row["trimmed_reads"] = stats.get("trimmed_reads", "NA")
         row["mapped_reads"]  = stats.get("mapped_reads", "NA")

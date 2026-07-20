@@ -536,21 +536,44 @@ def test_write_html_no_flag_when_control_samples_empty(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# report.read_control parses the control field from the config snapshot
+# report.read_control derives control samples from per-sample config snapshot
 # ---------------------------------------------------------------------------
 
-def test_read_control_scalar(tmp_path):
-    (tmp_path / "config_used.yaml").write_text("control: ctrlA\n")
-    assert rp.read_control(str(tmp_path)) == ["ctrlA"]
+def test_read_control_single(tmp_path):
+    (tmp_path / "config_used.yaml").write_text(
+        "samples:\n"
+        "  TF1: {control: inA}\n"
+        "  inA: {control: null}\n"
+    )
+    assert rp.read_control(str(tmp_path)) == ["inA"]
 
 
-def test_read_control_list(tmp_path):
-    (tmp_path / "config_used.yaml").write_text("control:\n  - c1\n  - c2\n")
-    assert rp.read_control(str(tmp_path)) == ["c1", "c2"]
+def test_read_control_multiple_experiments(tmp_path):
+    (tmp_path / "config_used.yaml").write_text(
+        "samples:\n"
+        "  TF1: {control: inA}\n"
+        "  TF2: {control: inB}\n"
+        "  inA: {control: null}\n"
+        "  inB: {control: null}\n"
+    )
+    assert rp.read_control(str(tmp_path)) == ["inA", "inB"]
 
 
-def test_read_control_null(tmp_path):
-    (tmp_path / "config_used.yaml").write_text("control: null\n")
+def test_read_control_shared_control_deduped(tmp_path):
+    (tmp_path / "config_used.yaml").write_text(
+        "samples:\n"
+        "  TF1: {control: inA}\n"
+        "  TF2: {control: inA}\n"
+        "  inA: {control: null}\n"
+    )
+    assert rp.read_control(str(tmp_path)) == ["inA"]
+
+
+def test_read_control_none(tmp_path):
+    (tmp_path / "config_used.yaml").write_text(
+        "samples:\n"
+        "  TF1: {control: null}\n"
+    )
     assert rp.read_control(str(tmp_path)) == []
 
 

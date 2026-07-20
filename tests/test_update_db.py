@@ -264,6 +264,12 @@ def test_meta_cols_include_experiment_metadata():
     assert "gdna_batch" in m.META_COLS
 
 
+def test_control_column_present_once():
+    """control is a per-sample column (each row records its own control name);
+    it must appear exactly once in COLS after the run-level -> per-sample move."""
+    assert m.COLS.count("control") == 1
+
+
 def test_experiment_metadata_lands_in_run_metadata(tmp_path):
     db = tmp_path / "pipeline_db.db"
     base = {c: "" for c in m.META_COLS}

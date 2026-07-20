@@ -9,31 +9,48 @@ author: "Your Name"
 # If SE, leave r2 as null
 # add as many samples as you'd like
 #
+# control (optional, per-sample): name of another sample to use as this sample's
+# MACS3 -c background and bamCompare -b2. Exactly one control per sample; leave
+# as null to peak-call this sample with no background. A sample named as a
+# control by others is peak-called against itself (QC self peak-call and an
+# against-itself run through the full treatment pipeline) and appears as a
+# flagged row in the report. Assign different controls to different samples to
+# run several experiments in one pipeline invocation.
+#
 # experiment_date / gdna_batch are optional per-sample provenance. They appear
 # as columns in the HTML report and are stored per-sample in the results
 # database. Leave as null to omit.
 
 samples:
-  sample_1_name:
+  # ── Experiment A ──
+  TF_A:
     r1: null
     r2: null
+    control: input_A        # uses input_A as its background
     experiment_date: null   # optional, e.g. "2026-07-14" (free-form string)
     gdna_batch: null        # optional, e.g. "batch-07" (free-form string)
 
-  control:
+  input_A:
     r1: null
     r2: null
+    control: null           # a control names no control of its own
     experiment_date: null
     gdna_batch: null
 
-# Control sample name — must match a key in samples above.
-# Set to null to run without a control.
-# When set, the control is peak-called twice in MACS: once with no input
-# control (QC self peak-call), and once against itself (-t control -c control,
-# expected to yield few/no peaks). The against-itself run gets the full
-# treatment-style pipeline (filtering, motifs, stats) and appears as a flagged
-# row in the report.
-control: control
+  # ── Experiment B (runs in the same pipeline invocation) ──
+  TF_B:
+    r1: null
+    r2: null
+    control: input_B
+    experiment_date: null
+    gdna_batch: null
+
+  input_B:
+    r1: null
+    r2: null
+    control: null
+    experiment_date: null
+    gdna_batch: null
 
 # please put output folder in a directory outside of the pipeline folder
 output_dir: null

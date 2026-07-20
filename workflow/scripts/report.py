@@ -325,13 +325,18 @@ def read_run_metadata(out_dir):
 def read_control(out_dir):
     """Return the list of control sample names from the config snapshot.
 
-    Normalizes the ``control`` field (scalar / list / null) to a list; returns
-    [] when the snapshot is missing, unparseable, or has no control.
+    Control is assigned per sample: each ``samples`` entry may name another
+    sample under its ``control`` key. This returns the de-duplicated, ordered
+    set of sample names referenced as a control by any sample. Returns [] when
+    the snapshot is missing, unparseable, or no sample declares a control.
     """
-    ctrl = _load_config_snapshot(out_dir).get("control")
-    if not ctrl:
-        return []
-    return list(ctrl) if isinstance(ctrl, (list, tuple)) else [ctrl]
+    samples = _load_config_snapshot(out_dir).get("samples") or {}
+    controls = []
+    for scfg in samples.values():
+        ctrl = (scfg or {}).get("control")
+        if ctrl and ctrl not in controls:
+            controls.append(ctrl)
+    return controls
 
 
 def run_html(samples, stats_dir, meme_dir, factorbook_dir, csv_out, html_out,
