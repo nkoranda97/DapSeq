@@ -129,16 +129,16 @@ db_path: null  # null uses the default (pipeline_db.db in repo root)
 
 resources:
   bowtie2_index:
-    mem_mb: 32000
+    mem_mb: 64000
     runtime: 60
   bwa_mem2_index:
-    mem_mb: 32000
+    mem_mb: 64000
     runtime: 120
   bwa_mem2_align:
-    mem_mb: 32000
+    mem_mb: 64000
     runtime: 120
   trim_align:
-    mem_mb: 16000
+    mem_mb: 64000
     runtime: 120
   fastqc:
     mem_mb: 16000
@@ -150,7 +150,7 @@ resources:
     mem_mb: 8000
     runtime: 60
   macs3:
-    mem_mb: 16000
+    mem_mb: 32000
     runtime: 60
   filter_peaks:
     mem_mb: 8000
