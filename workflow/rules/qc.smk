@@ -32,4 +32,4 @@ rule multiqc:
     log:
         OUT + "/logs/multiqc.log"
     shell:
-        "multiqc {params.extra} {params.indir}/ -o {params.outdir}/ 2>{log}"
+        "multiqc --force {params.extra} {params.indir}/ -o {params.outdir}/ 2>{log}"
