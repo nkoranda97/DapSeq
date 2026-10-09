@@ -65,9 +65,13 @@ output_dir: null
 # full path to fasta file
 genome_ref: null
 
-# Whole number of bp; plain or scientific notation (e.g. 2700000000 or "2.7e9").
+# Effective genome size: the part of the genome reads can map to, not the
+# assembly length. MACS3 uses it as -g and bamCoverage for RPGC scaling, so a
+# wrong value skews peak calls and coverage tracks. It cannot be larger than the
+# reference; the run warns when it is. Typical values and how to choose one:
+# README, "Choosing genome_size". Plain or scientific notation ("1.19e8").
 # Required.
-genome_size: "3000000000"
+genome_size: null
 
 # Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
 # full path to gtf
@@ -75,152 +79,40 @@ gene_annotation: null
 
 aligner: bowtie2  # bowtie2 | bwa_mem2
 
-# ── Compute ──────────────────────────────────────────────────────────────────
-threads: 16
-
-bbduk:
-  adapters: null
-  max_frags: null
-  mem_gb: 8
-  k: 21
-  mink: 11
-  ktrim: r # r=right, l=left, lr=both
-  qtrim: r # r=right, l=left, lr=both, w=window
-  trimq: 6
-  maq: 10
-  ow: t # t=overwrite, f=fail if output exists
-  extra: ""
-
-fastqc:
-  extra: ""
-
-bowtie2:
-  extra: ""
-  extra_build: ""
-
-samtools:
-  mapq: 30
-
-bamcoverage:
-  normalize_using: RPGC
-  bin_size: 1
-  ignore_duplicates: true
-  max_fragment_length: 600 # PE only
-  extend_reads: true # PE only
-  extra: ""
-
-bamcompare:
-  bin_size: 80
-  operation: ratio
-  scale_factors_method: SES
-  n: 1000
-  extra: ""
-
-macs3:
-  # null = choose per peak call: BAMPE when the sample and its control are both
-  # paired-end, otherwise BAM. Set BAM or BAMPE to force one format for every call.
-  format: null
-  foldch_levels: [2, 5, 15]   # three enrichment filter thresholds; must be strictly increasing
-  meme_foldch_level: 2         # 1-based index into foldch_levels for MEME input (1=low, 2=mid, 3=high)
-  keep_dup: 1
-  extra: ""
-
-chrom_filter: []  # e.g. [chrEBV] — chromosomes excluded from peaks before MEME
-
-blacklist_filter:
-  enabled: false
-  bed: null     # set to path of blacklist BED/BED.gz when enabled: true (e.g. blacklist/hg38-blacklist.v2.bed.gz)
-
-rmsk_filter:
-  enabled: false
-  txt: null     # path to UCSC rmsk.txt.gz when enabled: true (e.g. blacklist/rmsk.txt.gz)
-
-meme:
-  nmotifs: 2
-  minw: 8
-  maxw: 32
-  mod: anr
-  markov_order: 0   # set to 2 to suppress composition-driven repetitive motifs
-  maxpeaks: 500
-  maxsize: 10000000
-  summit_extend: 50
-  extra: ""
-  # Optional: customize base colors in sequence logos.
-  # Use hex codes with or without '#'. Omit or leave blank to use MEME defaults.
-  # base_colors:
-  #   A: "#008000"
-  #   C: "#0000FF"
-  #   G: "#FFB300"
-  #   T: "#FF0000"
-
-fimo:
-  thresh: 1.0e-5
-  extra: ""
-
-homer:
-  extra: ""
-
-multiqc:
-  extra: ""
-
-# Paths to Factorbook motif reference files. Override if you store them
-# elsewhere; defaults point to the factorbook/ directory in the repo root.
-# factorbook:
-#   tsv:  /absolute/path/to/factorbook_chip_seq_meme_motifs.tsv
-#   meme: /absolute/path/to/factorbook_chip_seq_meme_motif_catalog.meme
-
-# Database path for the run-tracking SQLite DB.
-# Defaults to pipeline_db.db in the repo root; set to an absolute path to
-# store it elsewhere.
-# db_path: /absolute/path/to/pipeline_db.db
-
-# ── Per-rule resource overrides ───────────────────────────────────────────────
-resources:
-  bowtie2_index:
-    mem_mb: 32000
-    runtime: 120
-  trim_align:
-    mem_mb: 32000
-    runtime: 480
-  fastqc:
-    mem_mb: 2000
-    runtime: 30
-  multiqc:
-    mem_mb: 2000
-    runtime: 30
-  bamcompare:
-    mem_mb: 32000
-    runtime: 120
-  macs3:
-    mem_mb: 32000
-    runtime: 120
-  filter_peaks:
-    mem_mb: 32000
-    runtime: 120
-  blacklist_filter_peaks:
-    mem_mb: 8000
-    runtime: 10
-  rmsk_filter_peaks:
-    mem_mb: 8000
-    runtime: 30
-  narrow_peak_to_fasta:
-    mem_mb: 32000
-    runtime: 120
-  meme:
-    mem_mb: 32000
-    runtime: 120
-  fimo:
-    mem_mb: 32000
-    runtime: 120
-  alignment_stats:
-    mem_mb: 8000
-    runtime: 120
-  report:
-    mem_mb: 8000
-    runtime: 120
-  homer_annotate:
-    mem_mb: 32000
-    runtime: 120
-  update_db:
-    mem_mb: 2000
-    runtime: 30
+# ── Optional overrides ───────────────────────────────────────────────────────
+# Every other setting comes from config/config.yaml. Copy a key here only to
+# change it; the README options table lists them all. Values shown are the
+# current defaults.
+#
+# threads: 8
+#
+# macs3:
+#   foldch_levels: [2, 5, 15]   # three enrichment thresholds, strictly increasing
+#   meme_foldch_level: 2        # which of them feeds MEME/FIMO (1-3)
+#
+# meme:
+#   nmotifs: 2
+#   maxpeaks: 100               # top peaks by fold-change written for MEME/FIMO
+#
+# fimo:
+#   thresh: 1.0e-5
+#
+# chrom_filter: []              # e.g. [ChrC, ChrM]: chromosomes kept out of MEME
+#
+# blacklist_filter:
+#   enabled: false
+#   bed: /path/to/blacklist.bed.gz
+#
+# rmsk_filter:
+#   enabled: false
+#   txt: /path/to/rmsk.txt.gz
+#
+# bbduk:
+#   max_frags: null             # subsample each sample to this many fragments
+#
+# db_path: /absolute/path/to/pipeline_db.db   # default: pipeline_db.db in the repo root
+#
+# resources:                    # per-rule SLURM limits; defaults suit the cluster
+#   meme:
+#     mem_mb: 16000
+#     runtime: 120
