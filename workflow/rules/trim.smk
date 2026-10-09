@@ -1,6 +1,6 @@
 rule trim_se:
     wildcard_constraints:
-        sample = "|".join(sorted(SE_SAMPLES)) if SE_SAMPLES else "(?!)",
+        sample = sample_regex(sorted(SE_SAMPLES)),
     input:
         r1  = lambda wc: get_r1(wc.sample),
     output:
@@ -93,7 +93,7 @@ rule trim_se:
 
 rule trim_pe:
     wildcard_constraints:
-        sample = "|".join(sorted(PE_SAMPLES)) if PE_SAMPLES else "(?!)",
+        sample = sample_regex(sorted(PE_SAMPLES)),
     input:
         r1 = lambda wc: get_r1(wc.sample),
         r2 = lambda wc: get_r2(wc.sample),
