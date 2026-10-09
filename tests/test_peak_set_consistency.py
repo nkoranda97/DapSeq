@@ -29,6 +29,7 @@ def test_db_has_no_column_the_report_never_produces():
         "mapq", "max_frags", "macs3_format", "macs3_foldch_levels",
         "macs3_meme_foldch_level", "meme_nmotifs", "meme_minw", "meme_maxw",
         "meme_maxpeaks", "fimo_thresh", "sample", "r1", "r2", "is_treatment",
+        "pipeline_version",
     }
     assert set(m.COLS) - run_level <= produced
 
@@ -37,6 +38,13 @@ def test_report_header_says_which_columns_use_the_meme_set():
     header = rp._report_header_html(filter_foldch=5)
     assert "num_peaks_filt" in header and "5" in header
     assert "final set fed to MEME/FIMO" in header
+
+
+def test_report_header_defines_motif_peaks_and_summit_counts():
+    for header in (rp._report_header_html(filter_foldch=5), rp._report_header_html()):
+        assert "<code>motif_peaks</code> counts" in header
+        assert "meme.maxpeaks" in header
+        assert "count MACS3 summits" in header and "one peak region can have several" in header
 
 
 def test_ensure_columns_tolerates_a_column_added_concurrently(tmp_path):

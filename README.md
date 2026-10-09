@@ -20,8 +20,12 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **Filtered-peak stats describe the MEME input.** `reads_in_peaks_filt`, `frip_filt`, `max_peak_score`, HOMER annotation and the database's filtered-peak path now use the final set fed to MEME/FIMO (after blacklist/rmsk when enabled). `num_peaks_filt` is still the fold-change count.
 - **HOMER runs by default** when `gene_annotation` is set.
 - **Factorbook reference logos** match more samples: set `tf:` per sample, or the sample name and then its part before the first `_` or `-` is tried (`CTCF_rep1` -> CTCF).
-- **`motif_peaks` is `0`**, not `NA`, when FIMO ran and found no hits.
+- **`motif_peaks` counts peaks.** It used to count the chromosomes with a FIMO hit, so every earlier value was wrong. It is `0` when FIMO ran and found no hits, and `NA` when FIMO did not run.
+  - Values already in the results database were blanked to `NA`. Re-running a project restores them.
+  - If `motif_peaks` still reads `NA` after a re-run, add `--forcerun fimo`. This is needed with `--rerun-triggers mtime`, or when Snakemake has no record of the project's earlier FIMO run.
+- **FIMO output names each hit by its peak.** In `fimo.tsv`, `fimo.gff` and `best_site.narrowPeak`, the sequence name is the peak (`chr:start-end`) and positions are within that peak. Output from earlier runs keeps genome coordinates.
 - **Results database.**
+  - Each row records `pipeline_version`, the pipeline checkout's `git describe` (`unknown` when it can't be read). `motif_peaks` is blanked on rows without one.
   - Runs are keyed by the absolute `output_dir`, so `out`, `out/` and `./out` are the same run.
   - Two projects that both use a relative `results` no longer overwrite each other.
   - New columns: `num_peaks_bl`, `num_peaks_rmsk`, `frip` and `frip_filt`.
@@ -93,7 +97,7 @@ Everything lands under `output_dir`:
 | `bam/`, `bigWig/` | Filtered, sorted alignments and coverage tracks |
 | `MACS/` | `<sample>_peaks.narrowPeak` and summits from MACS3; `<sample>_peaks_fold<N>.narrowPeak` per fold level; `<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak`, the final set fed to MEME/FIMO; `<control>_control_peaks.narrowPeak`, the QC self-call for each control |
 | `fasta/` | Peak and summit sequences used for motif discovery |
-| `meme/<sample>/{summits,peaks}/`, `fimo/<sample>/{summits,peaks}/` | MEME motifs with logos, and FIMO scans |
+| `meme/<sample>/{summits,peaks}/`, `fimo/<sample>/{summits,peaks}/` | MEME motifs with logos, and FIMO scans. A FIMO hit's `sequence_name` is its peak (`chr:start-end`); `start`/`stop` are positions within that peak |
 | `factorbook/` | Matching Factorbook (ENCODE) motif logos |
 | `annotations/` | HOMER peak annotations, when `gene_annotation` is set |
 | `stats/` | Per-sample stats, `report.csv`, and the self-contained `report.html` |
@@ -101,6 +105,11 @@ Everything lands under `output_dir`:
 | `logs/` | One log per rule and sample |
 
 Each run also writes one row per sample to the shared results database (`pipeline_db.db` in the repo root, or `db_path`).
+
+Count columns in `report.csv`, `report.html` and the database:
+
+- `num_peaks`, `num_peaks_filt`, `num_peaks_bl` and `num_peaks_rmsk` count MACS3 summits, and one peak region can have several.
+- `motif_peaks` counts the peaks scanned for motifs that have at least one FIMO hit. The scanned peaks are the top `meme.maxpeaks` by fold-change, the set MEME learns from.
 
 ## Tests
 

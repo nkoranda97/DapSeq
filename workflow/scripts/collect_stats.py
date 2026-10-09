@@ -171,27 +171,42 @@ def _narrowpeak_max_score(path):
     return str(round(max_signal, 4)) if max_signal is not None else NA
 
 
-def _fimo_motif_peaks(path):
-    """Count unique peak names (sequence_name column) in a FIMO TSV.
+def fimo_names_peaks(path):
+    """True when a non-empty FIMO TSV was written with --no-pgc in effect.
 
-    A TSV with FIMO's header but no hits is "0"; NA means FIMO produced no
-    output at all.
+    FIMO echoes its command line as a "# fimo ..." comment. Without --no-pgc
+    it reads chr:start-end FASTA headers as genome coordinates and names each
+    hit by chromosome only, so its sequence_name column cannot identify peaks.
+    Of --no-pgc and --parse-genomic-coord, FIMO honors whichever comes last.
+    """
+    with open(path) as fh:
+        for line in fh:
+            if line.startswith("# fimo "):
+                flags = [t for t in line.split() if t in ("--no-pgc", "--parse-genomic-coord")]
+                return bool(flags) and flags[-1] == "--no-pgc"
+    return False
+
+
+def _fimo_motif_peaks(path):
+    """Count distinct peaks (sequence_name column) with a hit in a FIMO TSV.
+
+    NA when FIMO did not run (the fimo rule leaves an empty file) or when the
+    output names hits by chromosome instead of peak; "0" when it ran and
+    found nothing.
     """
     if not os.path.exists(path) or os.path.getsize(path) == 0:
         return NA
+    if not fimo_names_peaks(path):
+        return NA
     seen = set()
-    has_header = False
     with open(path) as fh:
         for line in fh:
-            if line.startswith("#"):
+            if not line.strip() or line.startswith("#") or line.startswith("motif_id\t"):
                 continue
             parts = line.rstrip("\n").split("\t")
-            if parts[0] == "motif_id":
-                has_header = True
-                continue
             if len(parts) >= 3:
                 seen.add(parts[2])
-    return str(len(seen)) if seen or has_header else NA
+    return str(len(seen))
 
 
 # ---------------------------------------------------------------------------

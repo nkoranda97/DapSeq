@@ -19,13 +19,19 @@ same physical node, which SLURM does not guarantee.
 import csv
 import os
 import sqlite3
+import sys
 from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
+sys.path.insert(0, os.path.dirname(__file__))
+from collect_stats import fimo_names_peaks  # noqa: E402
+from pipeline_version import UNKNOWN  # noqa: E402
+
 
 COLS = [
     "run_date",
+    "pipeline_version",
     "output_dir",
     "genome_ref",
     "genome_size",
@@ -70,6 +76,7 @@ META_COLS = [
     # provenance
     "author",
     "run_date",
+    "pipeline_version",
     "experiment_date",
     "gdna_batch",
     # reference paths (from config)
@@ -191,6 +198,14 @@ def _connect(db_path):
     return con
 
 
+# Rows written before pipeline_version existed, or later by an older checkout,
+# have a NULL version and a motif_peaks that counted chromosomes, not peaks.
+_BLANK_UNVERSIONED = (
+    "UPDATE pipeline_runs SET motif_peaks = 'NA' "
+    "WHERE pipeline_version IS NULL AND motif_peaks IS NOT 'NA'"
+)
+
+
 def _replace(con, table, insert_sql, output_dir, rows, aliases):
     keys = [output_dir, *[a for a in aliases if a != output_dir]]
     con.execute(
@@ -204,7 +219,8 @@ def write_run(db_path, output_dir, rows, meta_rows, aliases=()):
     transaction, so a failure leaves both tables as they were.
 
     Rows stored under any of *aliases* (older spellings of output_dir) are
-    replaced too. Safe to call concurrently from multiple processes.
+    replaced too, and motif_peaks is blanked on every unversioned row in the
+    same transaction. Safe to call concurrently from multiple processes.
     """
     with closing(_connect(db_path)) as con:
         con.execute(_CREATE)
@@ -212,6 +228,7 @@ def write_run(db_path, output_dir, rows, meta_rows, aliases=()):
         _ensure_columns(con, "pipeline_runs", COLS)       # DDL outside transaction
         _ensure_columns(con, "run_metadata", META_COLS)
         with con:
+            con.execute(_BLANK_UNVERSIONED)
             _replace(con, "pipeline_runs", _INSERT, output_dir, rows, aliases)
             _replace(con, "run_metadata", _INSERT_META, output_dir, meta_rows, aliases)
 
@@ -287,12 +304,15 @@ def main():
     run_date         = datetime.now().isoformat(timespec="seconds")
     author           = sm.params.author
     gene_annotation  = sm.params.gene_annotation or ""
+    # Never empty: write_run blanks motif_peaks on rows without a version.
+    pipeline_version = sm.params.pipeline_version or UNKNOWN
 
     qc_stats = read_report(sm.input.report)
 
     meme_fold_idx = sm.params.macs3_meme_foldch_level
     shared = {
         "run_date":                 run_date,
+        "pipeline_version":         pipeline_version,
         "output_dir":               output_dir,
         "genome_ref":               sm.params.genome_ref,
         "genome_size":              sm.params.genome_size,
@@ -342,17 +362,26 @@ def main():
         for col in ("num_peaks_bl", "num_peaks_rmsk", "frip", "frip_filt"):
             row[col] = stats.get(col, "NA")
 
-        new_rows.append(tuple(row.get(c, "") for c in COLS))
-
         generated = _build_meta_paths(output_dir, sample)
         generated["peaks_filt_narrowpeak"] = meme_peaks_path(
             output_dir, sample, meme_fold_idx, sm.params.peaks_filter_suffix
         )
+        # A report.csv from before the --no-pgc fix (a run in flight during the
+        # upgrade, or a database-only re-run) counted chromosomes. Its FIMO
+        # output shows that, so keep the count out of the versioned row.
+        fimo_tsv = generated["fimo_peaks_tsv"]
+        if (os.path.exists(fimo_tsv) and os.path.getsize(fimo_tsv) > 0
+                and not fimo_names_peaks(fimo_tsv)):
+            row["motif_peaks"] = "NA"
+
+        new_rows.append(tuple(row.get(c, "") for c in COLS))
+
         meta = {
             "output_dir":      output_dir,
             "sample":          sample,
             "author":          author,
             "run_date":        run_date,
+            "pipeline_version": pipeline_version,
             "experiment_date": scfg.get("experiment_date") or "",
             "gdna_batch":      scfg.get("gdna_batch") or "",
             "genome_ref":      sm.params.genome_ref,

@@ -188,22 +188,33 @@ def _fmt_html(col, val):
     return html.escape(str(val))
 
 
+_PEAK_COUNTS_HTML = (
+    "<p><strong>Peak counts:</strong> <code>num_peaks</code>, "
+    "<code>num_peaks_filt</code>, <code>num_peaks_bl</code> and "
+    "<code>num_peaks_rmsk</code> count MACS3 summits, and one peak region can "
+    "have several. <code>motif_peaks</code> counts the peaks scanned for motifs "
+    "(the top <code>meme.maxpeaks</code> by fold-change, the set MEME learns "
+    "from) that have at least one FIMO hit.</p>"
+)
+
+
 def _report_header_html(filter_foldch=None):
-    """Return the header <p> block describing the _filt fold threshold.
+    """Return the header <p> blocks describing what the count columns count.
 
     Experiment metadata (experiment_date, gdna_batch) is per-sample and lives
     in the table columns, not this header. The filter note is emitted only when
     a fold value is supplied.
     """
     if filter_foldch is None:
-        return ""
+        return _PEAK_COUNTS_HTML
     return (
         f"<p><strong>Filtered peaks:</strong> <code>num_peaks_filt</code> counts "
         f"peaks with fold-change&nbsp;&ge;&nbsp;{filter_foldch}&times;; "
         f"<code>num_peaks_bl</code> / <code>num_peaks_rmsk</code> count those left "
         f"after the blacklist / repeat filters, when enabled. "
         f"<code>reads_in_peaks_filt</code>, <code>frip_filt</code> and "
-        f"<code>max_peak_score</code> use the final set fed to MEME/FIMO.</p>"
+        f"<code>max_peak_score</code> use the final set fed to MEME/FIMO.</p>\n"
+        + _PEAK_COUNTS_HTML
     )
 
 
