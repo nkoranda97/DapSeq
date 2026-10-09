@@ -6,7 +6,7 @@ Produces an empty PNG when no matching motif is found so downstream rules can
 depend on the output unconditionally.
 
 The TF is the sample's optional `tf:` config key. Without it, the sample name
-is tried as-is, then the part before the first "_", "-" or "." (CTCF_rep1 ->
+is tried as-is, then the part before the first "_" or "-" (CTCF_rep1 ->
 CTCF). Matching against the catalog's `target` column is case-insensitive.
 """
 
@@ -26,7 +26,7 @@ def tf_candidates(sample, tf=None):
     if tf:
         return [str(tf).upper()]
     full = sample.upper()
-    prefix = re.split(r"[_.\-]", full, maxsplit=1)[0]
+    prefix = re.split(r"[_\-]", full, maxsplit=1)[0]
     return [full] if prefix in ("", full) else [full, prefix]
 
 

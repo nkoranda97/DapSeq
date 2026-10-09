@@ -52,7 +52,6 @@ def test_explicit_tf_is_the_only_candidate():
 def test_without_tf_try_full_name_then_prefix():
     assert m.tf_candidates("CTCF_rep1") == ["CTCF_REP1", "CTCF"]
     assert m.tf_candidates("myc-2") == ["MYC-2", "MYC"]
-    assert m.tf_candidates("Nfkb.r1") == ["NFKB.R1", "NFKB"]
 
 
 def test_plain_name_has_one_candidate():
