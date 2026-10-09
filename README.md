@@ -11,6 +11,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **Turn on filtering explicitly if you rely on it.** `blacklist_filter` and `rmsk_filter` now default to off; set `enabled: true` and a path in your config.
 - **Remove options that no longer exist.** `macs3.min_foldch`, `complexity_filter`, `tandem_filter` and `slurm_partition`/`slurm_account` (in your experiment config) now stop the run with a message saying what replaced them. `samtools.extra_merge` is ignored and can be deleted.
 - **Rename samples whose names contain `.`, `/` or spaces**, or that are named `<control>_control`. They now stop the run at startup instead of failing later.
+- **Expect an existing bowtie2 index to be rebuilt once.** The index rule changed (its log now keeps bowtie2-build's output), so the first run against an existing index rebuilds it next to the genome and re-runs the alignments that use it. Avoid two people starting that first run on the same genome at the same time. To keep the existing index, run with `--rerun-triggers mtime`; that also skips the other re-runs caused by rule changes, so add `--forcerun fimo` to restore `motif_peaks`.
 
 ### New behavior
 

@@ -1,9 +1,10 @@
 # Project audit 2 — 2026-10-09
 
 **Status (2026-10-09):**
-- Group 1 is narrowed to `motif_peaks`: items 1, 2 and 32, the version marker from item 18, and the `num_peaks*` wording from item 7. See `docs/plans/2026-10-09-1415-fix-motif-peaks-count-plan.md`.
+- Group 1 was narrowed to `motif_peaks` (items 1, 2 and 32, the version marker from item 18, and the `num_peaks*` wording from item 7) and merged in #14. See `docs/plans/2026-10-09-1415-fix-motif-peaks-count-plan.md`.
 - Item 3 was reviewed: the filtered-peak stats are correct as they are, so it is not planned.
-- Groups 2–6 are not started.
+- The bowtie2-build log overwrite in item 26 (first-audit item 7) is fixed.
+- Groups 2–6 are otherwise not started.
 
 Read-only second audit, run after every group from the [first audit](2026-10-09-project-audit.md) merged. It covers the workflow rules, Python scripts, tests, config, profiles, container and docs.
 Findings were checked against the code. Items 1, 2, 5, 7, 10 and 12 were also reproduced with the container's own tools (MEME/FIMO 5.5.9, MACS3 3.0.4, BBMap 39.81 from `apptainer_build/.pixi`) on simulated paired-end data. Items marked *(unverified)* depend on the built `.sif` or the cluster, neither of which was available.
