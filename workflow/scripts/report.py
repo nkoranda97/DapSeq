@@ -179,7 +179,7 @@ def logo_to_base64(png_path):
 
 
 def _fmt_html(col, val):
-    if val == "NA":
+    if val in ("NA", "", None):   # blank cells occur in older or hand-edited CSVs
         return "NA"
     if col in INT_COLS:
         return f"{int(val):,}"

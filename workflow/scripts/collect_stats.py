@@ -172,20 +172,26 @@ def _narrowpeak_max_score(path):
 
 
 def _fimo_motif_peaks(path):
-    """Count unique peak names (sequence_name column) in a FIMO TSV."""
+    """Count unique peak names (sequence_name column) in a FIMO TSV.
+
+    A TSV with FIMO's header but no hits is "0"; NA means FIMO produced no
+    output at all.
+    """
     if not os.path.exists(path) or os.path.getsize(path) == 0:
         return NA
     seen = set()
+    has_header = False
     with open(path) as fh:
         for line in fh:
             if line.startswith("#"):
                 continue
             parts = line.rstrip("\n").split("\t")
             if parts[0] == "motif_id":
+                has_header = True
                 continue
             if len(parts) >= 3:
                 seen.add(parts[2])
-    return str(len(seen)) if seen else NA
+    return str(len(seen)) if seen or has_header else NA
 
 
 # ---------------------------------------------------------------------------
