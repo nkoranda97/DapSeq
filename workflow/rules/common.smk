@@ -1,4 +1,11 @@
 import os
+import sys
+
+sys.path.insert(0, os.path.join(workflow.basedir, "scripts"))
+from layout_utils import (
+    as_list, fallback_pairs, lane_count_errors, macs3_format as _resolve_macs3_format,
+    parse_genome_size,
+)
 
 # Known top-level config keys — union of config.yaml and config/config.yaml,
 # plus keys that have no YAML default but are accessed via config.get().
@@ -36,10 +43,11 @@ if _unexpected_keys:
 
 
 def get_r1(sample):
-    r1 = config["samples"][sample]["r1"]
-    if r1 is None:
-        return []
-    return r1 if isinstance(r1, list) else [r1]
+    return as_list(config["samples"][sample]["r1"])
+
+
+def get_r2(sample):
+    return as_list(config["samples"][sample].get("r2"))
 
 
 SAMPLES     = [s for s in config["samples"] if get_r1(s)]
@@ -52,6 +60,8 @@ if not config.get("output_dir"):
     _missing_fields.append("output_dir")
 if not config.get("genome_ref"):
     _missing_fields.append("genome_ref")
+if config.get("genome_size") is None:
+    _missing_fields.append("genome_size")
 if not SAMPLES:
     _missing_fields.append("samples (at least one sample must have r1 set)")
 if _missing_fields:
@@ -60,6 +70,11 @@ if _missing_fields:
         "Pass your experiment config with: --configfile /path/to/your/config.yaml\n"
         "See the README for setup instructions."
     )
+
+try:
+    GENOME_SIZE = parse_genome_size(config["genome_size"])
+except ValueError as _e:
+    raise ValueError(f"Invalid config value(s):\n  {_e}") from None
 
 def _control_of(sample):
     """The control sample assigned to *sample* via its per-sample 'control:'
@@ -151,11 +166,9 @@ for _samp in SAMPLES:
     for _p in get_r1(_samp):
         if not os.path.exists(_p):
             _path_errors.append(f"  samples.{_samp}.r1: '{_p}' does not exist")
-    _r2 = config["samples"][_samp].get("r2")
-    if _r2 is not None:
-        for _p in (_r2 if isinstance(_r2, list) else [_r2]):
-            if not os.path.exists(_p):
-                _path_errors.append(f"  samples.{_samp}.r2: '{_p}' does not exist")
+    for _p in get_r2(_samp):
+        if not os.path.exists(_p):
+            _path_errors.append(f"  samples.{_samp}.r2: '{_p}' does not exist")
 
 _adapters = config["bbduk"].get("adapters")
 if _adapters and not os.path.exists(_adapters):
@@ -187,16 +200,34 @@ if _fb_tsv and not os.path.exists(_fb_tsv):
 if _fb_meme and not os.path.exists(_fb_meme):
     _path_errors.append(f"  factorbook.meme: '{_fb_meme}' does not exist")
 
-if _path_errors:
-    raise ValueError(
-        "The following file paths in your config do not exist:\n"
-        + "\n".join(_path_errors)
-        + "\nVerify that paths are absolute and the files are accessible from this machine."
-    )
+_lane_errors = lane_count_errors(config["samples"], PE_SAMPLES)
+
+if _path_errors or _lane_errors:
+    _msg = []
+    if _path_errors:
+        _msg.append(
+            "The following file paths in your config do not exist:\n"
+            + "\n".join(_path_errors)
+            + "\nVerify that paths are absolute and the files are accessible from this machine."
+        )
+    if _lane_errors:
+        _msg.append("Mismatched r1/r2 lane counts:\n" + "\n".join(_lane_errors))
+    raise ValueError("\n".join(_msg))
+
+# MACS3 -f: an explicit macs3.format overrides the per-call automatic choice.
+MACS3_FORMAT_OVERRIDE = config["macs3"].get("format") or None
 
 
 def is_pe(wc):
     return "true" if wc.sample in PE_SAMPLES else "false"
+
+
+def macs3_format(wc):
+    """MACS3 -f value for the peak call of wc.sample (see layout_utils.macs3_format)."""
+    return _resolve_macs3_format(
+        wc.sample, SAMPLE_CONTROL.get(wc.sample), PE_SAMPLES, set(CONTROL_SAMPLES),
+        MACS3_FORMAT_OVERRIDE,
+    )
 
 
 def control_for(wc):
