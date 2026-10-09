@@ -12,6 +12,7 @@ rule sample_stats:
         peaks_fold1  = OUT + "/MACS/{sample}_peaks_fold1.narrowPeak",
         peaks_fold2  = OUT + "/MACS/{sample}_peaks_fold2.narrowPeak",
         peaks_fold3  = OUT + "/MACS/{sample}_peaks_fold3.narrowPeak",
+        meme_peaks   = get_final_filtered_peaks,   # fold + blacklist + rmsk: the MEME/FIMO input
         fimo         = OUT + "/fimo/{sample}/peaks/fimo.tsv",
         subsample_log= OUT + "/logs/bbduk/{sample}.subsample.log",
         trim_log     = OUT + "/logs/bbduk/{sample}.trim.log",

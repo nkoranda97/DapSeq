@@ -16,6 +16,7 @@ rule update_db:
         macs3_format     = MACS3_FORMAT_OVERRIDE or "auto",
         macs3_foldch_levels  = config["macs3"]["foldch_levels"],
         macs3_meme_foldch_level = MEME_FOLD_IDX,
+        peaks_filter_suffix = PEAKS_FILTER_SUFFIX,
         meme_nmotifs     = config["meme"]["nmotifs"],
         meme_minw        = config["meme"]["minw"],
         meme_maxw        = config["meme"]["maxw"],
