@@ -96,7 +96,7 @@ rule trim_pe:
         sample = "|".join(sorted(PE_SAMPLES)) if PE_SAMPLES else "(?!)",
     input:
         r1 = lambda wc: get_r1(wc.sample),
-        r2 = lambda wc: config["samples"][wc.sample]["r2"],
+        r2 = lambda wc: get_r2(wc.sample),
     output:
         r1               = OUT + "/trimmed/{sample}.R1.fastq.gz",
         r2               = OUT + "/trimmed/{sample}.R2.fastq.gz",
@@ -112,6 +112,7 @@ rule trim_pe:
         trimq     = config["bbduk"].get("trimq", 6),
         maq       = config["bbduk"].get("maq", 10),
         ow        = config["bbduk"].get("ow", "t"),
+        join_dir  = OUT + "/temp/{sample}_lanes",
     threads:
         # bbmap 39.81's parallel FASTQ reader (FastqStreamer) has a thread-safety
         # bug that deadlocks at high thread counts (>=12 observed) with spurious
@@ -128,8 +129,35 @@ rule trim_pe:
         """
         set -euo pipefail
         R1_FILES=({input.r1})
-        R1="${{R1_FILES[0]}}"
-        R2={input.r2}
+        R2_FILES=({input.r2})
+        JOIN_DIR="{params.join_dir}"
+        trap 'rm -rf "$JOIN_DIR"' EXIT
+
+        # Join a mate's lanes into one file so bbduk sees a single in1/in2.
+        # One lane is used as-is. Same-compression lanes are byte-concatenated
+        # (concatenated gzip members are a valid gzip stream); mixed lanes are
+        # decompressed. The extension matches the content, which BBTools reads.
+        join_lanes() {{
+          local out=$1; shift
+          if [ $# -eq 1 ]; then echo "$1"; return; fi
+          local n_gz=0 fq
+          for fq in "$@"; do
+            if gzip -t "$fq" 2>/dev/null; then n_gz=$((n_gz + 1)); fi
+          done
+          mkdir -p "$JOIN_DIR"
+          if [ "$n_gz" -eq "$#" ]; then
+            cat "$@" > "$out.fastq.gz"; echo "$out.fastq.gz"
+          elif [ "$n_gz" -eq 0 ]; then
+            cat "$@" > "$out.fastq"; echo "$out.fastq"
+          else
+            for fq in "$@"; do
+              if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
+            done > "$out.fastq"
+            echo "$out.fastq"
+          fi
+        }}
+        R1=$(join_lanes "$JOIN_DIR/R1" "${{R1_FILES[@]}}")
+        R2=$(join_lanes "$JOIN_DIR/R2" "${{R2_FILES[@]}}")
 
         TOTAL_FRAGS=$(
           if gzip -t "$R1" 2>/dev/null; then gzip -dc "$R1"; else cat "$R1"; fi | wc -l
@@ -145,7 +173,7 @@ rule trim_pe:
             -Xmx{params.mem_gb}g \
             threads={threads} \
             int=t \
-            in1=$R1 in2=$R2 out1={output.r1} out2={output.r2} \
+            in1="$R1" in2="$R2" out1={output.r1} out2={output.r2} \
             ref={params.adapters} \
             k={params.k} mink={params.mink} ktrim={params.ktrim} tbo tpe qtrim={params.qtrim} trimq={params.trimq} maq={params.maq} ow={params.ow} \
             {params.extra} \
@@ -155,7 +183,7 @@ rule trim_pe:
           if (( $(echo "$SUB_FRAC > 1" | bc -l) )); then SUB_FRAC=1; fi
 
           reformat.sh \
-            in1=$R1 in2=$R2 \
+            in1="$R1" in2="$R2" \
             out=stdout.fq \
             -Xmx{params.mem_gb}g \
             int=t \
