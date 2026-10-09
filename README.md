@@ -24,10 +24,10 @@ Set your partition and account under `default-resources` in `profiles/slurm/conf
 
 ### Local workstation
 
-Build the Apptainer SIF once (requires the pixi environment):
+Build the Apptainer SIF once (requires Apptainer, which is not part of the pixi environment). The build installs exactly the versions in `apptainer_build/pixi.lock`; after editing `apptainer_build/pixi.toml`, run `pixi lock --manifest-path apptainer_build/pixi.toml` first:
 
 ```sh
-pixi run apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
+apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
 ```
 
 Then run using the local profile (no SLURM, 4 parallel jobs by default):

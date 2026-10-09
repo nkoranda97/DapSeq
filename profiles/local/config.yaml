@@ -3,7 +3,7 @@
 
 # Run every rule inside the Apptainer container (same SIF as HPC).
 # Build the SIF once with:
-#   pixi run apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
+#   apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
 use-apptainer: true
 
 # Bind the full home directory so data/output paths outside the pipeline directory

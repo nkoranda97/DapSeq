@@ -1,7 +1,8 @@
 executor: slurm
 
-# jobscript runs before every SLURM job — loads Apptainer module
-jobscript: "profiles/slurm/slurm-jobscript.sh"
+# Run `module load apptainer` before `snakemake` (see README): the SLURM
+# executor submits with `sbatch --export=ALL --wrap`, so jobs inherit that
+# environment. It does not use a custom jobscript.
 
 # Maximum number of jobs submitted to SLURM at once
 jobs: 100
@@ -9,10 +10,10 @@ jobs: 100
 # Run every rule inside the container declared in the Snakefile
 use-apptainer: true
 
-# Bind your HPC project directory so data paths outside $HOME are visible in
-# the container. Replace /project/FILL_IN with your lab's project path
-# (e.g. /project/pi-yourlab). List multiple paths as comma-separated values.
-apptainer-args: "--bind /project/zhuzhuzhang, --bind /project/gzy8899"
+# Bind your HPC project directories so data paths outside $HOME are visible in
+# the container. Give one --bind with comma-separated paths (no spaces), e.g.
+# "--bind /project/pi-yourlab,/scratch/yourlab".
+apptainer-args: "--bind /project/zhuzhuzhang,/project/gzy8899"
 
 # Default SLURM resources used when a rule does not specify its own.
 # Set slurm_partition and slurm_account to your cluster values before first use.
