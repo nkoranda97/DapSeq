@@ -128,6 +128,7 @@ rule trim_pe:
     shell:
         """
         set -euo pipefail
+        shopt -s inherit_errexit  # a failed cat/gzip inside $(join_lanes ...) must abort the job
         R1_FILES=({input.r1})
         R2_FILES=({input.r2})
         JOIN_DIR="{params.join_dir}"
