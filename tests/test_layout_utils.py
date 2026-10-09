@@ -2,8 +2,11 @@
 Tests for workflow/scripts/layout_utils.py
 
 Covers MACS3 format resolution per peak call, PE->BAM fallback detection,
-r1/r2 lane-list normalisation and validation, and genome_size parsing.
+r1/r2 lane-list normalisation and validation, genome_size parsing, the
+reference length and the oversized-genome_size warning.
 """
+
+import gzip
 
 import pytest
 
@@ -113,9 +116,16 @@ def test_parse_genome_size_rejects_invalid(value):
 
 # ── reference_length / oversized_genome_size_warning ─────────────────────────
 
-def _fasta(tmp_path, name="genome.fa"):
+FASTA_TEXT = ">chr1 desc\nACGTNNNN\nacgt\n>chr2\nAC\n"   # 8 + 4 + 2 letters
+
+
+def _fasta(tmp_path, name="genome.fa", text=FASTA_TEXT):
     p = tmp_path / name
-    p.write_text(">chr1 desc\nACGTNNNN\nacgt\n>chr2\nAC\n")   # 8 + 4 + 2 letters
+    if name.endswith(".gz"):
+        with gzip.open(p, "wt") as fh:
+            fh.write(text)
+    else:
+        p.write_text(text)
     return p
 
 
@@ -130,24 +140,37 @@ def test_reference_length_counts_fasta_letters_without_an_index(tmp_path):
 
 
 def test_reference_length_reads_a_gzipped_fasta(tmp_path):
-    import gzip
-    p = tmp_path / "genome.fa.gz"
-    with gzip.open(p, "wt") as fh:
-        fh.write(">chr1\nACGTNNNN\nacgt\n>chr2\nAC\n")
-    assert m.reference_length(str(p)) == 14
+    assert m.reference_length(str(_fasta(tmp_path, "genome.fa.gz"))) == 14
 
 
-def test_reference_length_is_none_for_unreadable_or_damaged_input(tmp_path):
+def test_reference_length_counts_an_unwrapped_chromosome(tmp_path):
+    # One line far longer than the read piece size.
+    fa = _fasta(tmp_path, text=">chr1\n" + "ACGT" * 50_000 + "\n>chr2\nAC\n")
+    assert m.reference_length(str(fa)) == 200_002
+
+
+def test_reference_length_is_none_for_a_missing_file(tmp_path):
     assert m.reference_length(str(tmp_path / "missing.fa")) is None
+
+
+def test_reference_length_is_none_for_a_half_written_fai(tmp_path):
     fa = _fasta(tmp_path)
-    (tmp_path / "genome.fa.fai").write_text("chr1\t100\t6\t60\t61\nchr2\t")   # index still being written
+    (tmp_path / "genome.fa.fai").write_text("chr1\t100\t6\t60\t61\nchr2\t")
     assert m.reference_length(str(fa)) is None
-    truncated = tmp_path / "cut.fa.gz"
-    import gzip
-    with gzip.open(truncated, "wt") as fh:
-        fh.write(">chr1\n" + "ACGT" * 5000 + "\n")
-    truncated.write_bytes(truncated.read_bytes()[:-20])
-    assert m.reference_length(str(truncated)) is None
+
+
+def test_reference_length_is_none_for_a_truncated_gzip(tmp_path):
+    p = _fasta(tmp_path, "cut.fa.gz", text=">chr1\n" + "ACGT" * 5000 + "\n")
+    p.write_bytes(p.read_bytes()[:-20])
+    assert m.reference_length(str(p)) is None
+
+
+def test_reference_length_is_none_for_a_corrupt_gzip(tmp_path):
+    p = _fasta(tmp_path, "bad.fa.gz", text=">chr1\n" + "ACGT" * 5000 + "\n")
+    data = bytearray(p.read_bytes())
+    data[30:40] = b"\xff" * 10   # damage the deflate stream, keep the header
+    p.write_bytes(bytes(data))
+    assert m.reference_length(str(p)) is None
 
 
 def test_oversized_genome_size_warns_with_both_numbers():

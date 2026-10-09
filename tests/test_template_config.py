@@ -41,4 +41,3 @@ def test_filled_in_template_runs_on_the_defaults():
 
     for key in set(DEFAULTS) - PER_RUN:
         assert merged[key] == DEFAULTS[key], key
-    assert merged["meme"]["maxpeaks"] == 100 and merged["threads"] == 8

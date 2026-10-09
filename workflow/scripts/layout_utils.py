@@ -1,4 +1,4 @@
-"""Read-layout decisions derived from the per-sample config.
+"""Read-layout decisions derived from the per-sample config, and genome-size checks.
 
 Imported by workflow/rules/common.smk. Kept free of Snakemake objects so the
 logic is unit-testable.
@@ -78,8 +78,9 @@ def reference_length(fasta_path):
     """Total sequence length of a reference FASTA, or None when it cannot be read.
 
     Sums <fasta>.fai (samtools faidx) when it exists; otherwise counts the
-    FASTA's sequence letters, through gzip for a .gz path. Any read or parse
-    error gives None: the caller only warns, and an exception raised in
+    FASTA's sequence letters, through gzip for a .gz path, reading in bounded
+    pieces so an unwrapped chromosome is never held in memory whole. Any
+    failure gives None: the caller only warns, and an exception raised in
     onstart would stop the run.
     """
     try:
@@ -88,13 +89,16 @@ def reference_length(fasta_path):
             with open(fai) as fh:
                 return sum(int(line.split("\t")[1]) for line in fh if line.strip())
         opener = gzip.open if fasta_path.endswith(".gz") else open
-        total = 0
+        total, at_line_start, in_header = 0, True, False
         with opener(fasta_path, "rt") as fh:
-            for line in fh:
-                if not line.startswith(">"):
-                    total += len(line.strip())
+            while piece := fh.readline(1 << 16):
+                if at_line_start:
+                    in_header = piece.startswith(">")
+                if not in_header:
+                    total += len(piece.strip())
+                at_line_start = piece.endswith("\n")
         return total
-    except (OSError, ValueError, IndexError, EOFError):
+    except Exception:  # corrupt gzip (zlib.error), half-written .fai, memory, ...
         return None
 
 
