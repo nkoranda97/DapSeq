@@ -3,7 +3,7 @@ title: "feat: Blacklist filtering of narrowPeak files after peak calling"
 date: 2026-06-16
 sequence: "001"
 type: feat
-status: active
+status: completed
 ---
 
 # feat: Blacklist filtering of narrowPeak files after peak calling

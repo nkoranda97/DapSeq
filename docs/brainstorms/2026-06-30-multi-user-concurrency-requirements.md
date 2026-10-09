@@ -1,7 +1,7 @@
 # Multi-User Concurrency Requirements
 
 **Date:** 2026-06-30
-**Status:** Ready for planning
+**Status:** Implemented. Requirement 2 shipped differently: the database uses `journal_mode=DELETE`, not WAL, because WAL's shared-memory coordination needs all writers on one node, which SLURM does not guarantee (see the module docstring in `workflow/scripts/update_db.py`).
 
 ## Goal
 

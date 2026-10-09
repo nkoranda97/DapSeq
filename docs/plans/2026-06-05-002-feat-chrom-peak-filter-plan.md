@@ -3,7 +3,7 @@ title: "feat: Add chromosome name filtering to narrow_peak_to_fasta"
 date: 2026-06-05
 sequence: "002"
 type: feat
-status: active
+status: completed
 ---
 
 # feat: Add chromosome name filtering to narrow_peak_to_fasta

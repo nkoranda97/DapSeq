@@ -30,3 +30,5 @@ bam_data/
 blacklist/rmsk.txt.gz
 
 .context/compound-engineering/
+
+.DS_Store

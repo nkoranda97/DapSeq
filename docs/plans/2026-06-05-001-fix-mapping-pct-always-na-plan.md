@@ -1,7 +1,7 @@
 ---
 title: "fix: mapping_pct always returns NA"
 type: fix
-status: active
+status: completed
 created: 2026-06-05
 ---
 

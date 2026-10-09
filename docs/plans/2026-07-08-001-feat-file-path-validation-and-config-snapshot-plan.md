@@ -1,6 +1,6 @@
 ---
 title: "feat: Add file-path validation and config snapshot"
-status: active
+status: completed
 created: 2026-07-08
 type: feat
 ---
