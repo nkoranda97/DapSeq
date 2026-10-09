@@ -18,6 +18,7 @@ rule factorbook_logo:
         runtime         = 20,
     params:
         base_colors = config["meme"].get("base_colors") or {},
+        tf          = lambda wc: config["samples"][wc.sample].get("tf"),
     log:
         OUT + "/logs/factorbook/{sample}.log"
     script:
