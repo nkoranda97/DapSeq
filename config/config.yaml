@@ -156,6 +156,9 @@ resources:
   narrow_peak_to_fasta:
     mem_mb: 8000
     runtime: 30
+  logo:            # factorbook_logo, meme_logo_summits, meme_logo_peaks
+    mem_mb: 4000
+    runtime: 20
   meme:
     mem_mb: 16000
     runtime: 120

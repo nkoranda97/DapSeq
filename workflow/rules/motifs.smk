@@ -14,8 +14,8 @@ rule factorbook_logo:
     wildcard_constraints:
         sample = REPORT_SAMPLE_CONSTRAINT,
     resources:
-        mem_mb          = config["resources"]["meme"]["mem_mb"],
-        runtime         = 20,
+        mem_mb          = config["resources"]["logo"]["mem_mb"],
+        runtime         = config["resources"]["logo"]["runtime"],
     params:
         base_colors = config["meme"].get("base_colors") or {},
         tf          = lambda wc: config["samples"][wc.sample].get("tf"),
@@ -112,8 +112,8 @@ rule meme_logo_summits:
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:
-        mem_mb          = config["resources"]["meme"]["mem_mb"],
-        runtime         = 10,
+        mem_mb          = config["resources"]["logo"]["mem_mb"],
+        runtime         = config["resources"]["logo"]["runtime"],
     log:
         OUT + "/logs/meme/{sample}.summits.logo.log"
     script:
@@ -187,8 +187,8 @@ rule meme_logo_peaks:
     params:
         base_colors = config["meme"].get("base_colors") or {},
     resources:
-        mem_mb          = config["resources"]["meme"]["mem_mb"],
-        runtime         = 10,
+        mem_mb          = config["resources"]["logo"]["mem_mb"],
+        runtime         = config["resources"]["logo"]["runtime"],
     log:
         OUT + "/logs/meme/{sample}.peaks.logo.log"
     script:

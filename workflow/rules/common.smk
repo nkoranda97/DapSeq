@@ -6,6 +6,7 @@ from layout_utils import (
     as_list, fallback_pairs, lane_count_errors, macs3_format as _resolve_macs3_format,
     parse_genome_size,
 )
+from sample_names import control_name_collisions, invalid_sample_names, sample_regex
 
 # Known top-level config keys — union of config.yaml and config/config.yaml,
 # plus keys that have no YAML default but are accessed via config.get().
@@ -122,9 +123,11 @@ for _c in CONTROL_SAMPLES:
             f"  sample '{_c}' is used as a control by another sample, so it "
             "must not declare its own 'control:'"
         )
+_ctrl_errors += invalid_sample_names(SAMPLES)
+_ctrl_errors += control_name_collisions(SAMPLES, CONTROL_SAMPLES)
 if _ctrl_errors:
     raise ValueError(
-        "Invalid per-sample control assignment(s):\n" + "\n".join(_ctrl_errors)
+        "Invalid sample name(s) or control assignment(s):\n" + "\n".join(_ctrl_errors)
     )
 
 TREATMENT_SAMPLES = [s for s in SAMPLES if s not in CONTROL_SAMPLES]
@@ -140,10 +143,10 @@ REPORT_SAMPLES = TREATMENT_SAMPLES + CONTROL_SAMPLES
 CONTROL_TREATMENT_SAMPLES = [s for s in TREATMENT_SAMPLES if SAMPLE_CONTROL.get(s)]
 
 # Regex constraints for wildcard_constraints blocks; "(?!)" never matches (no samples).
-CONTROL_SAMPLE_CONSTRAINT     = "|".join(CONTROL_SAMPLES)           if CONTROL_SAMPLES           else "(?!)"
-TREATMENT_SAMPLE_CONSTRAINT   = "|".join(TREATMENT_SAMPLES)         if TREATMENT_SAMPLES         else "(?!)"
-REPORT_SAMPLE_CONSTRAINT      = "|".join(REPORT_SAMPLES)            if REPORT_SAMPLES            else "(?!)"
-CONTROL_TREATMENT_CONSTRAINT  = "|".join(CONTROL_TREATMENT_SAMPLES) if CONTROL_TREATMENT_SAMPLES else "(?!)"
+CONTROL_SAMPLE_CONSTRAINT     = sample_regex(CONTROL_SAMPLES)
+TREATMENT_SAMPLE_CONSTRAINT   = sample_regex(TREATMENT_SAMPLES)
+REPORT_SAMPLE_CONSTRAINT      = sample_regex(REPORT_SAMPLES)
+CONTROL_TREATMENT_CONSTRAINT  = sample_regex(CONTROL_TREATMENT_SAMPLES)
 
 SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
 PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}

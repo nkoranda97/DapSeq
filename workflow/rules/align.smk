@@ -1,7 +1,7 @@
 if ALIGNER == "bowtie2":
     rule align_se:
         wildcard_constraints:
-            sample = "|".join(sorted(SE_SAMPLES)) if SE_SAMPLES else "(?!)",
+            sample = sample_regex(sorted(SE_SAMPLES)),
         input:
             r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
             idx = config["genome_ref"] + ".1.bt2",
@@ -54,7 +54,7 @@ if ALIGNER == "bowtie2":
 
     rule align_pe:
         wildcard_constraints:
-            sample = "|".join(sorted(PE_SAMPLES)) if PE_SAMPLES else "(?!)",
+            sample = sample_regex(sorted(PE_SAMPLES)),
         input:
             r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
             r2  = OUT + "/trimmed/{sample}.R2.fastq.gz",
@@ -112,7 +112,7 @@ if ALIGNER == "bowtie2":
 elif ALIGNER == "bwa_mem2":
     rule align_se:
         wildcard_constraints:
-            sample = "|".join(sorted(SE_SAMPLES)) if SE_SAMPLES else "(?!)",
+            sample = sample_regex(sorted(SE_SAMPLES)),
         input:
             r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
             idx = config["genome_ref"] + ".0123",
@@ -164,7 +164,7 @@ elif ALIGNER == "bwa_mem2":
 
     rule align_pe:
         wildcard_constraints:
-            sample = "|".join(sorted(PE_SAMPLES)) if PE_SAMPLES else "(?!)",
+            sample = sample_regex(sorted(PE_SAMPLES)),
         input:
             r1  = OUT + "/trimmed/{sample}.R1.fastq.gz",
             r2  = OUT + "/trimmed/{sample}.R2.fastq.gz",
