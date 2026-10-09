@@ -2,6 +2,33 @@
 
 Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clusters or local workstations via Apptainer.
 
+## What's changed (October 2026)
+
+### Update your setup before the next run
+
+- **Rebuild the container.** The old image is missing logomaker, so motif logos fail. The build now installs exactly the versions in `apptainer_build/pixi.lock` (see [Local workstation](#local-workstation)).
+- **Delete `macs3.format: BAMPE` from configs copied from the old template.** Left in, it still forces BAMPE for every peak call; removed, the format is chosen per call (below).
+- **Turn on filtering explicitly if you rely on it.** `blacklist_filter` and `rmsk_filter` now default to off; set `enabled: true` and a path in your config.
+- **Remove options that no longer exist.** `macs3.min_foldch`, `complexity_filter`, `tandem_filter` and `slurm_partition`/`slurm_account` (in your experiment config) now stop the run with a message saying what replaced them. `samtools.extra_merge` is ignored and can be deleted.
+- **Rename samples whose names contain `.`, `/` or spaces**, or that are named `<control>_control`. They now stop the run at startup instead of failing later.
+
+### New behavior
+
+- **MACS3 read format per peak call.** BAMPE when a sample and its control are both paired-end, otherwise BAM; a paired-end sample with a single-end control gets a startup warning. `macs3.format` overrides every call when set.
+- **Multi-lane paired-end samples.** `r1` and `r2` can each be a list of lane files, paired by position; all lanes are trimmed. Mismatched lane counts stop the run.
+- **`genome_size`** accepts plain or scientific notation (`2700000000` or `"2.7e9"`) and must be set.
+- **Filtered-peak stats describe the MEME input.** `reads_in_peaks_filt`, `frip_filt`, `max_peak_score`, HOMER annotation and the database's filtered-peak path now use the final set fed to MEME/FIMO (after blacklist/rmsk when enabled). `num_peaks_filt` is still the fold-change count.
+- **HOMER runs by default** when `gene_annotation` is set.
+- **Factorbook reference logos** match more samples: set `tf:` per sample, or the sample name and then its part before the first `_` or `-` is tried (`CTCF_rep1` -> CTCF).
+- **`motif_peaks` is `0`**, not `NA`, when FIMO ran and found no hits.
+- **Results database.**
+  - Runs are keyed by the absolute `output_dir`, so `out`, `out/` and `./out` are the same run.
+  - Two projects that both use a relative `results` no longer overwrite each other.
+  - New columns: `num_peaks_bl`, `num_peaks_rmsk`, `frip` and `frip_filt`.
+  - `alignment_rate`, which was never filled, is no longer written.
+- Logo jobs request 4 GB (`resources.logo`) instead of MEME's 16 GB.
+- `pixi run test` runs the test suite, which also runs on every pull request.
+
 ## Setup
 
 Install [Pixi](https://pixi.sh):
