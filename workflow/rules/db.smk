@@ -25,6 +25,7 @@ rule update_db:
         treatment_samples = TREATMENT_SAMPLES,
         author           = config.get("author", ""),
         gene_annotation  = config.get("gene_annotation") or "",
+        pipeline_version = PIPELINE_VERSION,
     resources:
         mem_mb          = config["resources"]["update_db"]["mem_mb"],
         runtime         = config["resources"]["update_db"]["runtime"],

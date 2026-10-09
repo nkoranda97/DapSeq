@@ -29,6 +29,7 @@ def test_db_has_no_column_the_report_never_produces():
         "mapq", "max_frags", "macs3_format", "macs3_foldch_levels",
         "macs3_meme_foldch_level", "meme_nmotifs", "meme_minw", "meme_maxw",
         "meme_maxpeaks", "fimo_thresh", "sample", "r1", "r2", "is_treatment",
+        "pipeline_version",
     }
     assert set(m.COLS) - run_level <= produced
 

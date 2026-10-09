@@ -7,6 +7,7 @@ from layout_utils import (
     parse_genome_size,
 )
 from sample_names import control_name_collisions, invalid_sample_names, sample_regex
+from pipeline_version import pipeline_version
 
 # Known top-level config keys — union of config.yaml and config/config.yaml,
 # plus keys that have no YAML default but are accessed via config.get().
@@ -152,6 +153,10 @@ SE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is None}
 PE_SAMPLES = {s for s in SAMPLES if config["samples"][s].get("r2") is not None}
 
 SCRIPTS = os.path.join(workflow.basedir, "scripts")
+
+# Stored with every results-DB row; read here on the host because the
+# container has no git.
+PIPELINE_VERSION = pipeline_version(os.path.dirname(workflow.basedir))
 
 ALIGNER = config.get("aligner", "bowtie2")
 
