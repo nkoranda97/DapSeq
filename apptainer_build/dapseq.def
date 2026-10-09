@@ -1,11 +1,15 @@
 Bootstrap: docker
-From: ghcr.io/prefix-dev/pixi:latest
+# Pinned so rebuilds use the same pixi (and lockfile format) every time.
+From: ghcr.io/prefix-dev/pixi:0.81.0
 
 %files
     apptainer_build/pixi.toml /app/pixi.toml
+    apptainer_build/pixi.lock /app/pixi.lock
 
 %post
-    cd /app && pixi install && pixi clean cache -y
+    # --locked installs exactly what pixi.lock records and fails if the lock no
+    # longer matches pixi.toml, instead of re-resolving to newer versions.
+    cd /app && pixi install --locked && pixi clean cache -y
 
 %environment
     export PATH=/app/.pixi/envs/default/bin:$PATH

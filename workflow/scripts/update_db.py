@@ -17,7 +17,9 @@ same physical node, which SLURM does not guarantee.
 """
 
 import csv
+import os
 import sqlite3
+from contextlib import closing
 from datetime import datetime
 from pathlib import Path
 
@@ -163,35 +165,73 @@ def get_r2(sample_cfg):
     return r2[0] if isinstance(r2, list) else r2
 
 
-def write_rows(db_path, output_dir, rows):
-    """Write rows (list of tuples ordered by COLS) to the SQLite database.
+def normalize_output_dir(path):
+    """Canonical DB key for an output directory: absolute, no trailing slash,
+    no ./ or // segments. "out", "out/" and "./out" are the same run, while
+    a relative "results" used from two project dirs stays two runs."""
+    return os.path.normpath(os.path.abspath(path))
 
-    Replaces all existing rows for output_dir atomically. Safe to call
-    concurrently from multiple processes on shared filesystems.
+
+
+def legacy_output_dir_keys(raw_output_dir, canonical):
+    """Older spellings of this run's key to replace on write.
+
+    Only an absolute raw spelling (e.g. a trailing slash) identifies this run
+    for certain. A relative one such as "results" may belong to another
+    project's rows, so it is left alone (at worst a stale duplicate).
     """
+    if not os.path.isabs(raw_output_dir):
+        return []
+    return sorted({raw_output_dir, raw_output_dir.rstrip("/")} - {canonical})
+
+
+def _connect(db_path):
     con = sqlite3.connect(str(db_path), timeout=60)
     con.execute("PRAGMA journal_mode=DELETE")
-    con.execute(_CREATE)
-    _ensure_columns(con, "pipeline_runs", COLS)  # DDL outside transaction
-    with con:
-        con.execute("DELETE FROM pipeline_runs WHERE output_dir = ?", (output_dir,))
-        con.executemany(_INSERT, rows)
-    con.close()
+    return con
 
 
-def write_meta_rows(db_path, output_dir, rows):
-    """Write rows (list of tuples ordered by META_COLS) to run_metadata.
+def _replace(con, table, insert_sql, output_dir, rows, aliases):
+    keys = [output_dir, *[a for a in aliases if a != output_dir]]
+    con.execute(
+        f'DELETE FROM "{table}" WHERE output_dir IN ({", ".join("?" * len(keys))})', keys
+    )
+    con.executemany(insert_sql, rows)
 
-    Same idempotency and concurrency guarantees as write_rows().
+
+def write_run(db_path, output_dir, rows, meta_rows, aliases=()):
+    """Replace one run's rows in pipeline_runs and run_metadata in a single
+    transaction, so a failure leaves both tables as they were.
+
+    Rows stored under any of *aliases* (older spellings of output_dir) are
+    replaced too. Safe to call concurrently from multiple processes.
     """
-    con = sqlite3.connect(str(db_path), timeout=60)
-    con.execute("PRAGMA journal_mode=DELETE")
-    con.execute(_CREATE_META)
-    _ensure_columns(con, "run_metadata", META_COLS)  # DDL outside transaction
-    with con:
-        con.execute("DELETE FROM run_metadata WHERE output_dir = ?", (output_dir,))
-        con.executemany(_INSERT_META, rows)
-    con.close()
+    with closing(_connect(db_path)) as con:
+        con.execute(_CREATE)
+        con.execute(_CREATE_META)
+        _ensure_columns(con, "pipeline_runs", COLS)       # DDL outside transaction
+        _ensure_columns(con, "run_metadata", META_COLS)
+        with con:
+            _replace(con, "pipeline_runs", _INSERT, output_dir, rows, aliases)
+            _replace(con, "run_metadata", _INSERT_META, output_dir, meta_rows, aliases)
+
+
+def write_rows(db_path, output_dir, rows, aliases=()):
+    """Replace output_dir's rows in pipeline_runs (rows ordered by COLS)."""
+    with closing(_connect(db_path)) as con:
+        con.execute(_CREATE)
+        _ensure_columns(con, "pipeline_runs", COLS)  # DDL outside transaction
+        with con:
+            _replace(con, "pipeline_runs", _INSERT, output_dir, rows, aliases)
+
+
+def write_meta_rows(db_path, output_dir, rows, aliases=()):
+    """Replace output_dir's rows in run_metadata (rows ordered by META_COLS)."""
+    with closing(_connect(db_path)) as con:
+        con.execute(_CREATE_META)
+        _ensure_columns(con, "run_metadata", META_COLS)  # DDL outside transaction
+        with con:
+            _replace(con, "run_metadata", _INSERT_META, output_dir, rows, aliases)
 
 
 def _build_meta_paths(output_dir, sample):
@@ -237,7 +277,11 @@ def main():
     sm = snakemake  # noqa: F821 — injected by Snakemake
 
     db_path          = sm.params.db_path
-    output_dir       = sm.params.output_dir
+    # Rows are keyed by the normalised path. Rows an older version stored under
+    # an absolute raw spelling (e.g. trailing slash) are replaced too.
+    raw_output_dir   = sm.params.output_dir
+    output_dir       = normalize_output_dir(raw_output_dir)
+    legacy_keys      = legacy_output_dir_keys(raw_output_dir, output_dir)
     samples_cfg      = sm.params.samples_cfg
     treatment_set    = set(sm.params.treatment_samples)
     run_date         = datetime.now().isoformat(timespec="seconds")
@@ -319,8 +363,7 @@ def main():
         meta.update(generated)
         meta_rows.append(tuple(meta.get(c, "") for c in META_COLS))
 
-    write_rows(db_path, output_dir, new_rows)
-    write_meta_rows(db_path, output_dir, meta_rows)
+    write_run(db_path, output_dir, new_rows, meta_rows, aliases=legacy_keys)
 
     Path(sm.output.flag).touch()
 

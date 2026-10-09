@@ -22,3 +22,8 @@ biopython = "*"
 pandas = "*"
 ghostscript = ">=10.0"
 pillow = ">=10.0.0"
+
+[pypi-dependencies]
+# motif logo rendering (logo_utils.py). From PyPI, as in the root env: the
+# conda-forge build declares a spurious dependency on the hatch build tool.
+logomaker = ">=0.8"

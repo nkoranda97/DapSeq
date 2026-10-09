@@ -344,3 +344,62 @@ def test_write_rows_migrates_legacy_schema(tmp_path):
     assert "reads_in_peaks_filt" in cols       # newly added
     assert "reads_in_peaks_fold1" in cols      # legacy column preserved
     assert len(_rows_for(db, "/out/A")) == 2
+
+
+# ── output_dir identity and single-transaction writes ────────────────────────
+
+def test_output_dir_spellings_normalise_to_one_key(tmp_path, monkeypatch):
+    monkeypatch.chdir(tmp_path)
+    expected = str(tmp_path / "out")
+    for spelling in ("out", "out/", "./out", str(tmp_path / "out") + "/"):
+        assert m.normalize_output_dir(spelling) == expected
+
+
+def test_same_relative_name_from_different_dirs_stays_separate(tmp_path, monkeypatch):
+    (tmp_path / "projA").mkdir()
+    (tmp_path / "projB").mkdir()
+    monkeypatch.chdir(tmp_path / "projA")
+    a = m.normalize_output_dir("results")
+    monkeypatch.chdir(tmp_path / "projB")
+    b = m.normalize_output_dir("results")
+    assert a != b
+
+
+def test_write_run_replaces_rows_stored_under_a_legacy_spelling(tmp_path):
+    db = tmp_path / "test.db"
+    # A pre-normalisation run stored the raw config value.
+    m.write_rows(db, "out/", _make_rows("out/", n=3))
+    m.write_meta_rows(db, "out/", _make_meta_rows("out/", n=3))
+
+    canon = "/abs/out"
+    m.write_run(db, canon, _make_rows(canon, n=2), _make_meta_rows(canon, n=2),
+                aliases=["out/"])
+    assert _row_count(db) == 2 and _meta_row_count(db) == 2
+    assert len(_rows_for(db, canon)) == 2
+
+
+def test_write_run_is_atomic_across_both_tables(tmp_path):
+    db = tmp_path / "test.db"
+    m.write_run(db, "/out/A", _make_rows("/out/A", n=2), _make_meta_rows("/out/A", n=2))
+
+    bad_meta = [("too", "short")]   # wrong arity: the run_metadata insert fails
+    with pytest.raises(sqlite3.ProgrammingError):
+        m.write_run(db, "/out/A", _make_rows("/out/A", n=5), bad_meta)
+
+    # Neither table changed: the failed run left the previous run intact.
+    assert _row_count(db) == 2 and _meta_row_count(db) == 2
+
+
+def test_absolute_raw_spelling_is_a_legacy_alias():
+    assert m.legacy_output_dir_keys("/abs/out/", "/abs/out") == ["/abs/out/"]
+
+
+def test_relative_raw_spelling_is_never_a_legacy_alias():
+    # Another project may have stored rows under the same relative name;
+    # deleting them on a guess would destroy that project's data.
+    assert m.legacy_output_dir_keys("results", "/home/a/proj/results") == []
+    assert m.legacy_output_dir_keys("results/", "/home/a/proj/results") == []
+
+
+def test_canonical_spelling_has_no_aliases():
+    assert m.legacy_output_dir_keys("/abs/out", "/abs/out") == []
