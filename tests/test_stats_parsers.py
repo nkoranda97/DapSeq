@@ -7,6 +7,7 @@ import subprocess
 from types import SimpleNamespace
 
 import collect_stats as cs
+import fimo_fixtures as ff
 
 
 def _write(tmp_path, name, text):
@@ -41,20 +42,26 @@ def test_narrowpeak_max_score_skips_short_rows_and_empty_files(tmp_path):
     assert cs._narrowpeak_max_score(np) == "4.0"
 
 
-FIMO_HEADER = "motif_id\tmotif_alt_id\tsequence_name\tstart\tstop\tstrand\tscore\tp-value\tq-value\tmatched_sequence\n"
+def test_fimo_counts_peaks_not_chromosomes(tmp_path):
+    # Three peaks have hits, two of them on chr1; rows are interleaved by p-value.
+    tsv = _write(tmp_path, "fimo.tsv", ff.FIMO_PEAKS_THREE_HITS)
+    assert cs._fimo_motif_peaks(tsv) == "3"
 
 
-def test_fimo_counts_unique_peaks_with_a_hit(tmp_path):
-    tsv = _write(tmp_path, "fimo.tsv", FIMO_HEADER
-                 + "M1\tA\tpeak1\t1\t8\t+\t10\t1e-6\t0.1\tACGT\n"
-                 + "M1\tA\tpeak1\t20\t28\t-\t9\t2e-6\t0.1\tACGT\n"
-                 + "M1\tA\tpeak2\t5\t13\t+\t8\t3e-6\t0.1\tACGT\n"
-                 + "# FIMO (Find Individual Motif Occurrences): Version 5\n")
-    assert cs._fimo_motif_peaks(tsv) == "2"
+def test_fimo_peak_hit_by_two_motifs_counts_once(tmp_path):
+    tsv = _write(tmp_path, "fimo.tsv", ff.FIMO_PEAK_TWO_MOTIFS)
+    assert cs._fimo_motif_peaks(tsv) == "1"
 
 
 def test_fimo_ran_with_no_hits_is_zero_not_na(tmp_path):
-    assert cs._fimo_motif_peaks(_write(tmp_path, "fimo.tsv", FIMO_HEADER)) == "0"
+    tsv = _write(tmp_path, "fimo.tsv", ff.FIMO_NO_HITS)
+    assert cs._fimo_motif_peaks(tsv) == "0"
+
+
+def test_fimo_old_coordinate_mode_output_is_na(tmp_path):
+    # Hits named by chromosome alone cannot be counted as peaks.
+    assert cs._fimo_motif_peaks(_write(tmp_path, "a.tsv", ff.FIMO_OLD_MODE_HITS)) == "NA"
+    assert cs._fimo_motif_peaks(_write(tmp_path, "b.tsv", ff.FIMO_OLD_MODE_NO_HITS)) == "NA"
 
 
 def test_fimo_missing_or_empty_output_is_na(tmp_path):

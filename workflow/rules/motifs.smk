@@ -195,6 +195,10 @@ rule meme_logo_peaks:
         "../scripts/render_meme_logo.py"
 
 
+# --no-pgc keeps each chr:start-end FASTA header as FIMO's sequence_name, so
+# hits are named by peak (start/stop are positions within the peak). FIMO
+# otherwise parses the header as genome coordinates and names hits by
+# chromosome. It comes after {params.extra} because FIMO's last flag wins.
 rule fimo:
     input:
         meme_xml = OUT + "/meme/{sample}/{peak_type}/meme.xml",
@@ -215,8 +219,8 @@ rule fimo:
         if [ ! -s {input.meme_xml} ]; then
             mkdir -p {params.outdir} && touch {output.tsv}
         else
-            fimo --parse-genomic-coord --thresh {params.fimo_thresh} \
-              {params.extra} -oc {params.outdir} \
+            fimo --thresh {params.fimo_thresh} \
+              {params.extra} --no-pgc -oc {params.outdir} \
               {input.meme_xml} {input.fasta} 2>{log}
         fi
         """
