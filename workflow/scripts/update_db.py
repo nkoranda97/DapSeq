@@ -26,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(__file__))
 from collect_stats import fimo_names_peaks  # noqa: E402
+from pipeline_version import UNKNOWN  # noqa: E402
 
 
 COLS = [
@@ -304,7 +305,7 @@ def main():
     author           = sm.params.author
     gene_annotation  = sm.params.gene_annotation or ""
     # Never empty: write_run blanks motif_peaks on rows without a version.
-    pipeline_version = sm.params.pipeline_version or "unknown"
+    pipeline_version = sm.params.pipeline_version or UNKNOWN
 
     qc_stats = read_report(sm.input.report)
 

@@ -14,13 +14,14 @@ from pathlib import Path
 
 import pytest
 
+import fimo_fixtures as ff
 import update_db as m
 
 
 # ── helpers — pipeline_runs ───────────────────────────────────────────────────
 
-def _make_rows(output_dir, n=2):
-    """Return n minimal row tuples ordered by COLS."""
+def _make_rows(output_dir, n=2, **cols):
+    """Return n minimal row tuples ordered by COLS; *cols* set extra columns."""
     base = {c: "" for c in m.COLS}
     rows = []
     for i in range(n):
@@ -28,6 +29,7 @@ def _make_rows(output_dir, n=2):
         r["output_dir"] = output_dir
         r["sample"] = f"s{i}"
         r["run_date"] = "2026-01-01T00:00:00"
+        r.update(cols)
         rows.append(tuple(r[c] for c in m.COLS))
     return rows
 
@@ -50,8 +52,8 @@ def _rows_for(db_path, output_dir):
 
 # ── helpers — run_metadata ────────────────────────────────────────────────────
 
-def _make_meta_rows(output_dir, n=2, author="testuser"):
-    """Return n minimal meta row tuples ordered by META_COLS."""
+def _make_meta_rows(output_dir, n=2, author="testuser", **cols):
+    """Return n minimal meta row tuples ordered by META_COLS; *cols* set extra columns."""
     base = {c: "" for c in m.META_COLS}
     rows = []
     for i in range(n):
@@ -60,6 +62,7 @@ def _make_meta_rows(output_dir, n=2, author="testuser"):
         r["sample"]     = f"s{i}"
         r["author"]     = author
         r["run_date"]   = "2026-01-01T00:00:00"
+        r.update(cols)
         rows.append(tuple(r[c] for c in m.META_COLS))
     return rows
 
@@ -392,22 +395,10 @@ def test_write_run_is_atomic_across_both_tables(tmp_path):
 
 # ── pipeline_version and blanking pre-fix motif_peaks ────────────────────────
 
-def _versioned_rows(output_dir, motif_peaks, version="7836373"):
-    rows = []
-    for row in _make_rows(output_dir, n=2):
-        r = dict(zip(m.COLS, row))
-        r.update(motif_peaks=motif_peaks, pipeline_version=version)
-        rows.append(tuple(r[c] for c in m.COLS))
-    return rows
-
-
-def _versioned_meta_rows(output_dir, version="7836373"):
-    rows = []
-    for row in _make_meta_rows(output_dir, n=2):
-        r = dict(zip(m.META_COLS, row))
-        r["pipeline_version"] = version
-        rows.append(tuple(r[c] for c in m.META_COLS))
-    return rows
+def _write_versioned(db, output_dir, motif_peaks, version="7836373"):
+    m.write_run(db, output_dir,
+                _make_rows(output_dir, motif_peaks=motif_peaks, pipeline_version=version),
+                _make_meta_rows(output_dir, pipeline_version=version))
 
 
 def _legacy_db(db):
@@ -422,10 +413,12 @@ def _legacy_db(db):
     con.close()
 
 
-def _db_rows(db, table="pipeline_runs"):
+def _db_rows(db, table="pipeline_runs", output_dir=None):
+    """Rows of *table* as dicts, optionally only those for *output_dir*."""
     con = sqlite3.connect(str(db))
     con.row_factory = sqlite3.Row
-    rows = [dict(r) for r in con.execute(f"SELECT * FROM {table} ORDER BY id")]
+    where, args = ("WHERE output_dir = ?", (output_dir,)) if output_dir else ("", ())
+    rows = [dict(r) for r in con.execute(f"SELECT * FROM {table} {where} ORDER BY id", args)]
     con.close()
     return rows
 
@@ -433,11 +426,14 @@ def _db_rows(db, table="pipeline_runs"):
 def test_write_run_blanks_motif_peaks_on_pre_upgrade_rows(tmp_path):
     db = tmp_path / "test.db"
     _legacy_db(db)
-    m.write_run(db, "/out/B", _versioned_rows("/out/B", "5"), _versioned_meta_rows("/out/B"))
+    [before] = _db_rows(db, output_dir="/out/A")
+    _write_versioned(db, "/out/B", "5")
 
-    a = [r for r in _db_rows(db) if r["output_dir"] == "/out/A"]
-    assert a == [dict(a[0], motif_peaks="NA", num_peaks="120")]
-    b = [r for r in _db_rows(db) if r["output_dir"] == "/out/B"]
+    [after] = _db_rows(db, output_dir="/out/A")
+    assert after["motif_peaks"] == "NA"
+    assert {k: after[k] for k in before if k != "motif_peaks"} == {
+        k: v for k, v in before.items() if k != "motif_peaks"}
+    b = _db_rows(db, output_dir="/out/B")
     assert {r["motif_peaks"] for r in b} == {"5"}
     assert {r["pipeline_version"] for r in b} == {"7836373"}
     assert {r["pipeline_version"] for r in _db_rows(db, "run_metadata")} == {"7836373"}
@@ -446,18 +442,18 @@ def test_write_run_blanks_motif_peaks_on_pre_upgrade_rows(tmp_path):
 def test_second_write_run_leaves_blanked_rows_alone(tmp_path):
     db = tmp_path / "test.db"
     _legacy_db(db)
-    m.write_run(db, "/out/B", _versioned_rows("/out/B", "5"), _versioned_meta_rows("/out/B"))
-    before = [r for r in _db_rows(db) if r["output_dir"] == "/out/A"]
-    m.write_run(db, "/out/B", _versioned_rows("/out/B", "6"), _versioned_meta_rows("/out/B"))
+    _write_versioned(db, "/out/B", "5")
+    before = _db_rows(db, output_dir="/out/A")
+    _write_versioned(db, "/out/B", "6")
 
-    assert [r for r in _db_rows(db) if r["output_dir"] == "/out/A"] == before
-    b = [r for r in _db_rows(db) if r["output_dir"] == "/out/B"]
+    assert _db_rows(db, output_dir="/out/A") == before
+    b = _db_rows(db, output_dir="/out/B")
     assert len(b) == 2 and {r["motif_peaks"] for r in b} == {"6"}
 
 
 def test_row_from_an_older_checkout_is_blanked_by_the_next_write(tmp_path):
     db = tmp_path / "test.db"
-    m.write_run(db, "/out/B", _versioned_rows("/out/B", "5"), _versioned_meta_rows("/out/B"))
+    _write_versioned(db, "/out/B", "5")
     # An older checkout names only the columns it knows, so the version is NULL.
     con = sqlite3.connect(str(db))
     con.execute("INSERT INTO pipeline_runs (output_dir, sample, motif_peaks) "
@@ -465,7 +461,7 @@ def test_row_from_an_older_checkout_is_blanked_by_the_next_write(tmp_path):
     con.commit()
     con.close()
 
-    m.write_run(db, "/out/D", _versioned_rows("/out/D", "9"), _versioned_meta_rows("/out/D"))
+    _write_versioned(db, "/out/D", "9")
     motif = {r["output_dir"]: r["motif_peaks"] for r in _db_rows(db)}
     assert motif["/out/C"] == "NA"
     assert motif["/out/B"] == "5"
@@ -473,17 +469,17 @@ def test_row_from_an_older_checkout_is_blanked_by_the_next_write(tmp_path):
 
 def test_row_with_unknown_version_is_not_blanked(tmp_path):
     db = tmp_path / "test.db"
-    m.write_run(db, "/out/B", _versioned_rows("/out/B", "5", version="unknown"),
-                _versioned_meta_rows("/out/B", version="unknown"))
-    m.write_run(db, "/out/C", _versioned_rows("/out/C", "7"), _versioned_meta_rows("/out/C"))
-    assert {r["motif_peaks"] for r in _db_rows(db) if r["output_dir"] == "/out/B"} == {"5"}
+    _write_versioned(db, "/out/B", "5", version="unknown")
+    _write_versioned(db, "/out/C", "7")
+    assert {r["motif_peaks"] for r in _db_rows(db, output_dir="/out/B")} == {"5"}
 
 
 def test_failed_write_commits_no_blanking(tmp_path):
     db = tmp_path / "test.db"
     _legacy_db(db)
     with pytest.raises(sqlite3.ProgrammingError):
-        m.write_run(db, "/out/B", _versioned_rows("/out/B", "5"), [("too", "short")])
+        m.write_run(db, "/out/B", _make_rows("/out/B", motif_peaks="5", pipeline_version="7836373"),
+                    [("too", "short")])
     assert [r["motif_peaks"] for r in _db_rows(db)] == ["17"]
 
 
@@ -545,11 +541,8 @@ def _run_main(tmp_path, monkeypatch, output_dir="out/", suffix="_bl",
         output=SimpleNamespace(flag=str(flag))), raising=False)
     m.main()
     assert flag.exists()
-    con = sqlite3.connect(db)
-    con.row_factory = sqlite3.Row
-    runs = {r["sample"]: dict(r) for r in con.execute("SELECT * FROM pipeline_runs")}
-    meta = {r["sample"]: dict(r) for r in con.execute("SELECT * FROM run_metadata")}
-    con.close()
+    runs = {r["sample"]: r for r in _db_rows(db)}
+    meta = {r["sample"]: r for r in _db_rows(db, "run_metadata")}
     return runs, meta
 
 
@@ -589,12 +582,10 @@ def test_main_without_a_version_records_unknown(tmp_path, monkeypatch):
 
 def test_main_refuses_a_count_from_old_mode_fimo_output(tmp_path, monkeypatch):
     # report.csv was written by the old parser from a chromosome-named scan.
-    import fimo_fixtures as ff
     runs, _ = _run_main(tmp_path, monkeypatch, tf_fimo_tsv=ff.FIMO_OLD_MODE_HITS)
     assert runs["TF_A"]["motif_peaks"] == "NA"
 
 
 def test_main_keeps_a_count_from_peak_named_fimo_output(tmp_path, monkeypatch):
-    import fimo_fixtures as ff
     runs, _ = _run_main(tmp_path, monkeypatch, tf_fimo_tsv=ff.FIMO_PEAKS_THREE_HITS)
     assert runs["TF_A"]["motif_peaks"] == "2"

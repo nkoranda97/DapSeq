@@ -8,9 +8,10 @@ git) and passed to update_db as a rule param.
 import subprocess
 
 UNKNOWN = "unknown"
+_GIT_TIMEOUT_S = 10
 
 
-def pipeline_version(repo_dir, timeout=10):
+def pipeline_version(repo_dir):
     """`git describe --always --dirty` for the checkout at repo_dir, else "unknown".
 
     safe.directory=* lets lab members run from a shared checkout they do not
@@ -20,7 +21,7 @@ def pipeline_version(repo_dir, timeout=10):
         result = subprocess.run(
             ["git", "-c", "safe.directory=*", "-C", str(repo_dir),
              "describe", "--always", "--dirty"],
-            capture_output=True, text=True, timeout=timeout,
+            capture_output=True, text=True, timeout=_GIT_TIMEOUT_S,
         )
     except (OSError, subprocess.SubprocessError):
         return UNKNOWN
