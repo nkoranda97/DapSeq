@@ -20,7 +20,7 @@ pixi shell --frozen # activates the environment
 snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
 ```
 
-Set `slurm_partition` and `slurm_account` in the slurm profile
+Set your partition and account under `default-resources` in `profiles/slurm/config.yaml` (`slurm_partition`, `slurm_account`). They are not experiment-config keys.
 
 ### Local workstation
 
@@ -36,7 +36,7 @@ Then run using the local profile (no SLURM, 4 parallel jobs by default):
 pixi run snakemake --profile profiles/local --configfile /path/to/your/config.yaml
 ```
 
-`slurm_partition` and `slurm_account` can be omitted or left as `null` in your config when using the local profile. Override parallelism with `--jobs N`.
+Override parallelism with `--jobs N`.
 
 ### Shared installation (multi-user)
 
@@ -76,8 +76,6 @@ genome_ref: /path/to/genome.fa
 genome_size: "3000000000"    # whole bp; scientific notation like "2.7e9" also accepted
 gene_annotation: /path/to/annotation.gtf  # null to skip HOMER annotation
 
-slurm_partition: "caslake"
-slurm_account: "pi-yourlab"
 ```
 
 #### Running multiple experiments in one run
@@ -120,9 +118,10 @@ one `merged_control`) is no longer supported.
 | `bamcoverage.max_fragment_length` | `600` | Max fragment length for PE read/pair inclusion (program default: `0`, no limit) |
 | `bamcoverage.ignore_duplicates` | `true` | Count duplicate reads only once (program default: `f`) |
 | `chrom_filter` | `[]` | Chromosomes excluded from peaks before MEME (e.g. `[chrEBV]`) |
-| `complexity_filter.enabled` | `false` | Drop low-complexity peak FASTA sequences before MEME |
-| `complexity_filter.min_entropy` | `3.0` | Minimum 3-mer Shannon entropy in bits when `complexity_filter.enabled: true`; lower is more permissive, max possible is `6.0` |
-| `macs3.min_foldch` | `2.0` | Peak fold-change filter |
+| `blacklist_filter.enabled` / `.bed` | `false` / `null` | Drop peaks overlapping a blacklist BED before MEME. The hg38 ENCODE blacklist ships as `blacklist/hg38-blacklist.v2.bed.gz` |
+| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt.gz` for your genome (not in the repo) |
+| `macs3.foldch_levels` | `[2, 5, 15]` | Three strictly increasing fold-change (narrowPeak column 7) thresholds; each writes `MACS/<sample>_peaks_fold<N>.narrowPeak` (N = 1, 2, 3) |
+| `macs3.meme_foldch_level` | `2` | Which fold level (1-3) feeds blacklist/rmsk filtering and MEME/FIMO. The final MEME input is `MACS/<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak` |
 | `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` to force one format. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
 | `meme.nmotifs` | `2` | Number of motifs to search for (program default: `1`) |
 | `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
@@ -132,10 +131,6 @@ one `merged_control`) is no longer supported.
 | `meme.summit_extend` | `50` | bp around the peak summit used for motif search in "summits" mode |
 | `meme.base_colors` | unset | Optional hex color overrides for sequence logos |
 | `fimo.thresh` | `1.0e-5` | p-value threshold for FIMO motif scanning |
-
-### Migration note
-
-The old `tandem_filter` block (`enabled`, `k`, `k_max`) has been renamed and replaced by `complexity_filter` (`enabled`, `min_entropy`). Existing user config files that still use `tandem_filter` must be updated; the old key is ignored and the filter will stay off.
 
 ### Extra arguments
 
@@ -333,7 +328,7 @@ macs3:
 - `broad-cutoff=0.1` — Cutoff for broad regions when broad is set. A p-value cutoff if pvalue is set, otherwise a q-value cutoff — type: `float` — program default: `0.1`
 - `scale-to=small` — When `large`, linearly scale the smaller dataset up to the larger dataset's depth; when `small` (default), scale the larger dataset down. Scaling up is more prone to false positives — type: `enum` — program default: `small`
 - `call-summits=f` — Reanalyze the signal shape within each peak to deconvolve overlapping subpeaks, useful for detecting adjacent binding events. Subpeaks share the parent peak's boundaries but get distinct summits/scores — type: `bool` — program default: `f`
-- `min_foldch=2.0` — Minimum fold-change (narrowPeak column 7) for a peak to be kept in `*_peaks_filt.narrowPeak`. This is a pipeline-level post-filter applied after callpeak, not a MACS3 option — type: `float` — program default: `2.0`
+- `foldch_levels=[2, 5, 15]` / `meme_foldch_level=2` — Pipeline-level post-filters applied after callpeak, not MACS3 options; see Notable options. The removed `min_foldch` key now fails at startup — type: `list[float]` / `int` — program default: n/a
 
 ---
 
@@ -385,5 +380,3 @@ macs3:
 - `cons=` — (May be repeated.) Seed a starting point from this consensus sequence instead of sampling, suppressing sampling for that many motifs. Pad short DNA/RNA consensus sequences with `N`s to width 6 — type: `string` — program default: unset
 - `maxpeaks=100` — Maximum number of peaks written to the input FASTA, keeping those with the highest fold-change. This is a pipeline-level option for `narrow_peak_to_fasta.py`, not a MEME option — type: `int` — program default: `100`
 - `summit_extend=50` — Number of bp on each side of the peak summit to include in the input FASTA for the "summits" mode (use `all` to use the full peak instead). This is a pipeline-level option for `narrow_peak_to_fasta.py`, not a MEME option — type: `int`|`enum` — program default: `50`
-- `complexity_filter.enabled=false` — Enable low-complexity filtering of peak FASTA sequences before MEME. This is a pipeline-level option for `narrow_peak_to_fasta.py`, not a MEME option — type: `bool` — program default: `false`
-- `complexity_filter.min_entropy=3.0` — Minimum 3-mer Shannon entropy in bits for retained peak FASTA sequences when `complexity_filter.enabled` is true. Lower values keep more repetitive sequence; higher values are more aggressive. Max possible is `6.0`; calibrate against your own data — type: `float` — program default: `3.0`

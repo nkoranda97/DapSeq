@@ -39,7 +39,20 @@ if _unexpected_keys:
             " 'experiment_date' and 'gdna_batch' are now set per-sample under"
             " samples: <name>: (alongside r1/r2), not as top-level keys."
         )
+    if "complexity_filter" in _unexpected_keys or "tandem_filter" in _unexpected_keys:
+        _hint += (
+            " The sequence-complexity filter has been removed; use rmsk_filter"
+            " (RepeatMasker coordinates) to drop repeat peaks before MEME."
+        )
     raise ValueError(f"Unrecognized config key(s): {sorted(_unexpected_keys)}.{_hint}")
+
+# macs3 sub-keys are not covered by the top-level guard; catch the removed one
+# so it is not silently ignored.
+if "min_foldch" in (config.get("macs3") or {}):
+    raise ValueError(
+        "macs3.min_foldch has been removed. Use macs3.foldch_levels (three increasing"
+        " fold-change thresholds) and macs3.meme_foldch_level (1-3, which level feeds MEME)."
+    )
 
 
 def get_r1(sample):
