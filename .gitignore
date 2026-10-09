@@ -28,3 +28,5 @@ apptainer_build/dapseq_sandbox/
 bam_data/
 .compound-engineering/*.local.yaml
 blacklist/rmsk.txt.gz
+
+.context/compound-engineering/
