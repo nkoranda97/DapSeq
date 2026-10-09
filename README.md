@@ -17,7 +17,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 
 - **MACS3 read format per peak call.** BAMPE when a sample and its control are both paired-end, otherwise BAM; a paired-end sample with a single-end control gets a startup warning. `macs3.format` overrides every call when set.
 - **Multi-lane paired-end samples.** `r1` and `r2` can each be a list of lane files, paired by position; all lanes are trimmed. Mismatched lane counts stop the run.
-- **`genome_size`** accepts plain or scientific notation (`2700000000` or `"2.7e9"`) and must be set.
+- **`genome_size`** accepts plain or scientific notation (`2700000000` or `"2.7e9"`) and must be set. A value larger than the reference genome logs a startup warning.
 - **Filtered-peak stats describe the MEME input.** `reads_in_peaks_filt`, `frip_filt`, `max_peak_score`, HOMER annotation and the database's filtered-peak path now use the final set fed to MEME/FIMO (after blacklist/rmsk when enabled). `num_peaks_filt` is still the fold-change count.
 - **HOMER runs by default** when `gene_annotation` is set.
 - **Factorbook reference logos** match more samples: set `tf:` per sample, or the sample name and then its part before the first `_` or `-` is tried (`CTCF_rep1` -> CTCF).
@@ -122,7 +122,7 @@ Runs the unit tests in `tests/`. They cover the Python scripts and the config lo
 
 ## Configuration
 
-Copy `config.yaml` from the repo root and fill in the required fields. Defaults for all tool parameters are in `config/config.yaml`.
+Copy `config.yaml` from the repo root and fill in the required fields. Defaults for all tool parameters are in `config/config.yaml`; add any other key to your config only to change its default.
 
 ### Required fields
 
@@ -143,10 +143,35 @@ samples:
 
 output_dir: /path/to/output/
 genome_ref: /path/to/genome.fa
-genome_size: "3000000000"    # whole bp; scientific notation like "2.7e9" also accepted
+genome_size: null            # required: effective genome size, see "Choosing genome_size"
 gene_annotation: /path/to/annotation.gtf  # null to skip HOMER annotation
 
 ```
+
+#### Choosing genome_size
+
+`genome_size` is the **effective genome size**: the part of the genome reads can map to, not the assembly length. MACS3 uses it as `-g`, its genome-wide background, and bamCoverage uses it for RPGC scaling. A wrong value skews peak calls and coverage tracks.
+
+MACS3's built-in values for common genomes come from deepTools' [effective genome size table](https://deeptools.readthedocs.io/en/develop/content/feature/effectiveGenomeSize.html):
+
+| Genome | `genome_size` |
+|---|---|
+| Human (GRCh38) | `2913022398` |
+| Mouse (GRCm38) | `2652783500` |
+| *C. elegans* | `100286401` |
+| *D. melanogaster* | `142573017` |
+
+For any other genome, including Arabidopsis, count the non-N bases of your reference FASTA, as that deepTools page describes; it also gives a stricter k-mer method for reads filtered to unique alignments.
+
+The value can never be larger than the reference itself. When it is, the run logs a startup warning naming both numbers and continues. The check compares against the full reference length, Ns included, so a value between the non-N count and the full length is not flagged.
+
+**Checking past runs.** The results database records each run's `genome_ref` and `genome_size`. To find runs that may have used a wrong size, for example the old template's human `3000000000` on another genome, list them and compare each with its reference:
+
+```bash
+sqlite3 pipeline_db.db "SELECT DISTINCT output_dir, genome_ref, genome_size FROM pipeline_runs ORDER BY genome_ref"
+```
+
+Re-run any project whose size does not fit its reference.
 
 #### Running multiple experiments in one run
 
@@ -363,7 +388,7 @@ macs3:
 - `blackListFileName=` — A BED or GTF file of regions to exclude from all analyses, by rejecting genomic chunks that overlap an entry. Adjust effectiveGenomeSize accordingly if used — type: `string` — program default: unset
 - `numberOfProcessors=1` — Number of processors to use. Can be `max` or `max/2` — type: `int`|`string` — program default: `1`
 - `verbose=f` — Show processing messages — type: `bool` — program default: `f`
-- `effectiveGenomeSize=` — The portion of the genome that is mappable, excluding large stretches of Ns and adjusting for excluded repetitive regions. See deepTools' effectiveGenomeSize table for values — type: `int` — program default: unset
+- `effectiveGenomeSize=` — The portion of the genome that is mappable, excluding large stretches of Ns and adjusting for excluded repetitive regions. Set through `genome_size`; see [Choosing genome_size](#choosing-genome_size) — type: `int` — program default: unset
 - `normalizeUsing=RPGC` — Normalization method for reads per bin: RPKM, CPM, BPM, RPGC, or None. RPGC requires effectiveGenomeSize. Each read is considered independently; use samFlagInclude/samFlagExclude to count only one mate of a pair — type: `enum` — program default: `None`
 - `exactScaling=f` — Process all reads to compute exact scaling factors instead of sampling. More accurate but significantly slower — type: `bool` — program default: `f`
 - `ignoreForNormalization=` — Space-delimited list of chromosome names to exclude when computing normalization, e.g. for samples with unequal coverage across chromosomes — type: `string` — program default: unset
@@ -382,7 +407,7 @@ macs3:
 
 ### [MACS3 callpeak](https://macs3-project.github.io/MACS/docs/callpeak.html)
 
-- `gsize=hs` — Mappable/effective genome size (smaller than the raw genome size due to repeats). Precompiled shortcuts: `hs` (~2.9e9, human), `mm` (~2.65e9, mouse), `ce` (~1e8, C. elegans), `dm` (~1.4e8, fly). Check deepTools for other assemblies, or estimate by removing Ns and simple repeats from the genome — type: `string`|`int` — program default: `hs`
+- `gsize=hs` — Mappable/effective genome size (smaller than the raw genome size due to repeats). Precompiled shortcuts: `hs` (~2.9e9, human), `mm` (~2.65e9, mouse), `ce` (~1e8, C. elegans), `dm` (~1.4e8, fly). Set through `genome_size`; see [Choosing genome_size](#choosing-genome_size) for other assemblies — type: `string`|`int` — program default: `hs`
 - `tsize=` — Sequencing tag size. If unset, MACS3 determines it from the first 10 reads of the treatment file — type: `int` — program default: unset (auto-detected)
 - `qvalue=0.05` — q-value (FDR) cutoff for significant regions, computed via Benjamini-Hochberg. Try `0.01` for broad marks — type: `float` — program default: `0.05`
 - `pvalue=` — p-value cutoff. If set, overrides qvalue — type: `float` — program default: unset

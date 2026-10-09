@@ -4,7 +4,7 @@ import sys
 sys.path.insert(0, os.path.join(workflow.basedir, "scripts"))
 from layout_utils import (
     as_list, fallback_pairs, lane_count_errors, macs3_format as _resolve_macs3_format,
-    parse_genome_size,
+    oversized_genome_size_warning, parse_genome_size, reference_length,
 )
 from sample_names import control_name_collisions, invalid_sample_names, sample_regex
 from pipeline_version import pipeline_version
