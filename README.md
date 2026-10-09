@@ -45,10 +45,43 @@ The pipeline can be installed once on a shared filesystem and used by multiple u
 1. Copies `config.yaml` from the repo root to their own location and fills in their samples, paths, and parameters.
 2. Runs from the shared repo root, passing their own config with `--configfile`:
 
+```sh
+snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
+```
 
-Concurrent runs are safe as long as each user sets `output_dir` to a unique location. Snakemake's locks are keyed per output directory, so simultaneous runs do not interfere with each other.
+Concurrent runs are safe as long as each user sets `output_dir` to a unique location. Snakemake keeps its lock files in `.snakemake/` in the repo root and only refuses a run whose output files overlap another run's, so separate output directories do not block each other. `.snakemake/` must be writable by every user.
+
+Genome indexes are written next to `genome_ref`. When several users share a genome that has not been indexed yet, let one run build the index first; otherwise both runs try to write it, and the second is refused by the lock. Each user also needs write access to that directory for the first build.
 
 The shared database (`pipeline_db.db` in the repo root) accumulates results from all users' runs. Set `db_path` in your config to redirect to a private database if needed.
+
+## Outputs
+
+Everything lands under `output_dir`:
+
+| Path | Contents |
+|---|---|
+| `config_used.yaml` | Snapshot of the merged configuration for this run |
+| `trimmed/` | Adapter/quality-trimmed FASTQs |
+| `bam/`, `bigWig/` | Filtered, sorted alignments and coverage tracks |
+| `MACS/` | `<sample>_peaks.narrowPeak` and summits from MACS3; `<sample>_peaks_fold<N>.narrowPeak` per fold level; `<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak`, the final set fed to MEME/FIMO; `<control>_control_peaks.narrowPeak`, the QC self-call for each control |
+| `fasta/` | Peak and summit sequences used for motif discovery |
+| `meme/<sample>/{summits,peaks}/`, `fimo/<sample>/{summits,peaks}/` | MEME motifs with logos, and FIMO scans |
+| `factorbook/` | Matching Factorbook (ENCODE) motif logos |
+| `annotations/` | HOMER peak annotations, when `gene_annotation` is set |
+| `stats/` | Per-sample stats, `report.csv`, and the self-contained `report.html` |
+| `Fastqc/`, `multiqc_report.html` | Read QC |
+| `logs/` | One log per rule and sample |
+
+Each run also writes one row per sample to the shared results database (`pipeline_db.db` in the repo root, or `db_path`).
+
+## Tests
+
+```sh
+pixi run test
+```
+
+Runs the unit tests in `tests/`. They cover the Python scripts and the config logic in `workflow/scripts/`; they do not run the pipeline.
 
 ## Configuration
 

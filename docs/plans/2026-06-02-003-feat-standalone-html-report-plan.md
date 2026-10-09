@@ -1,7 +1,7 @@
 ---
 title: "feat: Standalone HTML report generation"
 date: 2026-06-02
-status: active
+status: completed
 type: feat
 ---
 

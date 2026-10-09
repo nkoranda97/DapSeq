@@ -1,7 +1,7 @@
 ---
 title: "refactor: Rewrite README to reflect current pipeline state"
 date: 2026-06-05
-status: active
+status: completed
 type: refactor
 ---
 
