@@ -96,7 +96,6 @@ bowtie2:
 
 samtools:
   mapq: 30
-  extra_merge: ""
 
 bamcoverage:
   normalize_using: RPGC
@@ -214,9 +213,6 @@ resources:
     runtime: 120
   report:
     mem_mb: 8000
-    runtime: 120
-  merge_control:
-    mem_mb: 32000
     runtime: 120
   homer_annotate:
     mem_mb: 32000
