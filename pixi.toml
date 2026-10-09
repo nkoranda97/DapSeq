@@ -5,6 +5,7 @@ platforms = ["linux-64"]
 version = "0.1.0"
 
 [tasks]
+test = "python -m pytest"
 
 [dependencies]
 snakemake = ">=9.19.0,<10"
