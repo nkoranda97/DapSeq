@@ -61,8 +61,8 @@ author: "Your Name"  # optional
 
 samples:
   sample_name:
-    r1: /path/to/sample.R1.fastq.gz
-    r2: /path/to/sample.R2.fastq.gz  # null for single-end
+    r1: /path/to/sample.R1.fastq.gz  # or a list of lane files
+    r2: /path/to/sample.R2.fastq.gz  # null for single-end; lanes pair with r1 by position
     control: input_DNA               # name of another sample; null for no background
     experiment_date: "2026-07-14"    # optional, per-sample (free-form)
     gdna_batch: "batch-07"           # optional, per-sample (free-form)
@@ -73,7 +73,7 @@ samples:
 
 output_dir: /path/to/output/
 genome_ref: /path/to/genome.fa
-genome_size: "3000000000"
+genome_size: "3000000000"    # whole bp; scientific notation like "2.7e9" also accepted
 gene_annotation: /path/to/annotation.gtf  # null to skip HOMER annotation
 
 slurm_partition: "caslake"
@@ -123,7 +123,7 @@ one `merged_control`) is no longer supported.
 | `complexity_filter.enabled` | `false` | Drop low-complexity peak FASTA sequences before MEME |
 | `complexity_filter.min_entropy` | `3.0` | Minimum 3-mer Shannon entropy in bits when `complexity_filter.enabled: true`; lower is more permissive, max possible is `6.0` |
 | `macs3.min_foldch` | `2.0` | Peak fold-change filter |
-| `macs3.format` | `BAMPE` | Set to `BAM` for single-end data |
+| `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` to force one format. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
 | `meme.nmotifs` | `2` | Number of motifs to search for (program default: `1`) |
 | `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
 | `meme.mod` | `anr` | Motif site distribution model (program default: `zoops`) |

@@ -4,6 +4,7 @@
 # against itself and shown as a flagged report row. Different controls on
 # different samples run several experiments in one invocation.
 # experiment_date / gdna_batch are optional per-sample provenance (free-form).
+# r1/r2 take one path or a list of lane files; PE lanes pair by position.
 samples:
   TF1:
     r1: null
@@ -28,6 +29,8 @@ output_dir: null
 
 # genome
 genome_ref: null
+# Whole number of bp; plain or scientific notation (e.g. 2700000000 or "2.7e9").
+# Required.
 genome_size: null
 gene_annotation: null
 aligner: bowtie2    # bowtie2 | bwa_mem2
@@ -79,7 +82,9 @@ bamcompare:
   extra: ""
 
 macs3:
-  format: BAMPE
+  # null = choose per peak call: BAMPE when the sample and its control are both
+  # paired-end, otherwise BAM. Set BAM or BAMPE to force one format for every call.
+  format: null
   foldch_levels: [2, 5, 15]   # three enrichment filter thresholds; must be strictly increasing
   meme_foldch_level: 2         # 1-based index into foldch_levels for MEME input (1=low, 2=mid, 3=high)
   keep_dup: 1

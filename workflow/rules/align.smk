@@ -18,7 +18,7 @@ if ALIGNER == "bowtie2":
             bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
             bw_extra        = config["bamcoverage"].get("extra", ""),
             bw_tempdir      = OUT + "/temp",
-            genome_size     = config["genome_size"],
+            genome_size     = GENOME_SIZE,
         threads:
             config["threads"]
         resources:
@@ -74,7 +74,7 @@ if ALIGNER == "bowtie2":
             bw_extend_reads = "--extendReads" if config["bamcoverage"].get("extend_reads", True) else "",
             bw_extra        = config["bamcoverage"].get("extra", ""),
             bw_tempdir      = OUT + "/temp",
-            genome_size     = config["genome_size"],
+            genome_size     = GENOME_SIZE,
         threads:
             config["threads"]
         resources:
@@ -129,7 +129,7 @@ elif ALIGNER == "bwa_mem2":
             bw_ignore_dups  = "--ignoreDuplicates" if config["bamcoverage"].get("ignore_duplicates", True) else "",
             bw_extra        = config["bamcoverage"].get("extra", ""),
             bw_tempdir      = OUT + "/temp",
-            genome_size     = config["genome_size"],
+            genome_size     = GENOME_SIZE,
         threads:
             config["threads"]
         resources:
@@ -184,7 +184,7 @@ elif ALIGNER == "bwa_mem2":
             bw_extend_reads = "--extendReads" if config["bamcoverage"].get("extend_reads", True) else "",
             bw_extra        = config["bamcoverage"].get("extra", ""),
             bw_tempdir      = OUT + "/temp",
-            genome_size     = config["genome_size"],
+            genome_size     = GENOME_SIZE,
         threads:
             config["threads"]
         resources:
