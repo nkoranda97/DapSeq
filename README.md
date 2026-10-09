@@ -23,6 +23,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **`motif_peaks` counts peaks.** It used to count the chromosomes with a FIMO hit, so every earlier value was wrong. It is `0` when FIMO ran and found no hits, and `NA` when FIMO did not run.
   - Values already in the results database were blanked to `NA`. Re-running a project restores them.
   - If `motif_peaks` still reads `NA` after a re-run, add `--forcerun fimo`. This is needed with `--rerun-triggers mtime`, or when Snakemake has no record of the project's earlier FIMO run.
+- **FIMO output names each hit by its peak.** In `fimo.tsv`, `fimo.gff` and `best_site.narrowPeak`, the sequence name is the peak (`chr:start-end`) and positions are within that peak. Output from earlier runs keeps genome coordinates.
 - **Results database.**
   - Each row records `pipeline_version`, the pipeline checkout's `git describe` (`unknown` when it can't be read). `motif_peaks` is blanked on rows without one.
   - Runs are keyed by the absolute `output_dir`, so `out`, `out/` and `./out` are the same run.

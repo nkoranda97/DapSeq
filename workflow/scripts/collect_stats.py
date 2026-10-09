@@ -172,16 +172,18 @@ def _narrowpeak_max_score(path):
 
 
 def fimo_names_peaks(path):
-    """True when a non-empty FIMO TSV was written with --no-pgc.
+    """True when a non-empty FIMO TSV was written with --no-pgc in effect.
 
     FIMO echoes its command line as a "# fimo ..." comment. Without --no-pgc
     it reads chr:start-end FASTA headers as genome coordinates and names each
     hit by chromosome only, so its sequence_name column cannot identify peaks.
+    Of --no-pgc and --parse-genomic-coord, FIMO honors whichever comes last.
     """
     with open(path) as fh:
         for line in fh:
             if line.startswith("# fimo "):
-                return "--no-pgc" in line.split()
+                flags = [t for t in line.split() if t in ("--no-pgc", "--parse-genomic-coord")]
+                return bool(flags) and flags[-1] == "--no-pgc"
     return False
 
 

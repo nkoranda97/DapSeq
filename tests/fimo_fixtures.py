@@ -71,3 +71,18 @@ FIMO_OLD_MODE_NO_HITS = (
     '# The format of this file is described at https://meme-suite.org/meme/doc/fimo-output-format.html#tsv_results.\n'
     '# fimo --parse-genomic-coord --thresh 1e-4 --oc old_nohit motifs.meme nohit.fa\n'
 )
+
+# --no-pgc overridden by a later --parse-genomic-coord: FIMO honors the last flag.
+FIMO_OVERRIDDEN_NO_PGC_HITS = (
+    'motif_id\tmotif_alt_id\tsequence_name\tstart\tstop\tstrand\tscore\tp-value\tq-value\tmatched_sequence\n'
+    'M1\tACGTACGT\tchr1\t111\t118\t+\t16\t1.47e-05\t0.000617\tACGTACGT\n'
+    'M1\tACGTACGT\tchr1\t111\t118\t-\t16\t1.47e-05\t0.000617\tACGTACGT\n'
+    'M1\tACGTACGT\tchr1\t521\t528\t+\t16\t1.47e-05\t0.000617\tACGTACGT\n'
+    'M1\tACGTACGT\tchr1\t521\t528\t-\t16\t1.47e-05\t0.000617\tACGTACGT\n'
+    'M1\tACGTACGT\tchr2\t1006\t1013\t+\t16\t1.47e-05\t0.000617\tACGTACGT\n'
+    'M1\tACGTACGT\tchr2\t1006\t1013\t-\t16\t1.47e-05\t0.000617\tACGTACGT\n'
+    '\n'
+    '# FIMO (Find Individual Motif Occurrences): Version 5.5.9 compiled on Nov 24 2025 at 04:06:59\n'
+    '# The format of this file is described at https://meme-suite.org/meme/doc/fimo-output-format.html#tsv_results.\n'
+    '# fimo --thresh 1e-4 --no-pgc --parse-genomic-coord --oc override_three motifs.meme three.fa\n'
+)

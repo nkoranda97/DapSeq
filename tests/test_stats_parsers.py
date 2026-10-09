@@ -64,6 +64,11 @@ def test_fimo_old_coordinate_mode_output_is_na(tmp_path):
     assert cs._fimo_motif_peaks(_write(tmp_path, "b.tsv", ff.FIMO_OLD_MODE_NO_HITS)) == "NA"
 
 
+def test_fimo_no_pgc_overridden_by_a_later_flag_is_na(tmp_path):
+    tsv = _write(tmp_path, "fimo.tsv", ff.FIMO_OVERRIDDEN_NO_PGC_HITS)
+    assert cs._fimo_motif_peaks(tsv) == "NA"
+
+
 def test_fimo_missing_or_empty_output_is_na(tmp_path):
     assert cs._fimo_motif_peaks(str(tmp_path / "missing.tsv")) == "NA"
     assert cs._fimo_motif_peaks(_write(tmp_path, "empty.tsv", "")) == "NA"
