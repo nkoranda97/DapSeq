@@ -11,10 +11,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **Turn on filtering explicitly if you rely on it.** `blacklist_filter` and `rmsk_filter` now default to off; set `enabled: true` and a path in your config.
 - **Remove options that no longer exist.** `macs3.min_foldch`, `complexity_filter`, `tandem_filter` and `slurm_partition`/`slurm_account` (in your experiment config) now stop the run with a message saying what replaced them. `samtools.extra_merge` is ignored and can be deleted.
 - **Rename samples whose names contain `.`, `/` or spaces**, or that are named `<control>_control`. They now stop the run at startup instead of failing later.
-- **Trim configs copied from the old template.** The template now holds only the per-run fields: `author`, `samples`, `output_dir`, `genome_ref`, `genome_size`, `gene_annotation` and `aligner`.
-  - Delete every other top-level key from your config, then add back only the settings you changed on purpose (see the options table). The old template's other values override `config/config.yaml`: `meme.maxpeaks: 500`, `threads: 16` and its own `resources:` block. Older copies also have `meme.summit_extend: 30` and `samtools.mapq: 10`.
-  - The default `resources` are tuned for the cluster. A large run that needed the old limits, such as the template's 480-minute `trim_align`, can keep just that rule under `resources:`.
-  - The old template set a human `genome_size` (`"3000000000"`). Set your genome's effective size instead (see [Choosing genome_size](#choosing-genome_size)).
+- **Expect an existing bowtie2 index to be rebuilt once.** The index rule changed (its log now keeps bowtie2-build's output), so the first run against an existing index rebuilds it next to the genome and re-runs the alignments that use it. Avoid two people starting that first run on the same genome at the same time. To keep the existing index, run with `--rerun-triggers mtime`; that also skips the other re-runs caused by rule changes, so add `--forcerun fimo` to restore `motif_peaks`.
 
 ### New behavior
 

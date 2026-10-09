@@ -24,7 +24,7 @@ if ALIGNER == "bowtie2":
             """
             set -euo pipefail
             bowtie2-build --threads {threads} {params.extra_build} {input} {input} 2>{log}
-            samtools faidx {input} 2>{log}
+            samtools faidx {input} 2>>{log}
             cut -f1,2 {input}.fai > {output.sizes}
             """
 
