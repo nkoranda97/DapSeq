@@ -579,3 +579,30 @@ def test_read_control_none(tmp_path):
 
 def test_read_control_missing_snapshot(tmp_path):
     assert rp.read_control(str(tmp_path)) == []
+
+
+def test_write_html_escapes_sample_names(tmp_path):
+    html = _write_flag_html(tmp_path, [{"sample": "<script>alert(1)</script>"}], [])
+    assert "<script>alert(1)</script>" not in html
+    assert "&lt;script&gt;alert(1)&lt;/script&gt;" in html
+
+
+def test_logo_to_base64_returns_none_for_missing_or_empty_png(tmp_path):
+    empty = tmp_path / "empty.png"
+    empty.write_bytes(b"")
+    assert rp.logo_to_base64(str(tmp_path / "missing.png")) is None
+    assert rp.logo_to_base64(str(empty)) is None
+
+
+def test_logo_to_base64_crops_white_border(tmp_path):
+    import base64
+    import io
+    from PIL import Image
+
+    img = Image.new("RGB", (100, 100), (255, 255, 255))
+    img.paste((0, 0, 0), (40, 40, 60, 60))   # 20x20 black square in a white field
+    path = tmp_path / "logo.png"
+    img.save(path)
+
+    out = Image.open(io.BytesIO(base64.b64decode(rp.logo_to_base64(str(path)))))
+    assert out.size == (32, 32)              # 20 px square plus 6 px padding per side
