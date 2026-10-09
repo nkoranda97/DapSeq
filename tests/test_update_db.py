@@ -403,3 +403,71 @@ def test_relative_raw_spelling_is_never_a_legacy_alias():
 
 def test_canonical_spelling_has_no_aliases():
     assert m.legacy_output_dir_keys("/abs/out", "/abs/out") == []
+
+
+# ── main(): rows built from report.csv and the run config ────────────────────
+
+def _run_main(tmp_path, monkeypatch, output_dir="out/", suffix="_bl"):
+    from types import SimpleNamespace
+    import report as rp
+
+    monkeypatch.chdir(tmp_path)
+    report = tmp_path / "report.csv"
+    cols = rp.make_cols()
+    with open(report, "w", newline="") as fh:
+        fh.write(",".join(cols) + "\n")
+        for sample, peaks in (("TF_A", "120"), ("input_A", "3")):
+            row = {c: "NA" for c in cols}
+            row.update(sample=sample, num_peaks=peaks, frip="12.5", num_peaks_bl="100")
+            fh.write(",".join(row[c] for c in cols) + "\n")
+
+    db = tmp_path / "pipeline.db"
+    params = SimpleNamespace(
+        db_path=str(db), output_dir=output_dir, author="nick", gene_annotation="",
+        samples_cfg={
+            "TF_A":    {"r1": ["L1_R1.fq.gz", "L2_R1.fq.gz"], "r2": "R2.fq.gz", "control": "input_A",
+                        "experiment_date": "2026-10-01"},
+            "input_A": {"r1": "in_R1.fq.gz", "r2": None, "control": None},
+            "unused":  {"r1": None},
+        },
+        treatment_samples=["TF_A"], genome_ref="/ref/g.fa", genome_size=2700000000,
+        threads=8, mapq=30, max_frags=None, macs3_format="auto",
+        macs3_foldch_levels=[2, 5, 15], macs3_meme_foldch_level=2,
+        meme_nmotifs=2, meme_minw=6, meme_maxw=32, meme_maxpeaks=100, fimo_thresh=1e-5,
+        peaks_filter_suffix=suffix,
+    )
+    flag = tmp_path / "db_updated.flag"
+    monkeypatch.setattr(m, "snakemake", SimpleNamespace(
+        params=params, input=SimpleNamespace(report=str(report)),
+        output=SimpleNamespace(flag=str(flag))), raising=False)
+    m.main()
+    assert flag.exists()
+    con = sqlite3.connect(db)
+    con.row_factory = sqlite3.Row
+    runs = {r["sample"]: dict(r) for r in con.execute("SELECT * FROM pipeline_runs")}
+    meta = {r["sample"]: dict(r) for r in con.execute("SELECT * FROM run_metadata")}
+    con.close()
+    return runs, meta
+
+
+def test_main_writes_one_row_per_sample_with_r1(tmp_path, monkeypatch):
+    runs, meta = _run_main(tmp_path, monkeypatch)
+    assert set(runs) == set(meta) == {"TF_A", "input_A"}
+
+
+def test_main_records_treatment_control_and_stats(tmp_path, monkeypatch):
+    runs, meta = _run_main(tmp_path, monkeypatch)
+    assert runs["TF_A"]["is_treatment"] == "1" and runs["TF_A"]["control"] == "input_A"
+    assert runs["input_A"]["is_treatment"] == "0" and runs["input_A"]["control"] == ""
+    assert runs["TF_A"]["num_peaks"] == "120" and runs["TF_A"]["frip"] == "12.5"
+    assert runs["TF_A"]["num_peaks_bl"] == "100"
+    assert runs["TF_A"]["r1"] == "L1_R1.fq.gz"          # first lane only (see run_metadata)
+    assert meta["TF_A"]["experiment_date"] == "2026-10-01"
+
+
+def test_main_keys_rows_by_absolute_output_dir_and_final_peak_file(tmp_path, monkeypatch):
+    runs, meta = _run_main(tmp_path, monkeypatch, output_dir="out/", suffix="_bl")
+    out = str(tmp_path / "out")
+    assert runs["TF_A"]["output_dir"] == out
+    assert meta["TF_A"]["peaks_filt_narrowpeak"] == f"{out}/MACS/TF_A_peaks_fold2_bl.narrowPeak"
+    assert meta["TF_A"]["bam"] == f"{out}/bam/TF_A.bam"
