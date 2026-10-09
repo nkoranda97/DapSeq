@@ -46,7 +46,6 @@ COLS = [
     "total_reads",
     "trimmed_reads",
     "mapped_reads",
-    "alignment_rate",
     "reads_in_peaks",
     "reads_in_peaks_filt",
     "max_peak_score",
@@ -56,6 +55,10 @@ COLS = [
     "median_frag_size",
     "num_peaks",
     "num_peaks_filt",
+    "num_peaks_bl",
+    "num_peaks_rmsk",
+    "frip",
+    "frip_filt",
 ]
 
 META_COLS = [
@@ -218,6 +221,13 @@ def _build_meta_paths(output_dir, sample):
     return paths
 
 
+def meme_peaks_path(output_dir, sample, meme_fold_idx, filter_suffix):
+    """Path of the peak file MEME/FIMO consume: the selected fold level plus
+    any enabled blacklist/rmsk filters (filter_suffix, e.g. "_bl_rmsk")."""
+    o = output_dir.rstrip("/")
+    return f"{o}/MACS/{sample}_peaks_fold{meme_fold_idx}{filter_suffix}.narrowPeak"
+
+
 def main():
     sm = snakemake  # noqa: F821 — injected by Snakemake
 
@@ -271,7 +281,6 @@ def main():
         row["total_reads"]   = stats.get("total_reads", "NA")
         row["trimmed_reads"] = stats.get("trimmed_reads", "NA")
         row["mapped_reads"]  = stats.get("mapped_reads", "NA")
-        row["alignment_rate"]       = stats.get("alignment_rate", "NA")
         row["reads_in_peaks"]       = stats.get("reads_in_peaks", "NA")
         row["reads_in_peaks_filt"]  = stats.get("reads_in_peaks_filt", "NA")
         row["max_peak_score"]       = stats.get("max_peak_score", "NA")
@@ -281,13 +290,14 @@ def main():
         row["median_frag_size"]     = stats.get("median_frag_size", "NA")
         row["num_peaks"]            = stats.get("num_peaks", "NA")
         row["num_peaks_filt"]       = stats.get("num_peaks_filt", "NA")
+        for col in ("num_peaks_bl", "num_peaks_rmsk", "frip", "frip_filt"):
+            row[col] = stats.get(col, "NA")
 
         new_rows.append(tuple(row.get(c, "") for c in COLS))
 
         generated = _build_meta_paths(output_dir, sample)
-        o = output_dir.rstrip("/")
-        generated["peaks_filt_narrowpeak"] = (
-            f"{o}/MACS/{sample}_peaks_fold{meme_fold_idx}.narrowPeak"
+        generated["peaks_filt_narrowpeak"] = meme_peaks_path(
+            output_dir, sample, meme_fold_idx, sm.params.peaks_filter_suffix
         )
         meta = {
             "output_dir":      output_dir,

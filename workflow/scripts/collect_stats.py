@@ -249,10 +249,12 @@ def main():
         row["median_frag_size"] = _bampe_median_frag(sm.input.bam)
 
     # --- Peak / FRiP / motif stats (all report samples have peaks) ---
-    # The "filtered" set reported (_filt) is the fold level MEME/FIMO actually
-    # consume, selected via meme_foldch_level. The pipeline still produces all
-    # three fold peak files; only this one is surfaced.
-    meme_peak_file = select_meme_peak_file(sm.input, sm.params.meme_foldch_level)
+    # num_peaks_filt counts the fold level selected by meme_foldch_level;
+    # num_peaks_bl / num_peaks_rmsk count what survives each later filter.
+    # reads_in_peaks_filt and max_peak_score describe meme_peaks, the exact
+    # file MEME/FIMO consume (fold + blacklist + rmsk when enabled).
+    fold_peak_file = select_meme_peak_file(sm.input, sm.params.meme_foldch_level)
+    meme_peak_file = sm.input.meme_peaks
 
     row["reads_in_peaks"] = _bedtools_intersect_count(
         sm.input.bam, sm.input.peaks
@@ -261,7 +263,7 @@ def main():
         sm.input.bam, meme_peak_file
     )
     row["num_peaks"]      = _count_lines(sm.input.peaks)
-    row["num_peaks_filt"] = _count_lines(meme_peak_file)
+    row["num_peaks_filt"] = _count_lines(fold_peak_file)
     if sm.params.blacklist_enabled and sm.input.peaks_bl:
         row["num_peaks_bl"] = _count_lines(sm.input.peaks_bl[0])
     if sm.params.rmsk_enabled and sm.input.peaks_rmsk:

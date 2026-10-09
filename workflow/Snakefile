@@ -50,3 +50,4 @@ rule all:
         rules.motifs_done.input,
         rules.qc_done.input,
         rules.update_db.output.flag,
+        rules.annotate_done.input if config.get("gene_annotation") else [],

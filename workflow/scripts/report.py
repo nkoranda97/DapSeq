@@ -198,10 +198,12 @@ def _report_header_html(filter_foldch=None):
     if filter_foldch is None:
         return ""
     return (
-        f"<p><strong>Filtered peaks</strong> "
-        f"(<code>num_peaks_filt</code>, <code>reads_in_peaks_filt</code>, "
-        f"<code>frip_filt</code>) use fold-change&nbsp;&ge;&nbsp;"
-        f"{filter_foldch}&times; — the peak set fed to MEME/FIMO.</p>"
+        f"<p><strong>Filtered peaks:</strong> <code>num_peaks_filt</code> counts "
+        f"peaks with fold-change&nbsp;&ge;&nbsp;{filter_foldch}&times;; "
+        f"<code>num_peaks_bl</code> / <code>num_peaks_rmsk</code> count those left "
+        f"after the blacklist / repeat filters, when enabled. "
+        f"<code>reads_in_peaks_filt</code>, <code>frip_filt</code> and "
+        f"<code>max_peak_score</code> use the final set fed to MEME/FIMO.</p>"
     )
 
 
