@@ -40,6 +40,13 @@ def test_report_header_says_which_columns_use_the_meme_set():
     assert "final set fed to MEME/FIMO" in header
 
 
+def test_report_header_defines_motif_peaks_and_summit_counts():
+    for header in (rp._report_header_html(filter_foldch=5), rp._report_header_html()):
+        assert "<code>motif_peaks</code> counts" in header
+        assert "meme.maxpeaks" in header
+        assert "count MACS3 summits" in header and "one peak region can have several" in header
+
+
 def test_ensure_columns_tolerates_a_column_added_concurrently(tmp_path):
     """Two runs finishing together against an older DB both see a column
     missing; the second ALTER must not crash the run."""
