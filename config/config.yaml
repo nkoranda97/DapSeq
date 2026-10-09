@@ -4,6 +4,8 @@
 # against itself and shown as a flagged report row. Different controls on
 # different samples run several experiments in one invocation.
 # experiment_date / gdna_batch are optional per-sample provenance (free-form).
+# tf (optional) is the TF name used to find a Factorbook motif; without it the
+# sample name, then its part before the first _ or -, is tried.
 # r1/r2 take one path or a list of lane files; PE lanes pair by position.
 # Samples come only from your --configfile. No placeholder samples live here:
 # Snakemake merges configs key by key, so a default sample would leak its

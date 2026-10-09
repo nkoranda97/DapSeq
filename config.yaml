@@ -19,6 +19,10 @@ author: "Your Name"
 # flagged row in the report. Assign different controls to different samples to
 # run several experiments in one pipeline invocation.
 #
+# tf is optional: the TF name used to look up a reference motif in Factorbook
+# (ENCODE human ChIP-seq). Without it, the sample name is tried, then its part
+# before the first _ or - (CTCF_rep1 -> CTCF). Unmatched samples get no logo.
+#
 # experiment_date / gdna_batch are optional per-sample provenance. They appear
 # as columns in the HTML report and are stored per-sample in the results
 # database. Leave as null to omit.
