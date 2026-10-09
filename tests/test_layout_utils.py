@@ -109,3 +109,54 @@ def test_parse_genome_size_accepts_int_and_scientific(value, expected):
 def test_parse_genome_size_rejects_invalid(value):
     with pytest.raises(ValueError, match="genome_size"):
         m.parse_genome_size(value)
+
+
+# ── reference_length / oversized_genome_size_warning ─────────────────────────
+
+def _fasta(tmp_path, name="genome.fa"):
+    p = tmp_path / name
+    p.write_text(">chr1 desc\nACGTNNNN\nacgt\n>chr2\nAC\n")   # 8 + 4 + 2 letters
+    return p
+
+
+def test_reference_length_reads_the_fai_when_present(tmp_path):
+    fa = _fasta(tmp_path)
+    (tmp_path / "genome.fa.fai").write_text("chr1\t100000000\t6\t60\t61\nchr2\t35000000\t9\t60\t61\n")
+    assert m.reference_length(str(fa)) == 135_000_000
+
+
+def test_reference_length_counts_fasta_letters_without_an_index(tmp_path):
+    assert m.reference_length(str(_fasta(tmp_path))) == 14
+
+
+def test_reference_length_reads_a_gzipped_fasta(tmp_path):
+    import gzip
+    p = tmp_path / "genome.fa.gz"
+    with gzip.open(p, "wt") as fh:
+        fh.write(">chr1\nACGTNNNN\nacgt\n>chr2\nAC\n")
+    assert m.reference_length(str(p)) == 14
+
+
+def test_reference_length_is_none_for_unreadable_or_damaged_input(tmp_path):
+    assert m.reference_length(str(tmp_path / "missing.fa")) is None
+    fa = _fasta(tmp_path)
+    (tmp_path / "genome.fa.fai").write_text("chr1\t100\t6\t60\t61\nchr2\t")   # index still being written
+    assert m.reference_length(str(fa)) is None
+    truncated = tmp_path / "cut.fa.gz"
+    import gzip
+    with gzip.open(truncated, "wt") as fh:
+        fh.write(">chr1\n" + "ACGT" * 5000 + "\n")
+    truncated.write_bytes(truncated.read_bytes()[:-20])
+    assert m.reference_length(str(truncated)) is None
+
+
+def test_oversized_genome_size_warns_with_both_numbers():
+    msg = m.oversized_genome_size_warning(3_000_000_000, 135_000_000)
+    assert "3,000,000,000" in msg and "135,000,000" in msg and "Choosing genome_size" in msg
+
+
+@pytest.mark.parametrize("size, length", [(119_000_000, 135_000_000),
+                                          (135_000_000, 135_000_000),
+                                          (3_000_000_000, None)])
+def test_no_warning_when_size_fits_or_length_unknown(size, length):
+    assert m.oversized_genome_size_warning(size, length) is None

@@ -4,6 +4,8 @@ Imported by workflow/rules/common.smk. Kept free of Snakemake objects so the
 logic is unit-testable.
 """
 
+import gzip
+import os
 from decimal import Decimal, InvalidOperation
 
 
@@ -70,3 +72,43 @@ def parse_genome_size(value):
     if not size.is_finite() or size <= 0 or size != size.to_integral_value():
         raise ValueError(f"genome_size must be a positive whole number, got {value!r}")
     return int(size)
+
+
+def reference_length(fasta_path):
+    """Total sequence length of a reference FASTA, or None when it cannot be read.
+
+    Sums <fasta>.fai (samtools faidx) when it exists; otherwise counts the
+    FASTA's sequence letters, through gzip for a .gz path. Any read or parse
+    error gives None: the caller only warns, and an exception raised in
+    onstart would stop the run.
+    """
+    try:
+        fai = fasta_path + ".fai"
+        if os.path.exists(fai):
+            with open(fai) as fh:
+                return sum(int(line.split("\t")[1]) for line in fh if line.strip())
+        opener = gzip.open if fasta_path.endswith(".gz") else open
+        total = 0
+        with opener(fasta_path, "rt") as fh:
+            for line in fh:
+                if not line.startswith(">"):
+                    total += len(line.strip())
+        return total
+    except (OSError, ValueError, IndexError, EOFError):
+        return None
+
+
+def oversized_genome_size_warning(genome_size, reference_bp):
+    """Warning text when genome_size exceeds the reference length, else None.
+
+    The effective genome size can never be larger than the assembly, so such a
+    value is certainly wrong (e.g. a human size on a plant genome).
+    """
+    if reference_bp is None or genome_size <= reference_bp:
+        return None
+    return (
+        f"WARNING: genome_size {genome_size:,} is larger than the reference genome "
+        f"({reference_bp:,} bp). genome_size is the effective genome size and cannot "
+        "exceed the reference; MACS3 and bamCoverage still use the configured value. "
+        'See "Choosing genome_size" in the README.'
+    )

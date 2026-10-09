@@ -41,6 +41,13 @@ onstart:
             "instead of read pairs."
         )
 
+    # Warn, never stop: reading a whole FASTA happens only on a genome's
+    # first run, before its .fai exists.
+    _size_warning = oversized_genome_size_warning(
+        GENOME_SIZE, reference_length(config["genome_ref"]))
+    if _size_warning:
+        logger.warning(_size_warning)
+
 
 rule all:
     input:
