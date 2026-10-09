@@ -28,8 +28,8 @@ rule macs3:
         keep_dup    = _MACS3_KEEP_DUP,
         extra       = _MACS3_EXTRA,
         tmpdir      = OUT + "/temp",
-        macs3_format = config["macs3"]["format"],
-        genome_size  = config["genome_size"],
+        macs3_format = macs3_format,
+        genome_size  = GENOME_SIZE,
         # A no-enrichment control has too few paired peaks (<100) for MACS3 to
         # build its shifting model, so model building aborts (exit 1). Skip it
         # for control-against-itself; MACS3 then uses its defaults (extsize=200,
@@ -67,8 +67,8 @@ rule macs3_control:
         keep_dup    = _MACS3_KEEP_DUP,
         extra       = _MACS3_EXTRA,
         tmpdir      = OUT + "/temp",
-        macs3_format = config["macs3"]["format"],
-        genome_size  = config["genome_size"],
+        macs3_format = macs3_format,
+        genome_size  = GENOME_SIZE,
     resources:
         mem_mb          = config["resources"]["macs3"]["mem_mb"],
         runtime         = config["resources"]["macs3"]["runtime"],

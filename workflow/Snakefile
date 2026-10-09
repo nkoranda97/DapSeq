@@ -1,6 +1,7 @@
 import yaml
 from datetime import datetime
 from snakemake.utils import min_version
+from snakemake.logging import logger
 
 min_version("8.0")
 
@@ -32,6 +33,13 @@ onstart:
         _f.write(f"# Source config: {', '.join(_user_cfgs)}\n")
         _f.write("#\n")
         yaml.dump(dict(config), _f, default_flow_style=False, sort_keys=True)
+
+    for _t, _c in fallback_pairs(SAMPLE_CONTROL, PE_SAMPLES, MACS3_FORMAT_OVERRIDE):
+        logger.warning(
+            f"WARNING: paired-end sample '{_t}' has single-end control '{_c}'; "
+            f"MACS3 will call '{_t}' as BAM, estimating fragment size from its model "
+            "instead of read pairs."
+        )
 
 
 rule all:
