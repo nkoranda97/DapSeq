@@ -142,7 +142,8 @@ rule trim_pe:
           if [ $# -eq 1 ]; then echo "$1"; return; fi
           local n_gz=0 fq
           for fq in "$@"; do
-            if gzip -t "$fq" 2>/dev/null; then n_gz=$((n_gz + 1)); fi
+            # gzip magic bytes 1f 8b; avoids decompressing each lane just to detect it
+            if [ "$(head -c2 "$fq" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then n_gz=$((n_gz + 1)); fi
           done
           mkdir -p "$JOIN_DIR"
           if [ "$n_gz" -eq "$#" ]; then

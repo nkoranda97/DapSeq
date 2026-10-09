@@ -225,7 +225,7 @@ def is_pe(wc):
 def macs3_format(wc):
     """MACS3 -f value for the peak call of wc.sample (see layout_utils.macs3_format)."""
     return _resolve_macs3_format(
-        wc.sample, SAMPLE_CONTROL.get(wc.sample), PE_SAMPLES, set(CONTROL_SAMPLES),
+        wc.sample, SAMPLE_CONTROL.get(wc.sample), PE_SAMPLES, CONTROL_SAMPLES,
         MACS3_FORMAT_OVERRIDE,
     )
 

@@ -52,7 +52,7 @@ def fallback_pairs(sample_control, pe_samples, override):
         return []
     return [
         (t, c) for t, c in sorted(sample_control.items())
-        if t in pe_samples and c not in pe_samples
+        if t in pe_samples and macs3_format(t, c, pe_samples, (), None) == "BAM"
     ]
 
 
