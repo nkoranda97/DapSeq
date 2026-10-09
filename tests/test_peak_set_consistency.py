@@ -37,3 +37,26 @@ def test_report_header_says_which_columns_use_the_meme_set():
     header = rp._report_header_html(filter_foldch=5)
     assert "num_peaks_filt" in header and "5" in header
     assert "final set fed to MEME/FIMO" in header
+
+
+def test_ensure_columns_tolerates_a_column_added_concurrently(tmp_path):
+    """Two runs finishing together against an older DB both see a column
+    missing; the second ALTER must not crash the run."""
+    import sqlite3
+
+    db = tmp_path / "db.sqlite"
+    con = sqlite3.connect(db)
+    con.execute('CREATE TABLE pipeline_runs (id INTEGER PRIMARY KEY, "sample" TEXT)')
+
+    snapshot = con.execute("PRAGMA table_info(pipeline_runs)").fetchall()
+    con.execute('ALTER TABLE pipeline_runs ADD COLUMN "frip" TEXT')   # the other run wins
+
+    class StaleSchema:
+        """Connection whose schema read predates the other run's ALTER."""
+        def execute(self, sql, *args):
+            return snapshot if sql.startswith("PRAGMA table_info") else con.execute(sql, *args)
+
+    stale = StaleSchema()
+    m._ensure_columns(stale, "pipeline_runs", ["sample", "frip", "frip_filt"])
+    cols = {r[1] for r in con.execute("PRAGMA table_info(pipeline_runs)")}
+    assert {"frip", "frip_filt"} <= cols

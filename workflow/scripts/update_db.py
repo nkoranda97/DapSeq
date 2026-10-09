@@ -131,7 +131,12 @@ def _ensure_columns(con, table, cols):
     existing = {row[1] for row in con.execute(f"PRAGMA table_info({table})")}
     for col in cols:
         if col not in existing:
-            con.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+            try:
+                con.execute(f'ALTER TABLE "{table}" ADD COLUMN "{col}" TEXT')
+            except sqlite3.OperationalError as e:
+                # A concurrent run added it between our schema read and ALTER.
+                if "duplicate column name" not in str(e):
+                    raise
 
 
 def read_report(path):
