@@ -7,6 +7,8 @@ author: "Your Name"
 # rename sample_name to name sample will be identified as
 # Use full paths to the raw data for r1 and r2
 # If SE, leave r2 as null
+# r1/r2 may be a list of lane files, e.g. r1: [/path/L1_R1.fq.gz, /path/L2_R1.fq.gz];
+# PE lanes pair by position, so r1 and r2 need the same number of files.
 # add as many samples as you'd like
 #
 # control (optional, per-sample): name of another sample to use as this sample's
@@ -59,7 +61,8 @@ output_dir: null
 # full path to fasta file
 genome_ref: null
 
-# "1e5" notation also accepted
+# Whole number of bp; plain or scientific notation (e.g. 2700000000 or "2.7e9").
+# Required.
 genome_size: "3000000000"
 
 # Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
@@ -111,7 +114,9 @@ bamcompare:
   extra: ""
 
 macs3:
-  format: BAMPE
+  # null = choose per peak call: BAMPE when the sample and its control are both
+  # paired-end, otherwise BAM. Set BAM or BAMPE to force one format for every call.
+  format: null
   foldch_levels: [2, 5, 15]   # three enrichment filter thresholds; must be strictly increasing
   meme_foldch_level: 2         # 1-based index into foldch_levels for MEME input (1=low, 2=mid, 3=high)
   keep_dup: 1
