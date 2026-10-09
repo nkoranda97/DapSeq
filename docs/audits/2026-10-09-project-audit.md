@@ -1,6 +1,6 @@
 # Project audit — 2026-10-09
 
-**Status (2026-10-09):** all seven groups addressed. Group 1 in nkoranda97/DapSeq#4, group 2 in #5, group 6 in #6, group 3 in #7, groups 4–5 in #8, group 7 in the docs/repo-cleanup PR. Not done: tests for `run_factorbook_logo.py`, `render_meme_logo.py`, `render_report_html.py`, `update_db.main()` and the `collect_stats` log parsers; item 28 (Factorbook exact-name matching) and the low-priority robustness items in section F (unquoted paths, `temp()` trimmed FASTQs, logo rules borrowing MEME memory, regex-unescaped sample names).
+**Status (2026-10-09):** all seven groups and the follow-ups are merged: group 1 in nkoranda97/DapSeq#4, group 2 in #5, group 6 in #6, group 3 in #7, groups 4–5 in #8, group 7 in #9, item 28 (Factorbook TF lookup) in #10, section F name and resource items in #11, and the remaining script tests in #12. Still open by choice: shell paths are not quoted (a path containing a space breaks the commands), and trimmed FASTQs are kept rather than marked temporary.
 
 Read-only audit of the workflow rules, Python scripts, tests, config, docs, and environment.
 Findings were spot-checked against the code; items marked *(unverified)* depend on tool behaviour not tested here.
