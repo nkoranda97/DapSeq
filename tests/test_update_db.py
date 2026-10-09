@@ -388,3 +388,18 @@ def test_write_run_is_atomic_across_both_tables(tmp_path):
 
     # Neither table changed: the failed run left the previous run intact.
     assert _row_count(db) == 2 and _meta_row_count(db) == 2
+
+
+def test_absolute_raw_spelling_is_a_legacy_alias():
+    assert m.legacy_output_dir_keys("/abs/out/", "/abs/out") == ["/abs/out/"]
+
+
+def test_relative_raw_spelling_is_never_a_legacy_alias():
+    # Another project may have stored rows under the same relative name;
+    # deleting them on a guess would destroy that project's data.
+    assert m.legacy_output_dir_keys("results", "/home/a/proj/results") == []
+    assert m.legacy_output_dir_keys("results/", "/home/a/proj/results") == []
+
+
+def test_canonical_spelling_has_no_aliases():
+    assert m.legacy_output_dir_keys("/abs/out", "/abs/out") == []

@@ -172,6 +172,19 @@ def normalize_output_dir(path):
     return os.path.normpath(os.path.abspath(path))
 
 
+
+def legacy_output_dir_keys(raw_output_dir, canonical):
+    """Older spellings of this run's key to replace on write.
+
+    Only an absolute raw spelling (e.g. a trailing slash) identifies this run
+    for certain. A relative one such as "results" may belong to another
+    project's rows, so it is left alone (at worst a stale duplicate).
+    """
+    if not os.path.isabs(raw_output_dir):
+        return []
+    return sorted({raw_output_dir, raw_output_dir.rstrip("/")} - {canonical})
+
+
 def _connect(db_path):
     con = sqlite3.connect(str(db_path), timeout=60)
     con.execute("PRAGMA journal_mode=DELETE")
@@ -264,11 +277,11 @@ def main():
     sm = snakemake  # noqa: F821 — injected by Snakemake
 
     db_path          = sm.params.db_path
-    # Rows are keyed by the normalised path; also replace rows an older version
-    # stored under the raw config spelling, so a rerun leaves no duplicates.
+    # Rows are keyed by the normalised path. Rows an older version stored under
+    # an absolute raw spelling (e.g. trailing slash) are replaced too.
     raw_output_dir   = sm.params.output_dir
     output_dir       = normalize_output_dir(raw_output_dir)
-    legacy_keys      = sorted({raw_output_dir, raw_output_dir.rstrip("/")} - {output_dir})
+    legacy_keys      = legacy_output_dir_keys(raw_output_dir, output_dir)
     samples_cfg      = sm.params.samples_cfg
     treatment_set    = set(sm.params.treatment_samples)
     run_date         = datetime.now().isoformat(timespec="seconds")
