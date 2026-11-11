@@ -158,18 +158,26 @@ def read_report(path):
     return result
 
 
-def get_r1(sample_cfg):
-    r1 = sample_cfg.get("r1")
-    if r1 is None:
+# Multi-lane r1/r2 values are stored as one cell, lanes joined in config order.
+LANE_SEPARATOR = ";"
+
+
+def _lanes(sample_cfg, key):
+    """All lane paths of one mate as a single string, or None when unset."""
+    value = sample_cfg.get(key)
+    if value is None:
         return None
-    return r1[0] if isinstance(r1, list) else r1
+    if isinstance(value, (list, tuple)):
+        return LANE_SEPARATOR.join(str(p) for p in value) or None
+    return value
+
+
+def get_r1(sample_cfg):
+    return _lanes(sample_cfg, "r1")
 
 
 def get_r2(sample_cfg):
-    r2 = sample_cfg.get("r2")
-    if r2 is None:
-        return None
-    return r2[0] if isinstance(r2, list) else r2
+    return _lanes(sample_cfg, "r2")
 
 
 def normalize_output_dir(path):
