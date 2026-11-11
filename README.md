@@ -8,6 +8,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **A treatment MACS3 can't model now says why it stopped.** A weak treatment called as `BAM` (single-end, or paired-end with a single-end control) can have too few paired peaks for MACS3's fragment-size model. MACS3 exits 1 and the run stops, as before, but the log and the job output now explain the cause and the `--nomodel --extsize 200` workaround. `logs/macs3/<sample>.log` also keeps MACS3's warnings (`--verbose=1`).
 - **`bbduk.max_frags` subsampling works.** It needed `bc`, which the container doesn't have, so a run with `max_frags` set failed at trimming. The subsampling `reformat.sh` step is now capped at the same thread count as bbduk.
 - **A corrupt or truncated `.fastq.gz` stops trimming with gzip's own error.** Before, it was read as plain text and bbduk failed with a parse error. Detecting gzip also no longer decompresses each input file one extra time.
+- **`meme.base_colors` works.** Setting it used to make both MEME rules fail on an alphabet file MEME rejected. Colors must be quoted hex strings; anything else stops the run at startup with a message.
 
 ## What's changed (October 2026)
 
@@ -226,7 +227,7 @@ Each treatment is peak-called against its assigned control. Each control is peak
 | `meme.markov_order` | `0` | Background Markov model order built from input sequences; try `2` to suppress composition-driven repeats |
 | `meme.maxsize` | `10000000` | Largest MEME input accepted, in letters (`-maxsize`; program default: no limit). MEME searches every input sequence (`-searchsize 0`); the input is already capped by `meme.maxpeaks`, so raising `maxpeaks` makes MEME slower (roughly with the square of the input size) instead of sampling it |
 | `meme.summit_extend` | `50` | bp around the peak summit used for motif search in "summits" mode |
-| `meme.base_colors` | unset | Optional hex color overrides for sequence logos |
+| `meme.base_colors` | unset | Optional colors for MEME's output and the motif logos, as quoted six-digit hex per base, e.g. `base_colors: {A: "#00AA00", T: "AA0000"}`. Unquoted values stop the run at startup, because YAML reads `000000` as a number and `#00AA00` as a comment |
 | `fimo.thresh` | `1.0e-5` | p-value threshold for FIMO motif scanning |
 
 ### Extra arguments

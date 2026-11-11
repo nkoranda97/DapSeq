@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import logomaker
 
-_MEME_DEFAULT_COLORS = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
+from meme_colors import MEME_DEFAULT_COLORS as _MEME_DEFAULT_COLORS
 
 
 def _render_logo_with_logomaker(ppm, out_path, base_colors=None):
