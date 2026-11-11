@@ -65,7 +65,9 @@ rule meme_summits:
         has_custom = "1" if BASE_COLORS else "",
         alphabet   = _MEME_ALPHABET,
     threads:
-        config["threads"]
+        # The container's MEME is built without MPI, so it runs on one CPU
+        # whatever -p says; reserving more only idles the allocation.
+        1
     resources:
         mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = config["resources"]["meme"]["runtime"],
@@ -93,9 +95,12 @@ rule meme_summits:
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
-                -maxsize {params.maxsize} -searchsize 0 -p {threads} -nostatus {params.extra} \
+                -maxsize {params.maxsize} -searchsize 0 -nostatus {params.extra} \
                 2>{log}
-            rm -f "$MEME_IN"
+            # MEME writes its own logo1.png / logo_rc1.png here, the same names
+            # the meme_logo rules produce. Left in place after an interrupted
+            # run, they would pass for up-to-date logo-rule outputs.
+            rm -f "$MEME_IN" {params.outdir}/logo*.png
             fi
         fi
         """
@@ -136,7 +141,9 @@ rule meme_peaks:
         has_custom = "1" if BASE_COLORS else "",
         alphabet   = _MEME_ALPHABET,
     threads:
-        config["threads"]
+        # The container's MEME is built without MPI, so it runs on one CPU
+        # whatever -p says; reserving more only idles the allocation.
+        1
     resources:
         mem_mb          = config["resources"]["meme"]["mem_mb"],
         runtime         = config["resources"]["meme"]["runtime"],
@@ -164,9 +171,12 @@ rule meme_peaks:
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
-                -maxsize {params.maxsize} -searchsize 0 -p {threads} -nostatus {params.extra} \
+                -maxsize {params.maxsize} -searchsize 0 -nostatus {params.extra} \
                 2>{log}
-            rm -f "$MEME_IN"
+            # MEME writes its own logo1.png / logo_rc1.png here, the same names
+            # the meme_logo rules produce. Left in place after an interrupted
+            # run, they would pass for up-to-date logo-rule outputs.
+            rm -f "$MEME_IN" {params.outdir}/logo*.png
             fi
         fi
         """

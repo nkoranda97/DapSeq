@@ -22,6 +22,8 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **The results database records every lane.** `r1` and `r2` in both tables used to hold only the first lane of a multi-lane sample. They now hold all lanes in config order, joined with `;` (`/data/L1_R1.fq.gz;/data/L2_R1.fq.gz`). Single-lane samples still store a plain path. Rows from earlier runs keep their first-lane value until the project is re-run.
 - **A metadata value of `0` is kept.** `gdna_batch: 0` (or any other falsy `experiment_date` / `gdna_batch`) used to show as `NA` in the report and empty in the database.
 - **`homer_annotations` is empty when HOMER didn't run.** The database used to record an annotation path for every sample, even without `gene_annotation`, when no such file exists.
+- **MEME jobs reserve one CPU.** The container's MEME is built without MPI, so `-p` was ignored and each MEME job held `threads` CPUs (8 by default) while using one. Results are unchanged.
+- **An interrupted run can no longer leave MEME's own logo images in place of the pipeline's.** MEME writes `logo1.png` / `logo_rc1.png` into the same directory as the logo rules; the MEME rules now delete them, so the logo rules always draw the report's images.
 
 ## What's changed (October 2026)
 
