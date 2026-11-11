@@ -14,13 +14,17 @@ latency-wait: 60
 # Run every rule inside the container declared in the Snakefile
 use-apptainer: true
 
+# The binds, partition and account below are the lab's own values. Another
+# group must change these three settings.
+#
 # Bind your HPC project directories so data paths outside $HOME are visible in
 # the container. Give one --bind with comma-separated paths (no spaces), e.g.
 # "--bind /project/pi-yourlab,/scratch/yourlab".
 apptainer-args: "--bind /project/zhuzhuzhang,/project/gzy8899"
 
 # Default SLURM resources used when a rule does not specify its own.
-# Set slurm_partition and slurm_account to your cluster values before first use.
+# slurm_partition and slurm_account are the lab's; set your own if you are
+# not in the lab.
 default-resources:
   mem_mb: 8000
   runtime: 120          # minutes

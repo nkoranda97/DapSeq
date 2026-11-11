@@ -24,12 +24,13 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **`homer_annotations` is empty when HOMER didn't run.** The database used to record an annotation path for every sample, even without `gene_annotation`, when no such file exists.
 - **MEME jobs reserve one CPU.** The container's MEME is built without MPI, so `-p` was ignored and each MEME job held `threads` CPUs (8 by default) while using one. Results are unchanged.
 - **An interrupted run can no longer leave MEME's own logo images in place of the pipeline's.** MEME writes `logo1.png` / `logo_rc1.png` into the same directory as the logo rules; the MEME rules now delete them, so the logo rules always draw the report's images.
+- **The README explains how to get the container on the cluster**, how to rebuild it without breaking running jobs, and which three SLURM profile settings are the lab's own.
 
 ## What's changed (October 2026)
 
 ### Update your setup before the next run
 
-- **Rebuild the container.** The old image is missing logomaker, so motif logos fail. The build now installs exactly the versions in `apptainer_build/pixi.lock` (see [Local workstation](#local-workstation)).
+- **Rebuild the container.** The old image is missing logomaker, so motif logos fail. The build now installs exactly the versions in `apptainer_build/pixi.lock` (see [HPC](#hpc-slurm-cluster) for building on the cluster).
 - **Delete `macs3.format: BAMPE` from configs copied from the old template.** Left in, it still forces BAMPE for every peak call; removed, the format is chosen per call (below).
 - **Turn on filtering explicitly if you rely on it.** `blacklist_filter` and `rmsk_filter` now default to off; set `enabled: true` and a path in your config.
 - **Remove options that no longer exist.** `macs3.min_foldch`, `complexity_filter`, `tandem_filter` and `slurm_partition`/`slurm_account` (in your experiment config) now stop the run with a message saying what replaced them. `samtools.extra_merge` is ignored and can be deleted.
@@ -75,7 +76,18 @@ pixi shell --frozen # activates the environment
 snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
 ```
 
-Set your partition and account under `default-resources` in `profiles/slurm/config.yaml` (`slurm_partition`, `slurm_account`). They are not experiment-config keys.
+**The container image.** Every job runs inside `apptainer_build/dapseq.sif`, which is not in git. Build it once in the checkout you run from:
+
+```sh
+module load apptainer
+apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
+```
+
+Building needs root, `--fakeroot`, or an Apptainer set up for unprivileged builds; your cluster's documentation says which applies (some only allow builds on a dedicated node). If you can't build on the cluster, build on a workstation (see [Local workstation](#local-workstation)) and copy the file to `apptainer_build/dapseq.sif`.
+
+To rebuild in a shared checkout, build to a new name and rename it over the old file: `apptainer build apptainer_build/dapseq.sif.new apptainer_build/dapseq.def && mv apptainer_build/dapseq.sif.new apptainer_build/dapseq.sif`. The old image stays whole until the new one is complete, and jobs that already started keep the image they opened. Rebuild between runs: jobs that start after the rename use the new image, so a run spanning a rebuild would mix two images.
+
+**The profile holds the lab's values.** `profiles/slurm/config.yaml` ships the lab's SLURM account (`slurm_account`), partition (`slurm_partition`) and container binds (`apptainer-args`). Another group must change those three settings; the binds must cover every data and output path outside `$HOME`. They are not experiment-config keys.
 
 ### Local workstation
 
