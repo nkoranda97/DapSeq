@@ -25,6 +25,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **MEME jobs reserve one CPU.** The container's MEME is built without MPI, so `-p` was ignored and each MEME job held `threads` CPUs (8 by default) while using one. Results are unchanged.
 - **An interrupted run can no longer leave MEME's own logo images in place of the pipeline's.** MEME writes `logo1.png` / `logo_rc1.png` into the same directory as the logo rules; the MEME rules now delete them, so the logo rules always draw the report's images.
 - **The README explains how to get the container on the cluster**, how to rebuild it without breaking running jobs, and which three SLURM profile settings are the lab's own.
+- **The host environment uses Python 3.12, the container's version**, so `pixi run test` checks the scripts on the Python they run on. `pixi.lock` is now in lock format v7; a pixi too old to read it (CI uses 0.84.2) needs `pixi self-update`. The first `pixi run` after pulling re-installs the environment.
 
 ## What's changed (October 2026)
 
@@ -91,7 +92,7 @@ To rebuild in a shared checkout, build to a new name and rename it over the old 
 
 ### Local workstation
 
-Build the Apptainer SIF once (requires Apptainer, which is not part of the pixi environment). The build installs exactly the versions in `apptainer_build/pixi.lock`; after editing `apptainer_build/pixi.toml`, run `pixi lock --manifest-path apptainer_build/pixi.toml` first:
+Build the Apptainer SIF once (requires Apptainer, which is not part of the pixi environment). The build installs exactly the versions in `apptainer_build/pixi.lock`; after editing `apptainer_build/pixi.toml`, run `pixi lock --manifest-path apptainer_build/pixi.toml` first, with pixi 0.81 (the version the image builds with, pinned in `apptainer_build/dapseq.def`) so the lock keeps a format the image's pixi reads:
 
 ```sh
 apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def

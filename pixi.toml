@@ -8,6 +8,9 @@ version = "0.1.0"
 test = "python -m pytest"
 
 [dependencies]
+# Same minor as the container (apptainer_build/pixi.lock), so tests run on the
+# Python the pipeline scripts run on.
+python = "3.12.*"
 snakemake = ">=9.19.0,<10"
 snakemake-executor-plugin-slurm = ">=2.6.0,<3"
 pillow = ">=10.0.0"
