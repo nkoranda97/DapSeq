@@ -104,7 +104,7 @@ META_COLS = [
     # generated paths — fimo (treatment only)
     "fimo_summits_tsv",
     "fimo_peaks_tsv",
-    # generated paths — homer (treatment only, if gene_annotation set)
+    # generated paths — homer (only when gene_annotation is set)
     "homer_annotations",
     # generated paths — report
     "report_csv",
@@ -379,6 +379,8 @@ def main():
         generated["peaks_filt_narrowpeak"] = meme_peaks_path(
             output_dir, sample, meme_fold_idx, sm.params.peaks_filter_suffix
         )
+        if not gene_annotation:
+            generated["homer_annotations"] = ""  # HOMER runs only with gene_annotation
         # A report.csv from before the --no-pgc fix (a run in flight during the
         # upgrade, or a database-only re-run) counted chromosomes. Its FIMO
         # output shows that, so keep the count out of the versioned row.
