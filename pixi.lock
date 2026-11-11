@@ -33,7 +33,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/alsa-lib-1.2.16.1-h7cc23a3_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/argon2-cffi-bindings-26.1.0-py312h5cc1888_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/backports.zstd-1.8.0-py312hf114f2f_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/biopython-1.88-py312h5cc1888_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/biopython-1.87-py312h4c3975b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-1.2.1-h505cf86_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-bin-1.2.1-h9908984_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-python-1.2.1-py312he9c40d5_0.conda
@@ -54,7 +54,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fontconfig-2.18.3-h4db4eae_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/fonttools-4.68.0-py312hfd18d64_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/freetype-2.14.3-ha770c72_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/fribidi-1.0.18-h7cc23a3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/graphite2-1.3.15-h54a6638_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/greenlet-3.5.6-py312h80505a6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/icu-78.3-h33c6efd_0.conda
@@ -111,7 +110,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libpng-1.6.59-h922cc85_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libpq-18.6-h3883810_5.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libpython-3.12.16-ha57cdbe_0_cpython.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/libraqm-0.11.0-h6406941_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libsodium-1.0.22-h280c20c_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libsqlite-3.54.1-h13e7031_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libssh2-1.11.1-hcf80075_0.conda
@@ -129,16 +127,16 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libxslt-1.1.45-h8e12856_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/libzlib-1.3.2-h25fd6f3_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/markupsafe-3.0.4-py312h8b7ec3f_4.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-3.11.2-py312h6a12a82_1.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.11.2-py312hfe9aac7_1.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-3.10.9-py312h7900ff3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.10.9-py312he3d6523_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.5.4-py312he827f4e_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.4.6-py312h33ff503_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openjpeg-2.5.4-h55fea9a_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openldap-2.6.13-hbde042b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/openssl-3.6.2-h35e630c_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pandas-2.3.3-py312hf79963d_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pcre2-10.47-haa7fec5_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-13.0.0-py312h38079b3_0.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.2.0-py312h50c33e8_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pixman-0.46.4-h54a6638_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/psutil-7.2.2-py312h1b36aeb_3.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/pthread-stubs-0.4-hb9d3cd8_1002.conda
@@ -649,21 +647,21 @@ packages:
   run_exports: {}
   size: 242142
   timestamp: 1792690561468
-- conda: https://conda.anaconda.org/conda-forge/linux-64/biopython-1.88-py312h5cc1888_1.conda
-  sha256: 3def2a81e90dc04384e1ef75e6cbeccd749e2a9c49b79ba0b0e4a1a58cfabbd1
-  md5: c37ac31f8250f43dd0455d7bb8334f87
+- conda: https://conda.anaconda.org/conda-forge/linux-64/biopython-1.87-py312h4c3975b_0.conda
+  sha256: 8439485bab2f8ae5af4069b624d76186939c5218d3fdf33c49fc67a48605ccc5
+  md5: 2eb5b71dfcfb2a316d0307eb696bf11e
   depends:
   - __glibc >=2.17,<3.0.a0
-  - libgcc >=15
+  - libgcc >=14
   - numpy
   - python >=3.12,<3.13.0a0
   - python_abi 3.12.* *_cp312
   license: LicenseRef-Biopython
   purls:
-  - pkg:pypi/biopython?source=compressed-mapping
+  - pkg:pypi/biopython?source=hash-mapping
   run_exports: {}
-  size: 3273918
-  timestamp: 1789126303923
+  size: 3306754
+  timestamp: 1774882187035
 - conda: https://conda.anaconda.org/conda-forge/linux-64/brotli-1.2.1-h505cf86_0.conda
   sha256: 3efb8e6ac07f12773f02e876567700f554965e33a8e30ee05ddd891c303f7aa3
   md5: 65f1fc5f6a3a984a8a25641d0e60fc25
@@ -1025,19 +1023,6 @@ packages:
   purls: []
   size: 173839
   timestamp: 1774298173462
-- conda: https://conda.anaconda.org/conda-forge/linux-64/fribidi-1.0.18-h7cc23a3_0.conda
-  sha256: 6cabdf62dad4973ef0fe8b0d80c4b5b5d76ac9249da91f26f663cb44acdcc6a1
-  md5: a14a9f11f543b9a5c03ae6a5c2245b0a
-  depends:
-  - __glibc >=2.17,<3.0.a0
-  - libgcc >=15
-  license: LGPL-2.1-or-later
-  purls: []
-  run_exports:
-    weak:
-    - fribidi >=1.0.18,<2.0a0
-  size: 64767
-  timestamp: 1793323486599
 - conda: https://conda.anaconda.org/conda-forge/linux-64/graphite2-1.3.15-h54a6638_1.conda
   sha256: 7fa3b6a9c081fa3e545573152a788d061a0a0ba57df7251cc0f4f75225fc93e7
   md5: f9fe2984587fa8235a6af6004760cd18
@@ -1812,24 +1797,6 @@ packages:
     - libpython >=3.12,<4.0a0
   size: 8763999
   timestamp: 1793015475617
-- conda: https://conda.anaconda.org/conda-forge/linux-64/libraqm-0.11.0-h6406941_0.conda
-  sha256: ab3ccb9fd5816f76b18ee8974d359cd2605ca87d8ddef55369dc461b9986f95c
-  md5: 3ac89a48d224409739dbf6200e524373
-  depends:
-  - libgcc >=14
-  - __glibc >=2.28,<3.0.a0
-  - fribidi >=1.0.16,<2.0a0
-  - libfreetype >=2.14.3
-  - libfreetype6 >=2.14.3
-  - libharfbuzz >=14.2.1
-  license: MIT
-  license_family: MIT
-  purls: []
-  run_exports:
-    weak:
-    - libraqm >=0.11.0,<0.12.0a0
-  size: 33983
-  timestamp: 1784850267262
 - conda: https://conda.anaconda.org/conda-forge/linux-64/libsodium-1.0.22-h280c20c_1.conda
   sha256: b677bbf1c339d894757c3dcfbb2f88649e499e4991d70ae09a1466da9a6c92d6
   md5: 965e4d531b588b2e42f66fd8e48b056c
@@ -2087,42 +2054,40 @@ packages:
   run_exports: {}
   size: 27696
   timestamp: 1793707103879
-- conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-3.11.2-py312h6a12a82_1.conda
-  sha256: 44001a8f40445bf63e96537d041d0c40d46facb67448d039aec4fee9262f05ab
-  md5: bfc8bc50a9803addad9bb033bacb80f3
+- conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-3.10.9-py312h7900ff3_0.conda
+  sha256: cdd59bb1a52b09979f11c68909d53120b2e749edd1992853a74e1604db19c8b0
+  md5: 579c6a324b197594fabc9240bddf2d8b
   depends:
-  - matplotlib-base >=3.11.2,<3.11.3.0a0
+  - matplotlib-base >=3.10.9,<3.10.10.0a0
   - pyside6 >=6.7.2
   - python >=3.12,<3.13.0a0
   - python_abi 3.12.* *_cp312
   - tornado >=5
   license: PSF-2.0
   license_family: PSF
-  purls:
-  - pkg:pypi/matplotlib?source=compressed-mapping
+  purls: []
   run_exports: {}
-  size: 14909
-  timestamp: 1789824128347
-- conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.11.2-py312hfe9aac7_1.conda
-  sha256: 066b5b0cee5edb51ad64eb0c55db99fc85a6dc92821c49531b778da1c6d9867e
-  md5: 0745f1af620efcb1095d8ddabcb2ed8b
+  size: 17831
+  timestamp: 1777000588302
+- conda: https://conda.anaconda.org/conda-forge/linux-64/matplotlib-base-3.10.9-py312he3d6523_0.conda
+  sha256: c7e133837376e53e6a52719c205a3067c42f05769bc3e8307417f8d817dfc63e
+  md5: 7d499b5b6d150f133800dc3a582771c7
   depends:
   - __glibc >=2.17,<3.0.a0
   - contourpy >=1.0.1
   - cycler >=0.10
-  - fonttools >=4.28.2
+  - fonttools >=4.22.0
   - freetype
   - kiwisolver >=1.3.1
   - libfreetype >=2.14.3
   - libfreetype6 >=2.14.3
-  - libgcc >=15
-  - libraqm >=0.11.0,<0.12.0a0
-  - libstdcxx >=15
-  - numpy >=1.25
-  - numpy >=1.25,<3
+  - libgcc >=14
+  - libstdcxx >=14
+  - numpy >=1.23
+  - numpy >=1.23,<3
   - packaging >=20.0
-  - pillow >=9
-  - pyparsing >=3
+  - pillow >=8
+  - pyparsing >=2.3.1
   - python >=3.12,<3.13.0a0
   - python-dateutil >=2.7
   - python_abi 3.12.* *_cp312
@@ -2131,10 +2096,10 @@ packages:
   license: PSF-2.0
   license_family: PSF
   purls:
-  - pkg:pypi/matplotlib?source=compressed-mapping
+  - pkg:pypi/matplotlib?source=hash-mapping
   run_exports: {}
-  size: 8946081
-  timestamp: 1789824111301
+  size: 8336056
+  timestamp: 1777000573501
 - conda: https://conda.anaconda.org/conda-forge/linux-64/ncurses-6.6-hdb14827_0.conda
   sha256: fc89f74bbe362fb29fa3c037697a89bec140b346a2469a90f7936d1d7ea4d8a3
   md5: fc21868a1a5aacc937e7a18747acb8a5
@@ -2145,29 +2110,29 @@ packages:
   purls: []
   size: 918956
   timestamp: 1777422145199
-- conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.5.4-py312he827f4e_0.conda
-  sha256: 8d562d8fcc44a93c65793a361f39a75712bb3cf2aa1d1a09bcc8ef072e54a1c3
-  md5: 759b701f4b548ff6d06794d99788e6bb
+- conda: https://conda.anaconda.org/conda-forge/linux-64/numpy-2.4.6-py312h33ff503_0.conda
+  sha256: dfcbeadb3e7ad0da7a55a0525884ca34c19584154e13cc4159396b305d1bd445
+  md5: 6e31d55ee1110fda83b4f4045f4d73ff
   depends:
   - python
-  - libstdcxx >=15
-  - libgcc >=15
+  - libstdcxx >=14
+  - libgcc >=14
   - __glibc >=2.17,<3.0.a0
   - liblapack >=3.9.0,<4.0a0
-  - python_abi 3.12.* *_cp312
   - libblas >=3.9.0,<4.0a0
+  - python_abi 3.12.* *_cp312
   - libcblas >=3.9.0,<4.0a0
   constrains:
   - numpy-base <0a0
   license: BSD-3-Clause
   license_family: BSD
   purls:
-  - pkg:pypi/numpy?source=compressed-mapping
+  - pkg:pypi/numpy?source=hash-mapping
   run_exports:
     weak:
-    - numpy >=1.25,<3
-  size: 9240540
-  timestamp: 1791675329565
+    - numpy >=1.23,<3
+  size: 8759520
+  timestamp: 1779169200325
 - conda: https://conda.anaconda.org/conda-forge/linux-64/openjpeg-2.5.4-h55fea9a_0.conda
   sha256: 3900f9f2dbbf4129cf3ad6acf4e4b6f7101390b53843591c53b00f034343bc4d
   md5: 11b3379b191f63139e29c0d19dee24cd
@@ -2276,30 +2241,30 @@ packages:
   purls: []
   size: 1222481
   timestamp: 1763655398280
-- conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-13.0.0-py312h38079b3_0.conda
-  sha256: 68462fdd07bb502f791338e88976d741265ec5ab9abe2e63126ed86d9787fa64
-  md5: eece7a5876135e44a9c6b0f654aa5447
+- conda: https://conda.anaconda.org/conda-forge/linux-64/pillow-12.2.0-py312h50c33e8_0.conda
+  sha256: fa291f8915114733dc1df9f1627b8c63c517217c1eee1a6ede2ceb5e368cf27a
+  md5: 9e5609720e31213d4f39afe377f6217e
   depends:
   - python
+  - libgcc >=14
   - __glibc >=2.17,<3.0.a0
-  - libgcc >=15
-  - openjpeg >=2.5.4,<3.0a0
-  - tk >=8.6.13,<8.7.0a0
-  - libjpeg-turbo >=3.2.0,<4.0a0
-  - python_abi 3.12.* *_cp312
+  - lcms2 >=2.18,<3.0a0
   - libxcb >=1.17.0,<2.0a0
+  - libjpeg-turbo >=3.1.2,<4.0a0
+  - libtiff >=4.7.1,<4.8.0a0
+  - libwebp-base >=1.6.0,<2.0a0
+  - openjpeg >=2.5.4,<3.0a0
+  - python_abi 3.12.* *_cp312
+  - tk >=8.6.13,<8.7.0a0
   - libfreetype >=2.14.3
   - libfreetype6 >=2.14.3
   - zlib-ng >=2.3.3,<2.4.0a0
-  - libwebp-base >=1.6.0,<2.0a0
-  - libtiff >=4.7.2,<4.8.0a0
-  - lcms2 >=2.19.1,<3.0a0
   license: HPND
   purls:
-  - pkg:pypi/pillow?source=compressed-mapping
+  - pkg:pypi/pillow?source=hash-mapping
   run_exports: {}
-  size: 1071229
-  timestamp: 1792416406105
+  size: 1039561
+  timestamp: 1775060059882
 - conda: https://conda.anaconda.org/conda-forge/linux-64/pixman-0.46.4-h54a6638_1.conda
   sha256: 43d37bc9ca3b257c5dd7bf76a8426addbdec381f6786ff441dc90b1a49143b6a
   md5: c01af13bdc553d1a8fbfff6e8db075f0

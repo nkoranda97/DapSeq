@@ -13,7 +13,8 @@ apptainer-args: "--bind $HOME"
 
 # CPU cores the run may use at once; override with --cores N. A rule asking for
 # more threads than this (alignment uses `threads`, 8 by default) is scaled
-# down to fit.
+# down to fit. Do not pass --jobs with this profile: with cores set here,
+# Snakemake reads --jobs N as N jobs at once and drops the core limit.
 cores: 4
 
 # Default resources, with the same keys as the SLURM profile so per-rule declarations resolve.
