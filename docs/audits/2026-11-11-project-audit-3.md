@@ -2,8 +2,9 @@
 
 **Status:**
 - 2026-11-11, #17: second-audit item 5 and items 10–16, with N1, N3 and N4, merged. Item 15's CRLF claim was wrong (text-mode `open` already handles CRLF); only blank lines were a bug.
-- 2026-11-11, branch `fix/db-provenance`: items 9, 17, 19 and 20 (group 4 plus item 9). Multi-lane `r1`/`r2` are stored joined with `;`.
-- Still open: items 8, 21–25 and 27–32, and N2.
+- 2026-11-11, #18: items 9, 17, 19 and 20 (group 4 plus item 9), merged. Multi-lane `r1`/`r2` are stored joined with `;`.
+- 2026-11-11, branch `fix/cluster-container`: items 21–25 and the rest of item 26 (group 5). The SLURM profile keeps the lab's account, partition and binds, now documented. The host env is pinned to the container's Python 3.12 and library minors; `pixi.lock` was re-locked by pixi 0.84.2 (format v7, readable from pixi 0.68), and CI uses that pixi.
+- Still open: items 8 and 27–32, and N2.
 
 Read-only third audit, run after #14 (`motif_peaks`), #15 (bowtie2-build log) and #16 (template defaults, `genome_size` warning) merged. It covers the workflow rules, Python scripts, config, profiles and tests, and re-checks the open items of the [second audit](2026-10-09-project-audit-2.md).
 

@@ -22,12 +22,16 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **The results database records every lane.** `r1` and `r2` in both tables used to hold only the first lane of a multi-lane sample. They now hold all lanes in config order, joined with `;` (`/data/L1_R1.fq.gz;/data/L2_R1.fq.gz`). Single-lane samples still store a plain path. Rows from earlier runs keep their first-lane value until the project is re-run.
 - **A metadata value of `0` is kept.** `gdna_batch: 0` (or any other falsy `experiment_date` / `gdna_batch`) used to show as `NA` in the report and empty in the database.
 - **`homer_annotations` is empty when HOMER didn't run.** The database used to record an annotation path for every sample, even without `gene_annotation`, when no such file exists.
+- **MEME jobs reserve one CPU.** The container's MEME is built without MPI, so `-p` was ignored and each MEME job held `threads` CPUs (8 by default) while using one. Results are unchanged.
+- **An interrupted run can no longer leave MEME's own logo images in place of the pipeline's.** MEME writes `logo1.png` / `logo_rc1.png` into the same directory as the logo rules; the MEME rules now delete them, so the logo rules always draw the report's images.
+- **The README explains how to get the container on the cluster**, how to rebuild it without breaking running jobs, and which three SLURM profile settings are the lab's own.
+- **The host environment uses Python 3.12, the container's version**, so `pixi run test` checks the scripts on the Python they run on. Its numpy, pillow, matplotlib and biopython are held to the container's versions too. `pixi.lock` is in lock format v7, which needs pixi 0.68 or newer. The first `pixi run` after pulling re-installs the environment; in a shared checkout, pull and run it only when no runs from that checkout are active, because jobs a running pipeline submits afterwards look for the removed Python 3.13.
 
 ## What's changed (October 2026)
 
 ### Update your setup before the next run
 
-- **Rebuild the container.** The old image is missing logomaker, so motif logos fail. The build now installs exactly the versions in `apptainer_build/pixi.lock` (see [Local workstation](#local-workstation)).
+- **Rebuild the container.** The old image is missing logomaker, so motif logos fail. The build now installs exactly the versions in `apptainer_build/pixi.lock` (see [HPC](#hpc-slurm-cluster) for building on the cluster).
 - **Delete `macs3.format: BAMPE` from configs copied from the old template.** Left in, it still forces BAMPE for every peak call; removed, the format is chosen per call (below).
 - **Turn on filtering explicitly if you rely on it.** `blacklist_filter` and `rmsk_filter` now default to off; set `enabled: true` and a path in your config.
 - **Remove options that no longer exist.** `macs3.min_foldch`, `complexity_filter`, `tandem_filter` and `slurm_partition`/`slurm_account` (in your experiment config) now stop the run with a message saying what replaced them. `samtools.extra_merge` is ignored and can be deleted.
@@ -73,7 +77,18 @@ pixi shell --frozen # activates the environment
 snakemake --profile profiles/slurm --configfile /path/to/your/config.yaml
 ```
 
-Set your partition and account under `default-resources` in `profiles/slurm/config.yaml` (`slurm_partition`, `slurm_account`). They are not experiment-config keys.
+**The container image.** Every job runs inside `apptainer_build/dapseq.sif`, which is not in git. Build it once in the checkout you run from:
+
+```sh
+module load apptainer
+apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
+```
+
+Building needs root, `--fakeroot`, or an Apptainer set up for unprivileged builds; your cluster's documentation says which applies (some only allow builds on a dedicated node). If you can't build on the cluster, build on a workstation (see [Local workstation](#local-workstation)) and copy the file to `apptainer_build/dapseq.sif`.
+
+To rebuild in a shared checkout, build to a new name and rename it over the old file: `apptainer build apptainer_build/dapseq.sif.new apptainer_build/dapseq.def && mv apptainer_build/dapseq.sif.new apptainer_build/dapseq.sif`. The old image stays whole until the new one is complete, and jobs that already started keep the image they opened. Rebuild between runs: jobs that start after the rename use the new image, so a run spanning a rebuild would mix two images.
+
+**The profile holds the lab's values.** `profiles/slurm/config.yaml` ships the lab's SLURM account (`slurm_account`), partition (`slurm_partition`) and container binds (`apptainer-args`). Another group must change those three settings; the binds must cover every data and output path outside `$HOME`. They are not experiment-config keys.
 
 ### Local workstation
 
@@ -83,13 +98,13 @@ Build the Apptainer SIF once (requires Apptainer, which is not part of the pixi 
 apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
 ```
 
-Then run using the local profile (no SLURM, 4 parallel jobs by default):
+Then run using the local profile (no SLURM; at most 4 CPU cores at once by default, with rules that ask for more threads scaled down to fit):
 
 ```sh
 pixi run snakemake --profile profiles/local --configfile /path/to/your/config.yaml
 ```
 
-Override parallelism with `--jobs N`.
+Override with `--cores N`. Do not pass `--jobs` with this profile: since the profile sets `cores`, Snakemake reads `--jobs N` as N jobs at once with no core limit.
 
 ### Shared installation (multi-user)
 

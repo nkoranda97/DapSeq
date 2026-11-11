@@ -8,14 +8,19 @@ version = "0.1.0"
 test = "python -m pytest"
 
 [dependencies]
+# Python and the libraries the pipeline scripts import are held to the
+# container's minor versions (apptainer_build/pixi.lock), so tests run on what
+# the scripts run on. Move them together with the container.
+python = "3.12.*"
+numpy = "2.4.*"
 snakemake = ">=9.19.0,<10"
 snakemake-executor-plugin-slurm = ">=2.6.0,<3"
-pillow = ">=10.0.0"
-matplotlib = ">=3.0"
+pillow = "12.2.*"
+matplotlib = "3.10.*"
 snakemake-logger-plugin-snkmt = ">=0.1.6,<0.2"
 pip = ">=26.0.1,<27"
 pytest = ">=8.0.0,<9"
-biopython = ">=1.80"
+biopython = "1.87.*"
 samtools = ">=1.23.1,<2"
 jupyter = ">=1.1.1,<2"
 
