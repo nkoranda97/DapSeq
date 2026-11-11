@@ -34,10 +34,15 @@ rule trim_se:
         set -euo pipefail
         R1_FILES=({input.r1})
 
+        # A lane is gzip when it starts with the gzip magic bytes 1f 8b. Reading
+        # them avoids decompressing a file just to detect it, and a corrupt or
+        # truncated .gz then fails in gzip -dc with gzip's own message.
+        read_fq() {{
+          if [ "$(head -c2 "$1" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then gzip -dc "$1"; else cat "$1"; fi
+        }}
+
         TOTAL_LINES=$(
-          for fq in "${{R1_FILES[@]}}"; do
-            if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
-          done | wc -l
+          for fq in "${{R1_FILES[@]}}"; do read_fq "$fq"; done | wc -l
         )
         TOTAL_FRAGS=$((TOTAL_LINES / 4))
 
@@ -46,9 +51,7 @@ rule trim_se:
           printf "Input:\t%s reads\nOutput:\t%s reads (100.00%%)\n" "$TOTAL_FRAGS" "$TOTAL_FRAGS" > {log.subsample}
 
           (
-            for fq in "${{R1_FILES[@]}}"; do
-              if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
-            done
+            for fq in "${{R1_FILES[@]}}"; do read_fq "$fq"; done
           ) \
           | bbduk.sh \
             -Xmx{params.mem_gb}g \
@@ -61,18 +64,18 @@ rule trim_se:
             {params.extra} \
             2>{log.trim}
         else
-          SUB_FRAC=$(echo "$MAXFRAGS / $TOTAL_FRAGS" | bc -l)
-          if (( $(echo "$SUB_FRAC > 1" | bc -l) )); then SUB_FRAC=1; fi
+          # Fraction of reads to keep, capped at 1 (awk: the container has no bc).
+          SUB_FRAC=$(awk -v m="$MAXFRAGS" -v t="$TOTAL_FRAGS" \
+            'BEGIN {{ f = (t > 0) ? m / t : 1; if (f > 1) f = 1; printf "%.10f", f }}')
 
           (
-            for fq in "${{R1_FILES[@]}}"; do
-              if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
-            done
+            for fq in "${{R1_FILES[@]}}"; do read_fq "$fq"; done
           ) \
           | reformat.sh \
             in=stdin.fq out=stdout.fq \
             int=f \
             -Xmx{params.mem_gb}g \
+            threads={threads} \
             samplerate=$SUB_FRAC \
             sampleseed=9 \
             2>{log.subsample} \
@@ -134,6 +137,16 @@ rule trim_pe:
         JOIN_DIR="{params.join_dir}"
         trap 'rm -rf "$JOIN_DIR"' EXIT
 
+        # A lane is gzip when it starts with the gzip magic bytes 1f 8b. Reading
+        # them avoids decompressing a file just to detect it, and a corrupt or
+        # truncated .gz then fails in gzip -dc with gzip's own message.
+        is_gz() {{
+          [ "$(head -c2 "$1" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]
+        }}
+        read_fq() {{
+          if is_gz "$1"; then gzip -dc "$1"; else cat "$1"; fi
+        }}
+
         # Join a mate's lanes into one file so bbduk sees a single in1/in2.
         # One lane is used as-is. Same-compression lanes are byte-concatenated
         # (concatenated gzip members are a valid gzip stream); mixed lanes are
@@ -143,8 +156,7 @@ rule trim_pe:
           if [ $# -eq 1 ]; then echo "$1"; return; fi
           local n_gz=0 fq
           for fq in "$@"; do
-            # gzip magic bytes 1f 8b; avoids decompressing each lane just to detect it
-            if [ "$(head -c2 "$fq" | od -An -tx1 | tr -d ' \n')" = "1f8b" ]; then n_gz=$((n_gz + 1)); fi
+            if is_gz "$fq"; then n_gz=$((n_gz + 1)); fi
           done
           mkdir -p "$JOIN_DIR"
           if [ "$n_gz" -eq "$#" ]; then
@@ -152,18 +164,14 @@ rule trim_pe:
           elif [ "$n_gz" -eq 0 ]; then
             cat "$@" > "$out.fastq"; echo "$out.fastq"
           else
-            for fq in "$@"; do
-              if gzip -t "$fq" 2>/dev/null; then gzip -dc "$fq"; else cat "$fq"; fi
-            done > "$out.fastq"
+            for fq in "$@"; do read_fq "$fq"; done > "$out.fastq"
             echo "$out.fastq"
           fi
         }}
         R1=$(join_lanes "$JOIN_DIR/R1" "${{R1_FILES[@]}}")
         R2=$(join_lanes "$JOIN_DIR/R2" "${{R2_FILES[@]}}")
 
-        TOTAL_FRAGS=$(
-          if gzip -t "$R1" 2>/dev/null; then gzip -dc "$R1"; else cat "$R1"; fi | wc -l
-        )
+        TOTAL_FRAGS=$(read_fq "$R1" | wc -l)
         TOTAL_FRAGS=$((TOTAL_FRAGS / 4))
 
         MAXFRAGS={params.max_frags}
@@ -181,13 +189,15 @@ rule trim_pe:
             {params.extra} \
             2>{log.trim}
         else
-          SUB_FRAC=$(echo "$MAXFRAGS / $TOTAL_FRAGS" | bc -l)
-          if (( $(echo "$SUB_FRAC > 1" | bc -l) )); then SUB_FRAC=1; fi
+          # Fraction of pairs to keep, capped at 1 (awk: the container has no bc).
+          SUB_FRAC=$(awk -v m="$MAXFRAGS" -v t="$TOTAL_FRAGS" \
+            'BEGIN {{ f = (t > 0) ? m / t : 1; if (f > 1) f = 1; printf "%.10f", f }}')
 
           reformat.sh \
             in1="$R1" in2="$R2" \
             out=stdout.fq \
             -Xmx{params.mem_gb}g \
+            threads={threads} \
             int=t \
             samplerate=$SUB_FRAC \
             sampleseed=9 \
