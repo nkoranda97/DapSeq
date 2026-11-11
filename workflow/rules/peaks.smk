@@ -134,13 +134,25 @@ if config.get("rmsk_filter", {}).get("enabled", False):
             runtime         = config["resources"]["rmsk_filter_peaks"]["runtime"],
         log:
             OUT + "/logs/rmsk_filter/{sample}.log"
+        # UCSC rmsk.txt holds chrom/start/end in columns 6-8; rows whose column 7
+        # is not a number (a header, or a file in another layout) are skipped.
+        # A file that yields no intervals would remove nothing, so stop instead.
+        # gzip -cdf reads the file gzipped or plain.
         shell:
             """
             set -euo pipefail
-            zcat {input.rmsk} \
-              | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' \
-              | bedtools intersect -v -a {input.peaks} -b stdin \
-              > {output} 2>{log}
+            REPEATS={output}.repeats.bed
+            trap 'rm -f "$REPEATS"' EXIT
+            gzip -cdf {input.rmsk} \
+              | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' > "$REPEATS"
+            if [ ! -s "$REPEATS" ]; then
+              echo "ERROR: rmsk_filter.txt '{input.rmsk}' has no rows in UCSC rmsk.txt" \
+                "layout (chromosome, start and end in columns 6-8), so the repeat filter" \
+                "would remove nothing. Use a UCSC rmsk.txt(.gz) for this genome, or set" \
+                "rmsk_filter.enabled: false." | tee {log} >&2
+              exit 1
+            fi
+            bedtools intersect -v -a {input.peaks} -b "$REPEATS" > {output} 2>{log}
             """
 
 

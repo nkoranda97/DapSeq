@@ -16,6 +16,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
   - a `macs3.format` other than `BAM` or `BAMPE`, or `BAMPE` when some samples are single-end;
   - a gzip- or bgzip-compressed `genome_ref`. Before, it failed at indexing, or with bgzip only after alignment and peak calling. Decompress it first.
 - **A section with every key commented out uses its defaults.** A config with `factorbook:` and nothing under it used to crash while the workflow loaded.
+- **`rmsk_filter` checks its file.** A repeat file not in UCSC `rmsk.txt` layout (for example a plant TE BED or GFF) used to remove nothing without saying so; it now stops the run with a message. An uncompressed `rmsk.txt` is accepted too.
 
 ## What's changed (October 2026)
 
@@ -228,7 +229,7 @@ Each treatment is peak-called against its assigned control. Each control is peak
 | `bamcoverage.ignore_duplicates` | `true` | Count duplicate reads only once (program default: `f`) |
 | `chrom_filter` | `[]` | Chromosomes excluded from peaks before MEME (e.g. `[chrEBV]`) |
 | `blacklist_filter.enabled` / `.bed` | `false` / `null` | Drop peaks overlapping a blacklist BED before MEME. The hg38 ENCODE blacklist ships as `blacklist/hg38-blacklist.v2.bed.gz` |
-| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt.gz` for your genome (not in the repo) |
+| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt` for your genome, gzipped or not (not in the repo). A file in another layout, such as a BED or GFF of repeats, stops the run instead of silently removing nothing |
 | `macs3.foldch_levels` | `[2, 5, 15]` | Three strictly increasing fold-change (narrowPeak column 7) thresholds; each writes `MACS/<sample>_peaks_fold<N>.narrowPeak` (N = 1, 2, 3) |
 | `macs3.meme_foldch_level` | `2` | Which fold level (1-3) feeds blacklist/rmsk filtering and MEME/FIMO. The final MEME input is `MACS/<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak` |
 | `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` (any case) to force one format; other values, or `BAMPE` when any sample is single-end, stop the run at startup. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
