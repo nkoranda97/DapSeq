@@ -7,7 +7,7 @@ from layout_utils import (
     oversized_genome_size_warning, parse_genome_size, reference_length,
 )
 from sample_names import control_name_collisions, invalid_sample_names, sample_regex
-from meme_colors import base_colors as _base_colors, meme_alphabet
+from meme_colors import base_colors, meme_alphabet
 from pipeline_version import pipeline_version
 from config_checks import (
     compressed_reference_error, fill_empty_sections, macs3_format_override,
@@ -104,7 +104,7 @@ if _missing_fields:
 try:
     GENOME_SIZE = parse_genome_size(config["genome_size"])
     # {base: "RRGGBB"} for the MEME alphabet and the logos; {} when unset.
-    BASE_COLORS = _base_colors(config["meme"].get("base_colors"))
+    BASE_COLORS = base_colors(config["meme"].get("base_colors"))
 except ValueError as _e:
     raise ValueError(f"Invalid config value(s):\n  {_e}") from None
 

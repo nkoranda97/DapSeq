@@ -6,7 +6,6 @@ objects so the logic is unit-testable.
 
 import re
 
-BASES = ("A", "C", "G", "T")
 _HEX = re.compile(r"#?[0-9A-Fa-f]{6}")
 
 # MEME's standard DNA alphabet (doc/alphabet-format.html, MEME 5.5.9) with the
@@ -20,6 +19,7 @@ _ALPHABET = (
     "B = CGT\nD = GAT\nH = ACT\nV = ACG\nN = ACGT\nX = ACGT\n"
 )
 MEME_DEFAULT_COLORS = {"A": "008000", "C": "0000FF", "G": "FFB300", "T": "FF0000"}
+BASES = tuple(MEME_DEFAULT_COLORS)
 
 
 def base_colors(value):
