@@ -9,8 +9,10 @@ Each run writes one row per sample to two tables:
 Both tables are joined via (output_dir, sample). Re-running the same
 output_dir replaces its rows in both tables (idempotent).
 
-Concurrency note: SQLite uses fcntl POSIX record locks internally, which work
-on Lustre/GPFS via NLM. The 60-second timeout serialises the rare case of two
+Concurrency note: SQLite serialises writers with fcntl POSIX record locks.
+Those hold across nodes only if the filesystem enforces them cluster-wide:
+GPFS does, and Lustre does when mounted with the `flock` option, while
+`localflock` locks per node only. Put db_path on such a filesystem. The 60-second timeout serialises the rare case of two
 runs finishing simultaneously without failing. WAL mode is intentionally NOT
 used — WAL's shared-memory coordination requires both writers to be on the
 same physical node, which SLURM does not guarantee.
@@ -104,7 +106,7 @@ META_COLS = [
     # generated paths — fimo (treatment only)
     "fimo_summits_tsv",
     "fimo_peaks_tsv",
-    # generated paths — homer (treatment only, if gene_annotation set)
+    # generated paths — homer (only when gene_annotation is set)
     "homer_annotations",
     # generated paths — report
     "report_csv",
@@ -158,18 +160,31 @@ def read_report(path):
     return result
 
 
-def get_r1(sample_cfg):
-    r1 = sample_cfg.get("r1")
-    if r1 is None:
+def _text_or_empty(value):
+    """Optional per-sample metadata as text; "" only when unset (0 is a value)."""
+    return "" if value is None or value == "" else str(value)
+
+
+# Multi-lane r1/r2 values are stored as one cell, lanes joined in config order.
+LANE_SEPARATOR = ";"
+
+
+def _lanes(sample_cfg, key):
+    """All lane paths of one mate as a single string, or None when unset."""
+    value = sample_cfg.get(key)
+    if value is None:
         return None
-    return r1[0] if isinstance(r1, list) else r1
+    if isinstance(value, (list, tuple)):
+        return LANE_SEPARATOR.join(str(p) for p in value) or None
+    return value
+
+
+def get_r1(sample_cfg):
+    return _lanes(sample_cfg, "r1")
 
 
 def get_r2(sample_cfg):
-    r2 = sample_cfg.get("r2")
-    if r2 is None:
-        return None
-    return r2[0] if isinstance(r2, list) else r2
+    return _lanes(sample_cfg, "r2")
 
 
 def normalize_output_dir(path):
@@ -366,6 +381,8 @@ def main():
         generated["peaks_filt_narrowpeak"] = meme_peaks_path(
             output_dir, sample, meme_fold_idx, sm.params.peaks_filter_suffix
         )
+        if not gene_annotation:
+            generated["homer_annotations"] = ""  # HOMER runs only with gene_annotation
         # A report.csv from before the --no-pgc fix (a run in flight during the
         # upgrade, or a database-only re-run) counted chromosomes. Its FIMO
         # output shows that, so keep the count out of the versioned row.
@@ -382,8 +399,8 @@ def main():
             "author":          author,
             "run_date":        run_date,
             "pipeline_version": pipeline_version,
-            "experiment_date": scfg.get("experiment_date") or "",
-            "gdna_batch":      scfg.get("gdna_batch") or "",
+            "experiment_date": _text_or_empty(scfg.get("experiment_date")),
+            "gdna_batch":      _text_or_empty(scfg.get("gdna_batch")),
             "genome_ref":      sm.params.genome_ref,
             "gene_annotation": gene_annotation,
             "r1":              r1,

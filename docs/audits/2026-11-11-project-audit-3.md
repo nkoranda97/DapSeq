@@ -1,5 +1,10 @@
 # Project audit 3 — 2026-11-11
 
+**Status:**
+- 2026-11-11, #17: second-audit item 5 and items 10–16, with N1, N3 and N4, merged. Item 15's CRLF claim was wrong (text-mode `open` already handles CRLF); only blank lines were a bug.
+- 2026-11-11, branch `fix/db-provenance`: items 9, 17, 19 and 20 (group 4 plus item 9). Multi-lane `r1`/`r2` are stored joined with `;`.
+- Still open: items 8, 21–25 and 27–32, and N2.
+
 Read-only third audit, run after #14 (`motif_peaks`), #15 (bowtie2-build log) and #16 (template defaults, `genome_size` warning) merged. It covers the workflow rules, Python scripts, config, profiles and tests, and re-checks the open items of the [second audit](2026-10-09-project-audit-2.md).
 
 Baseline: `pixi run test` passes (205 tests). Probes used the container's own tools from `apptainer_build/.pixi` (FIMO 5.5.9, bedtools, samtools, Biopython, logomaker). HOMER could not be run locally (see "Unverified").
