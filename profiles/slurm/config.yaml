@@ -7,6 +7,10 @@ executor: slurm
 # Maximum number of jobs submitted to SLURM at once
 jobs: 100
 
+# Seconds to wait for a finished job's outputs to appear on the shared
+# filesystem before declaring them missing (Snakemake's default is 5).
+latency-wait: 60
+
 # Run every rule inside the container declared in the Snakefile
 use-apptainer: true
 

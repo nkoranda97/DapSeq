@@ -11,8 +11,10 @@ use-apptainer: true
 # $HOME is expanded by the shell before Apptainer sees it.
 apptainer-args: "--bind $HOME"
 
-# Conservative parallel-job limit for a workstation; override with --jobs N.
-jobs: 4
+# CPU cores the run may use at once; override with --cores N. A rule asking for
+# more threads than this (alignment uses `threads`, 8 by default) is scaled
+# down to fit.
+cores: 4
 
 # Default resources, with the same keys as the SLURM profile so per-rule declarations resolve.
 default-resources:

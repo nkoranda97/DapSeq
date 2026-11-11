@@ -85,13 +85,13 @@ Build the Apptainer SIF once (requires Apptainer, which is not part of the pixi 
 apptainer build apptainer_build/dapseq.sif apptainer_build/dapseq.def
 ```
 
-Then run using the local profile (no SLURM, 4 parallel jobs by default):
+Then run using the local profile (no SLURM; at most 4 CPU cores at once by default, with rules that ask for more threads scaled down to fit):
 
 ```sh
 pixi run snakemake --profile profiles/local --configfile /path/to/your/config.yaml
 ```
 
-Override parallelism with `--jobs N`.
+Override with `--cores N`.
 
 ### Shared installation (multi-user)
 
