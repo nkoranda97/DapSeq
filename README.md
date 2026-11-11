@@ -10,6 +10,12 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **A corrupt or truncated `.fastq.gz` stops trimming with gzip's own error.** Before, it was read as plain text and bbduk failed with a parse error. Detecting gzip also no longer decompresses each input file one extra time.
 - **`meme.base_colors` works.** Setting it used to make both MEME rules fail on an alphabet file MEME rejected. Colors must be quoted hex strings; anything else stops the run at startup with a message.
 - **Sample names are limited to letters, digits, `_`, `+` and `-`.** Other characters, such as `(`, `;` or `$`, used to pass the startup checks and then break a shell command later in the run; they now stop the run at startup. Rename such samples, e.g. `TF(2)` to `TF_2`. Database rows already stored under the old name are not changed.
+- **More config mistakes stop the run at startup with a message:**
+  - a misspelled per-sample key, such as `contol:` (it used to be ignored, so the sample ran without its control);
+  - a sample with no settings at all;
+  - a `macs3.format` other than `BAM` or `BAMPE`, or `BAMPE` when some samples are single-end;
+  - a gzip- or bgzip-compressed `genome_ref`. Before, it failed at indexing, or with bgzip only after alignment and peak calling. Decompress it first.
+- **A section with every key commented out uses its defaults.** A config with `factorbook:` and nothing under it used to crash while the workflow loaded.
 
 ## What's changed (October 2026)
 
@@ -151,7 +157,7 @@ samples:
     control: null                    # a control declares no control of its own
 
 output_dir: /path/to/output/
-genome_ref: /path/to/genome.fa
+genome_ref: /path/to/genome.fa   # uncompressed FASTA (not .gz)
 genome_size: null            # required: effective genome size, see "Choosing genome_size"
 gene_annotation: /path/to/annotation.gtf  # null to skip HOMER annotation
 
@@ -225,7 +231,7 @@ Each treatment is peak-called against its assigned control. Each control is peak
 | `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt.gz` for your genome (not in the repo) |
 | `macs3.foldch_levels` | `[2, 5, 15]` | Three strictly increasing fold-change (narrowPeak column 7) thresholds; each writes `MACS/<sample>_peaks_fold<N>.narrowPeak` (N = 1, 2, 3) |
 | `macs3.meme_foldch_level` | `2` | Which fold level (1-3) feeds blacklist/rmsk filtering and MEME/FIMO. The final MEME input is `MACS/<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak` |
-| `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` to force one format. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
+| `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` (any case) to force one format; other values, or `BAMPE` when any sample is single-end, stop the run at startup. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
 | `meme.nmotifs` | `2` | Number of motifs to search for (program default: `1`) |
 | `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
 | `meme.mod` | `anr` | Motif site distribution model (program default: `zoops`) |

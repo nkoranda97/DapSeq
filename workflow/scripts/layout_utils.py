@@ -4,7 +4,6 @@ Imported by workflow/rules/common.smk. Kept free of Snakemake objects so the
 logic is unit-testable.
 """
 
-import gzip
 import os
 from decimal import Decimal, InvalidOperation
 
@@ -78,19 +77,18 @@ def reference_length(fasta_path):
     """Total sequence length of a reference FASTA, or None when it cannot be read.
 
     Sums <fasta>.fai (samtools faidx) when it exists; otherwise counts the
-    FASTA's sequence letters, through gzip for a .gz path, reading in bounded
-    pieces so an unwrapped chromosome is never held in memory whole. Any
-    failure gives None: the caller only warns, and an exception raised in
-    onstart would stop the run.
+    FASTA's sequence letters, reading in bounded pieces so an unwrapped
+    chromosome is never held in memory whole. A compressed reference is
+    rejected at startup, before this runs. Any failure gives None: the caller
+    only warns, and an exception raised in onstart would stop the run.
     """
     try:
         fai = fasta_path + ".fai"
         if os.path.exists(fai):
             with open(fai) as fh:
                 return sum(int(line.split("\t")[1]) for line in fh if line.strip())
-        opener = gzip.open if fasta_path.endswith(".gz") else open
         total, at_line_start, in_header = 0, True, False
-        with opener(fasta_path, "rt") as fh:
+        with open(fasta_path) as fh:
             while piece := fh.readline(1 << 16):
                 if at_line_start:
                     in_header = piece.startswith(">")
@@ -98,7 +96,7 @@ def reference_length(fasta_path):
                     total += len(piece.strip())
                 at_line_start = piece.endswith("\n")
         return total
-    except Exception:  # corrupt gzip (zlib.error), half-written .fai, memory, ...
+    except Exception:  # half-written .fai, unreadable file, memory, ...
         return None
 
 

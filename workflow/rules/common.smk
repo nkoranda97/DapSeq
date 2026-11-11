@@ -9,6 +9,11 @@ from layout_utils import (
 from sample_names import control_name_collisions, invalid_sample_names, sample_regex
 from meme_colors import base_colors as _base_colors, meme_alphabet
 from pipeline_version import pipeline_version
+from config_checks import (
+    compressed_reference_error, fill_empty_sections, macs3_format_override,
+    sample_config_errors,
+)
+import yaml
 
 # Known top-level config keys — union of config.yaml and config/config.yaml,
 # plus keys that have no YAML default but are accessed via config.get().
@@ -49,6 +54,15 @@ if _unexpected_keys:
         )
     raise ValueError(f"Unrecognized config key(s): {sorted(_unexpected_keys)}.{_hint}")
 
+# A section header with every key commented out parses as null, and the merge
+# then drops all of that section's defaults; give it back its defaults.
+with open(os.path.join(workflow.basedir, "..", "config", "config.yaml")) as _fh:
+    fill_empty_sections(config, yaml.safe_load(_fh))
+
+_sample_errors = sample_config_errors(config["samples"])
+if _sample_errors:
+    raise ValueError("Invalid sample settings:\n" + "\n".join(_sample_errors))
+
 # macs3 sub-keys are not covered by the top-level guard; catch the removed one
 # so it is not silently ignored.
 if "min_foldch" in (config.get("macs3") or {}):
@@ -59,7 +73,7 @@ if "min_foldch" in (config.get("macs3") or {}):
 
 
 def get_r1(sample):
-    return as_list(config["samples"][sample]["r1"])
+    return as_list(config["samples"][sample].get("r1"))
 
 
 def get_r2(sample):
@@ -225,8 +239,9 @@ if _fb_meme and not os.path.exists(_fb_meme):
     _path_errors.append(f"  factorbook.meme: '{_fb_meme}' does not exist")
 
 _lane_errors = lane_count_errors(config["samples"], PE_SAMPLES)
+_ref_error = compressed_reference_error(config["genome_ref"])
 
-if _path_errors or _lane_errors:
+if _path_errors or _lane_errors or _ref_error:
     _msg = []
     if _path_errors:
         _msg.append(
@@ -236,10 +251,15 @@ if _path_errors or _lane_errors:
         )
     if _lane_errors:
         _msg.append("Mismatched r1/r2 lane counts:\n" + "\n".join(_lane_errors))
+    if _ref_error:
+        _msg.append("Compressed reference genome:\n" + _ref_error)
     raise ValueError("\n".join(_msg))
 
 # MACS3 -f: an explicit macs3.format overrides the per-call automatic choice.
-MACS3_FORMAT_OVERRIDE = config["macs3"].get("format") or None
+try:
+    MACS3_FORMAT_OVERRIDE = macs3_format_override(config["macs3"].get("format"), SE_SAMPLES)
+except ValueError as _e:
+    raise ValueError(f"Invalid config value(s):\n  {_e}") from None
 
 
 def is_pe(wc):
