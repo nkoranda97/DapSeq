@@ -9,8 +9,11 @@ Each run writes one row per sample to two tables:
 Both tables are joined via (output_dir, sample). Re-running the same
 output_dir replaces its rows in both tables (idempotent).
 
-Concurrency note: SQLite uses fcntl POSIX record locks internally, which work
-on Lustre/GPFS via NLM. The 60-second timeout serialises the rare case of two
+Concurrency note: SQLite serialises writers with fcntl POSIX record locks.
+Those hold across nodes only if the filesystem enforces them cluster-wide:
+GPFS does, and Lustre does only when mounted with the `flock` option
+(`localflock` or no option gives node-local or no locking). Put db_path on
+such a filesystem. The 60-second timeout serialises the rare case of two
 runs finishing simultaneously without failing. WAL mode is intentionally NOT
 used — WAL's shared-memory coordination requires both writers to be on the
 same physical node, which SLURM does not guarantee.
