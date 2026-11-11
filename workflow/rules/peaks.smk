@@ -40,16 +40,30 @@ rule macs3:
         runtime         = config["resources"]["macs3"]["runtime"],
     log:
         OUT + "/logs/macs3/{sample}.log"
+    # --verbose=1 keeps MACS3's warnings: it reports a failed model build as a
+    # warning before exiting 1, and --verbose=0 would leave the log silent.
     shell:
         """
         set -euo pipefail
         mkdir -p {params.tmpdir}
         export TMPDIR={params.tmpdir}
-        macs3 callpeak \
+        if ! macs3 callpeak \
           -t {input.sample_bam} {params.ctrl} \
           -f {params.macs3_format} --outdir {params.outdir} \
           -g {params.genome_size} -n {params.name} \
-          --call-summits --keep-dup {params.keep_dup} {params.nomodel} {params.extra} --verbose=0 2>{log}
+          --call-summits --keep-dup {params.keep_dup} {params.nomodel} {params.extra} --verbose=1 2>{log}
+        then
+          if grep -q "needs at least 100 paired peaks" {log}; then
+            echo "ERROR: MACS3 could not build a fragment-size model for sample" \
+              "'{wildcards.sample}': it found fewer than the 100 paired peaks it needs," \
+              "which usually means weak or no enrichment. Check this sample's" \
+              "alignment and enrichment, or remove it from the config. To call it" \
+              "anyway with a fixed fragment size, add '--nomodel --extsize 200' to" \
+              "macs3.extra; that changes the peak call for every sample in the run." \
+              | tee -a {log} >&2
+          fi
+          exit 1
+        fi
         """
 
 

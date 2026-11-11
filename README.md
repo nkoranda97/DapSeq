@@ -5,6 +5,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 ## What's changed (November 2026)
 
 - **MEME searches all of its input.** It used to sample the input down to 100,000 letters, so part of a peaks-mode input could be left out of motif discovery without notice. The pipeline now passes `-searchsize 0`. Runs with a large `meme.maxpeaks` take longer; to sample again, add `-searchsize <letters>` to `meme.extra`. The MEME rules changed, so an existing project re-runs MEME, FIMO, the logos and the stats on its next run.
+- **A treatment MACS3 can't model now says why it stopped.** A weak treatment called as `BAM` (single-end, or paired-end with a single-end control) can have too few paired peaks for MACS3's fragment-size model. MACS3 exits 1 and the run stops, as before, but the log and the job output now explain the cause and the `--nomodel --extsize 200` workaround. `logs/macs3/<sample>.log` also keeps MACS3's warnings (`--verbose=1`).
 
 ## What's changed (October 2026)
 
