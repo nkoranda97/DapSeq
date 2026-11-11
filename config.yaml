@@ -4,7 +4,7 @@
 
 author: "Your Name"
 
-# rename sample_name to name sample will be identified as
+# Rename each sample key (TF_A, input_A, ...) to the name the sample should be identified by
 # Use full paths to the raw data for r1 and r2
 # If SE, leave r2 as null
 # r1/r2 may be a list of lane files, e.g. r1: [/path/L1_R1.fq.gz, /path/L2_R1.fq.gz];
@@ -13,11 +13,11 @@ author: "Your Name"
 #
 # control (optional, per-sample): name of another sample to use as this sample's
 # MACS3 -c background and bamCompare -b2. Exactly one control per sample; leave
-# as null to peak-call this sample with no background. A sample named as a
-# control by others is peak-called against itself (QC self peak-call and an
-# against-itself run through the full treatment pipeline) and appears as a
-# flagged row in the report. Assign different controls to different samples to
-# run several experiments in one pipeline invocation.
+# as null to peak-call this sample with no background. A sample that other
+# samples name as their control is peak-called twice: once with no background
+# (QC self-call) and once against itself through the full treatment pipeline.
+# It appears as a flagged row in the report. Assign different controls to
+# different samples to run several experiments in one pipeline invocation.
 #
 # tf is optional: the TF name used to look up a reference motif in Factorbook
 # (ENCODE human ChIP-seq). Without it, the sample name is tried, then its part
@@ -67,14 +67,14 @@ genome_ref: null
 
 # Effective genome size: the part of the genome reads can map to, not the
 # assembly length. MACS3 uses it as -g and bamCoverage for RPGC scaling, so a
-# wrong value skews peak calls and coverage tracks. It cannot be larger than the
-# reference; the run warns when it is. Typical values and how to choose one:
-# README, "Choosing genome_size". Plain or scientific notation ("1.19e8").
+# wrong value skews peak calls and coverage tracks. It should not be larger than
+# the reference; the run warns when it is. See "Choosing genome_size" in the
+# README for typical values and how to choose one. Plain or scientific notation
+# ("1.19e8").
 # Required.
 genome_size: null
 
-# Path to GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
-# full path to gtf
+# Full path to a GTF/GFF for HOMER annotatePeaks. Set to null to skip annotation.
 gene_annotation: null
 
 aligner: bowtie2  # bowtie2 | bwa_mem2

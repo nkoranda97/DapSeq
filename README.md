@@ -163,7 +163,7 @@ MACS3's built-in values for common genomes come from deepTools' [effective genom
 
 For any other genome, including Arabidopsis, count the non-N bases of your reference FASTA, as that deepTools page describes; it also gives a stricter k-mer method for reads filtered to unique alignments.
 
-The value can never be larger than the reference itself. When it is, the run logs a startup warning naming both numbers and continues. The check compares against the full reference length, Ns included, so a value between the non-N count and the full length is not flagged.
+The value should not be larger than the reference itself. When it is, the run logs a startup warning naming both numbers and continues. The check compares against the full reference length, Ns included, so a value between the non-N count and the full length is not flagged.
 
 **Checking past runs.** The results database records each run's `genome_ref` and `genome_size`. To find runs that may have used a wrong size, for example the old template's human `3000000000` on another genome, list them and compare each with its reference:
 
@@ -175,9 +175,7 @@ Re-run any project whose size does not fit its reference.
 
 #### Running multiple experiments in one run
 
-Control is assigned **per sample** via each sample's `control:` key, so you can run
-several independent experiments in a single pipeline invocation — just point each
-sample at its own control:
+Each sample's `control:` key names its own control, so one pipeline invocation can run several independent experiments. Point each treatment at its own control:
 
 ```yaml
 samples:
@@ -187,17 +185,13 @@ samples:
   input_B: { r1: ..., control: null }
 ```
 
-Each treatment is peak-called against its assigned control; each control is
-peak-called against itself and shown as a flagged report row. There is exactly one
-control per sample (the `control:` value is a single sample name, not a list). The
-previous multi-control **merge** behavior (a top-level `control:` list merged into
-one `merged_control`) is no longer supported.
+Each treatment is peak-called against its assigned control. Each control is peak-called against itself and shown as a flagged report row. A sample has exactly one control: the `control:` value is a single sample name, not a list. The old top-level `control:` list, which merged several controls into one `merged_control`, is no longer supported.
 
 ### Notable options
 
 | Option | Default | Notes |
 |---|---|---|
-| `samples.<name>.control` | `null` | Per-sample: name of another sample to use as this sample's MACS3 `-c` background and bamCompare `-b2`. Exactly one control per sample; `null` peak-calls the sample with no background. A sample named as a control by others is peak-called **twice**: once with no input control (QC self peak-call), and once **against itself** (`-t control -c control`, expected to yield few or no peaks). The against-itself run flows through the full treatment pipeline (filtering, MEME/FIMO motifs, stats) and appears as a flagged row in the report. Assign different controls to different samples to run several experiments in one pipeline invocation. **The old top-level `control:` field has been removed** — a config that still sets it fails fast with a migration message |
+| `samples.<name>.control` | `null` | Per-sample: name of another sample to use as this sample's MACS3 `-c` background and bamCompare `-b2`. Exactly one control per sample; `null` peak-calls the sample with no background. A sample that other samples name as their control is peak-called twice: once with no background (the QC self-call), and once against itself (`-t control -c control`, which should yield few or no peaks). The against-itself run goes through the full treatment pipeline (filtering, MEME/FIMO motifs, stats) and appears as a flagged row in the report. Assign different controls to different samples to run several experiments in one pipeline invocation. The old top-level `control:` field has been removed; a config that still sets it stops at startup with a message explaining the per-sample key |
 | `samples.<name>.tf` | `null` | Optional TF name for the Factorbook reference logo (ENCODE human ChIP-seq targets, case-insensitive). Without it the sample name is tried, then its part before the first `_` or `-`; `logs/factorbook/<sample>.log` says what matched. Samples with no match, including non-human TFs, get no Factorbook logo |
 | `samples.<name>.experiment_date` | `null` | Optional per-sample date (free-form); shown as a report column and stored per-sample in the results database |
 | `samples.<name>.gdna_batch` | `null` | Optional per-sample gDNA batch label (free-form); shown as a report column and stored per-sample in the results database |
@@ -239,19 +233,19 @@ macs3:
 
 ---
 
-## Default Pipeline Parameters
+## Default pipeline parameters
 
->Only biologically relevent parameters are shown. Please refere to original documentation for additional parameters
+>Only biologically relevant parameters are shown. Please refer to the original documentation for additional parameters
 
 ### [bbduk](https://bbmap.org/tools/bbduk)
 
-- `qin=auto` — Input quality offest: `33`, `64`, or `auto` — type: `enum` — program default: `auto`
+- `qin=auto` — Input quality offset: `33`, `64`, or `auto` — type: `enum` — program default: `auto`
 - `k=21` — Kmer length used for finding contaminants. Contaminants shorter than k will not be found — type: `int` — program default: `31`
 - `rcomp=t` — Look for reverse-complements of kmers in addition to forward kmers — type: `bool` — program default: `t`
-- `maskmiddle=t` — Tread the middle base of a kmer as a wildcard to increase sensetivity in the presence of an error — type: `bool`|`enum`|`int` (1 for odd-length kmers | 2 for even-length kmers | n to mask n many bp's) — program default: `t`
-- `minkmerhits=1` — Reads need at leasy this many matching kmers to be considered as matching the reference — type: `int` — program default: `1`
-- `minkmerfraction=0.0` — Reads needs at least this fraction of its total kmers to hit a ref, in order to be considered a match. If this and minkmerhits are set, the greater is used — type: `float` — program default: `0.0`
-- `mincovfraction=0.0` — Reads needs at least this fraction of its total bases to be covered by ref kmers to be considered a match. If specified, mcf overrides mkh and mkf — type: `float` — program default: `0.0`
+- `maskmiddle=t` — Treat the middle base of a kmer as a wildcard to increase sensitivity in the presence of an error — type: `bool`|`enum`|`int` (1 for odd-length kmers | 2 for even-length kmers | n to mask n many bp's) — program default: `t`
+- `minkmerhits=1` — Reads need at least this many matching kmers to be considered as matching the reference — type: `int` — program default: `1`
+- `minkmerfraction=0.0` — Reads need at least this fraction of their total kmers to hit a ref, in order to be considered a match. If this and minkmerhits are set, the greater is used — type: `float` — program default: `0.0`
+- `mincovfraction=0.0` — Reads need at least this fraction of their total bases to be covered by ref kmers to be considered a match. If specified, mcf overrides mkh and mkf — type: `float` — program default: `0.0`
 - `hammingdistance=0` — Maximum Hamming distance for ref kmers (subs only). Memory use scales as (3×K)^hdist: E. coli with k=31, hdist=1 uses ~15GB vs 140MB at hdist=0 — type: `int` — program default: `0`
 - `qhdist=0` — Hamming distance for query kmers; impacts speed, not memory. Alternative to hdist for memory-constrained systems - mutates read kmers instead of reference kmers — type: `int` — program default: `0`
 - `editdistance=0` — Maximum edit distance from ref kmers (subs and indels). Memory use scales as (8×K)^edist. Use qhdist instead of edist/hdist if insufficient memory available — type: `int` — program default: `0`

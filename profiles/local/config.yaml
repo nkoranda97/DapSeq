@@ -14,7 +14,7 @@ apptainer-args: "--bind $HOME"
 # Conservative parallel-job limit for a workstation; override with --jobs N.
 jobs: 4
 
-# Resource hints — same keys as the default profile so per-rule declarations resolve.
+# Default resources, with the same keys as the SLURM profile so per-rule declarations resolve.
 default-resources:
   mem_mb: 8000
   runtime: 120          # minutes

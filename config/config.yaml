@@ -1,8 +1,8 @@
 # control (optional, per-sample): name of another sample to use as this sample's
 # MACS3 -c background and bamCompare -b2. Exactly one control per sample; null
 # means no background. A sample named as a control by others is peak-called
-# against itself and shown as a flagged report row. Different controls on
-# different samples run several experiments in one invocation.
+# against itself and shown as a flagged report row. Giving samples different
+# controls runs several experiments in one invocation.
 # experiment_date / gdna_batch are optional per-sample provenance (free-form).
 # tf (optional) is the TF name used to find a Factorbook motif; without it the
 # sample name, then its part before the first _ or -, is tried.
