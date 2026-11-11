@@ -20,6 +20,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **A section with every key commented out uses its defaults.** A config with `factorbook:` and nothing under it, or `meme:` under `resources:`, used to crash while the workflow loaded.
 - **`rmsk_filter` checks its file.** A repeat file not in UCSC `rmsk.txt` layout (for example a plant TE BED or GFF), or one whose chromosome names don't match the reference (`chr1` vs `1`), used to remove nothing without saying so; it now stops the run with a message. An uncompressed `rmsk.txt` is accepted too.
 - **The results database records every lane.** `r1` and `r2` in both tables used to hold only the first lane of a multi-lane sample. They now hold all lanes in config order, joined with `;` (`/data/L1_R1.fq.gz;/data/L2_R1.fq.gz`). Single-lane samples still store a plain path. Rows from earlier runs keep their first-lane value until the project is re-run.
+- **A metadata value of `0` is kept.** `gdna_batch: 0` (or any other falsy `experiment_date` / `gdna_batch`) used to show as `NA` in the report and empty in the database.
 
 ## What's changed (October 2026)
 

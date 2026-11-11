@@ -158,6 +158,11 @@ def read_report(path):
     return result
 
 
+def _text_or_empty(value):
+    """Optional per-sample metadata as text; "" only when unset (0 is a value)."""
+    return "" if value is None or value == "" else str(value)
+
+
 # Multi-lane r1/r2 values are stored as one cell, lanes joined in config order.
 LANE_SEPARATOR = ";"
 
@@ -390,8 +395,8 @@ def main():
             "author":          author,
             "run_date":        run_date,
             "pipeline_version": pipeline_version,
-            "experiment_date": scfg.get("experiment_date") or "",
-            "gdna_batch":      scfg.get("gdna_batch") or "",
+            "experiment_date": _text_or_empty(scfg.get("experiment_date")),
+            "gdna_batch":      _text_or_empty(scfg.get("gdna_batch")),
             "genome_ref":      sm.params.genome_ref,
             "gene_annotation": gene_annotation,
             "r1":              r1,

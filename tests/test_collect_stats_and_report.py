@@ -4,6 +4,7 @@ and the mapping_pct column surfaced through report.make_cols / build_row.
 """
 
 import csv
+import datetime
 import os
 import sys
 from pathlib import Path
@@ -238,6 +239,14 @@ def test_run_csv_excludes_mapping_rate_and_includes_renamed_frip(tmp_path):
 
 
 # ---------------------------------------------------------------------------
+@pytest.mark.parametrize("value, expected", [
+    (None, "NA"), ("", "NA"), (0, "0"), ("batch-07", "batch-07"),
+    (datetime.date(2026, 7, 14), "2026-07-14"),   # unquoted YAML date
+])
+def test_metadata_value_keeps_falsy_labels(value, expected):
+    assert cs.metadata_value(value) == expected
+
+
 # Per-sample experiment_date / gdna_batch flow through stats CSV -> report CSV
 # ---------------------------------------------------------------------------
 

@@ -526,7 +526,7 @@ def _run_main(tmp_path, monkeypatch, output_dir="out/", suffix="_bl",
         samples_cfg={
             "TF_A":    {"r1": ["L1_R1.fq.gz", "L2_R1.fq.gz"], "r2": ["L1_R2.fq.gz", "L2_R2.fq.gz"],
                         "control": "input_A", "experiment_date": "2026-10-01"},
-            "input_A": {"r1": "in_R1.fq.gz", "r2": None, "control": None},
+            "input_A": {"r1": "in_R1.fq.gz", "r2": None, "control": None, "gdna_batch": 0},
             "unused":  {"r1": None},
         },
         treatment_samples=["TF_A"], genome_ref="/ref/g.fa", genome_size=2700000000,
@@ -558,6 +558,13 @@ def test_main_records_treatment_control_and_stats(tmp_path, monkeypatch):
     assert runs["TF_A"]["num_peaks"] == "120" and runs["TF_A"]["frip"] == "12.5"
     assert runs["TF_A"]["num_peaks_bl"] == "100"
     assert meta["TF_A"]["experiment_date"] == "2026-10-01"
+
+
+def test_main_keeps_falsy_metadata_values(tmp_path, monkeypatch):
+    # gdna_batch: 0 is a real batch label, not "unset"
+    _, meta = _run_main(tmp_path, monkeypatch)
+    assert meta["input_A"]["gdna_batch"] == "0"
+    assert meta["TF_A"]["gdna_batch"] == ""          # unset stays empty
 
 
 def test_main_records_every_lane_of_each_mate_in_both_tables(tmp_path, monkeypatch):

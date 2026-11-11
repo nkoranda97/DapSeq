@@ -96,6 +96,11 @@ def _safe_pct(numerator, denominator):
         return NA
 
 
+def metadata_value(value):
+    """Optional per-sample metadata as text; NA only when unset (0 is a value)."""
+    return NA if value is None or value == "" else str(value)
+
+
 def _gate_subsampled(subsampled, max_frags):
     """Return subsampled count if max_frags is set, else NA."""
     return subsampled if max_frags else NA
@@ -248,12 +253,8 @@ def main():
     row["sample"] = sample
 
     # --- Per-sample provenance (optional, from config) ---
-    row["experiment_date"] = (
-        str(sm.params.experiment_date) if sm.params.experiment_date else NA
-    )
-    row["gdna_batch"] = (
-        str(sm.params.gdna_batch) if sm.params.gdna_batch else NA
-    )
+    row["experiment_date"] = metadata_value(sm.params.experiment_date)
+    row["gdna_batch"] = metadata_value(sm.params.gdna_batch)
 
     # --- Log-parsed stats (all samples) ---
     total_reads, subsampled = _parse_subsample_log(sm.input.subsample_log, is_pe)
