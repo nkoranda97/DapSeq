@@ -2,6 +2,10 @@
 
 Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clusters or local workstations via Apptainer.
 
+## What's changed (November 2026)
+
+- **MEME searches all of its input.** It used to sample the input down to 100,000 letters, so part of a peaks-mode input could be left out of motif discovery without notice. The pipeline now passes `-searchsize 0`. Runs with a large `meme.maxpeaks` take longer; to sample again, add `-searchsize <letters>` to `meme.extra`. The MEME rules changed, so an existing project re-runs MEME, FIMO, the logos and the stats on its next run.
+
 ## What's changed (October 2026)
 
 ### Update your setup before the next run
@@ -217,7 +221,7 @@ Each treatment is peak-called against its assigned control. Each control is peak
 | `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
 | `meme.mod` | `anr` | Motif site distribution model (program default: `zoops`) |
 | `meme.markov_order` | `0` | Background Markov model order built from input sequences; try `2` to suppress composition-driven repeats |
-| `meme.maxsize` | `10000000` | Max total size (bp) of input sequences searched for motifs (`searchsize`; program default: sampling above `100000`) |
+| `meme.maxsize` | `10000000` | Largest MEME input accepted, in letters (`-maxsize`; program default: no limit). MEME searches every input sequence (`-searchsize 0`); the input is already capped by `meme.maxpeaks`, so raising `maxpeaks` makes MEME slower (roughly with the square of the input size) instead of sampling it |
 | `meme.summit_extend` | `50` | bp around the peak summit used for motif search in "summits" mode |
 | `meme.base_colors` | unset | Optional hex color overrides for sequence logos |
 | `fimo.thresh` | `1.0e-5` | p-value threshold for FIMO motif scanning |
@@ -431,7 +435,7 @@ macs3:
 - `shuf=2` — Kmer size (1-6) whose frequencies are preserved when shuffling primary sequences to create control sequences. Avoid 1 with masked (e.g. RepeatMasker) sequences — type: `int` — program default: `2`
 - `hsfrac=0.5` — Fraction of primary sequences held out for estimating motif width, site count, and significance, for objective functions that require hold-out sets — type: `float` — program default: `0.5`
 - `cefrac=0.25` — Fraction of each sequence's length used as the central region for the Central Enrichment (and Central Distance) objective functions — type: `float` — program default: `0.25`
-- `searchsize=` — Max total size (letters) of primary sequences searched for motifs; larger inputs are randomly subsampled. `0` disables sampling (uses everything, very slow). Doesn't affect reported motif frequencies/sites — type: `int` — program default: sampling occurs above `100000` letters
+- `searchsize=0` — Max total size (letters) of primary sequences searched for motifs; larger inputs are randomly subsampled. `0` disables sampling (uses everything, very slow). Doesn't affect reported motif frequencies/sites. The pipeline passes `0`; set a value in `meme.extra` to sample again — type: `int` — program default: sampling occurs above `100000` letters
 - `norand=f` — Don't randomize sequence order before applying searchsize sampling. Use if sequences are already ordered by confidence — type: `bool` — program default: `f`
 - `csites=1000` — Max sites used for E-value computation with the `classic` objective function; larger sets are subsampled (oops/zoops) or capped (anr) — type: `int` — program default: `1000`
 - `seed=0` — Random seed used for shuffling and sampling sequences — type: `int` — program default: `0`

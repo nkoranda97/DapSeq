@@ -95,7 +95,7 @@ rule meme_summits:
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
-                -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
+                -maxsize {params.maxsize} -searchsize 0 -p {threads} -nostatus {params.extra} \
                 2>{log}
             rm -f "$MEME_IN"
             fi
@@ -170,7 +170,7 @@ rule meme_peaks:
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
-                -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
+                -maxsize {params.maxsize} -searchsize 0 -p {threads} -nostatus {params.extra} \
                 2>{log}
             rm -f "$MEME_IN"
             fi
