@@ -7,8 +7,10 @@ logic is unit-testable.
 import re
 
 # Output paths use "{sample}.{read}" and directories per sample, so a sample
-# name cannot contain "." or "/"; whitespace breaks the shell commands.
+# name cannot contain "." or "/". Names also go unquoted into shell commands,
+# so only characters with no shell meaning are allowed.
 _FORBIDDEN = re.compile(r"[./\s]")
+_ALLOWED = re.compile(r"[A-Za-z0-9_+-]+")
 
 
 def sample_regex(names):
@@ -18,11 +20,23 @@ def sample_regex(names):
 
 
 def invalid_sample_names(names):
-    """One error line per name containing ".", "/" or whitespace."""
-    return [
-        f"  sample {n!r}: names may not contain '.', '/' or whitespace"
-        for n in names if _FORBIDDEN.search(n)
-    ]
+    """One error line per name the workflow cannot use: anything but letters,
+    digits, "_", "+" and "-", a leading "-", or a name that is not text."""
+    errors = []
+    for n in names:
+        if not isinstance(n, str):
+            errors.append(
+                f"  sample {n!r}: names must be text; quote it in the config, e.g. \"{n}\":"
+            )
+        elif _FORBIDDEN.search(n):
+            errors.append(f"  sample {n!r}: names may not contain '.', '/' or whitespace")
+        elif not _ALLOWED.fullmatch(n):
+            errors.append(
+                f"  sample {n!r}: names may only contain letters, digits, '_', '+' and '-'"
+            )
+        elif n.startswith("-"):
+            errors.append(f"  sample {n!r}: names may not start with '-'")
+    return errors
 
 
 def control_name_collisions(names, controls):

@@ -12,7 +12,7 @@ rule update_db:
         genome_size      = GENOME_SIZE,
         threads          = config["threads"],
         mapq             = config["samtools"]["mapq"],
-        max_frags        = config["bbduk"].get("max_frags"),
+        max_frags        = MAX_FRAGS,
         macs3_format     = MACS3_FORMAT_OVERRIDE or "auto",
         macs3_foldch_levels  = config["macs3"]["foldch_levels"],
         macs3_meme_foldch_level = MEME_FOLD_IDX,

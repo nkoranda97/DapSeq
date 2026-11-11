@@ -44,6 +44,8 @@ def find_motif_ids(tsv_path, candidates):
         ti, ai, ni = (header.index(c) for c in _REQUIRED_COLUMNS)
         ids_by_target = {}
         for line in fh:
+            if not line.strip():
+                continue  # blank lines in a user-edited catalog
             parts = line.rstrip("\n").split("\t")
             ids = ids_by_target.setdefault(parts[ti].upper(), [])
             mid = f"{parts[ai]}_{parts[ni]}"

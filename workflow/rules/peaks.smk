@@ -40,16 +40,30 @@ rule macs3:
         runtime         = config["resources"]["macs3"]["runtime"],
     log:
         OUT + "/logs/macs3/{sample}.log"
+    # --verbose=1 keeps MACS3's warnings: it reports a failed model build as a
+    # warning before exiting 1, and --verbose=0 would leave the log silent.
     shell:
         """
         set -euo pipefail
         mkdir -p {params.tmpdir}
         export TMPDIR={params.tmpdir}
-        macs3 callpeak \
+        if ! macs3 callpeak \
           -t {input.sample_bam} {params.ctrl} \
           -f {params.macs3_format} --outdir {params.outdir} \
           -g {params.genome_size} -n {params.name} \
-          --call-summits --keep-dup {params.keep_dup} {params.nomodel} {params.extra} --verbose=0 2>{log}
+          --call-summits --keep-dup {params.keep_dup} {params.nomodel} {params.extra} --verbose=1 2>{log}
+        then
+          if grep -q "needs at least 100 paired peaks" {log}; then
+            echo "ERROR: MACS3 could not build a fragment-size model for sample" \
+              "'{wildcards.sample}': it found fewer than the 100 paired peaks it needs," \
+              "which usually means weak or no enrichment. Check this sample's" \
+              "alignment and enrichment, or remove it from the config. To call it" \
+              "anyway with a fixed fragment size, add '--nomodel --extsize 200' to" \
+              "macs3.extra; that changes the peak call for every sample in the run." \
+              | tee -a {log} >&2
+          fi
+          exit 1
+        fi
         """
 
 
@@ -113,6 +127,7 @@ if config.get("rmsk_filter", {}).get("enabled", False):
         input:
             peaks = get_pre_rmsk_peaks,
             rmsk  = config["rmsk_filter"]["txt"],
+            fai   = config["genome_ref"] + ".fai",   # written by the index rule
         output:
             OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}{_RMSK_IN_SUFFIX}_rmsk.narrowPeak",
         resources:
@@ -120,13 +135,34 @@ if config.get("rmsk_filter", {}).get("enabled", False):
             runtime         = config["resources"]["rmsk_filter_peaks"]["runtime"],
         log:
             OUT + "/logs/rmsk_filter/{sample}.log"
+        # UCSC rmsk.txt holds chrom/start/end in columns 6-8; rows whose column 7
+        # is not a number (a header, or a file in another layout) are skipped.
+        # A file that yields no intervals, or none on this genome's chromosomes
+        # (a BED9/BED12 puts the strand in column 6; chr1 vs 1 naming), would
+        # remove nothing, so stop instead. gzip -cdf reads it gzipped or plain.
         shell:
             """
             set -euo pipefail
-            zcat {input.rmsk} \
-              | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' \
-              | bedtools intersect -v -a {input.peaks} -b stdin \
-              > {output} 2>{log}
+            REPEATS={output}.repeats.bed
+            trap 'rm -f "$REPEATS"' EXIT
+            gzip -cdf {input.rmsk} \
+              | awk '($7+0)==$7 {{OFS="\\t"; print $6, $7, $8}}' > "$REPEATS"
+            if [ ! -s "$REPEATS" ]; then
+              echo "ERROR: rmsk_filter.txt '{input.rmsk}' has no rows in UCSC rmsk.txt" \
+                "layout (chromosome, start and end in columns 6-8), so the repeat filter" \
+                "would remove nothing. Use a UCSC rmsk.txt(.gz) for this genome, or set" \
+                "rmsk_filter.enabled: false." | tee {log} >&2
+              exit 1
+            fi
+            if ! awk 'NR == FNR {{ chrom[$1]; next }} ($1 in chrom) {{ found = 1; exit }}
+                      END {{ exit !found }}' {input.fai} "$REPEATS"; then
+              echo "ERROR: no repeat in rmsk_filter.txt '{input.rmsk}' lies on a chromosome" \
+                "of genome_ref, so the repeat filter would remove nothing. Check that it is a" \
+                "UCSC rmsk.txt (not a BED or GFF) for this genome and that its chromosome" \
+                "names match the reference (e.g. chr1 vs 1)." | tee {log} >&2
+              exit 1
+            fi
+            bedtools intersect -v -a {input.peaks} -b "$REPEATS" > {output} 2>{log}
             """
 
 

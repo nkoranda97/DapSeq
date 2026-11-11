@@ -1,4 +1,6 @@
 _FB_DIR  = os.path.join(workflow.basedir, "..", "factorbook")
+# Custom MEME alphabet for meme.base_colors, with newlines as printf escapes.
+_MEME_ALPHABET = meme_alphabet(BASE_COLORS).replace("\n", "\\n")
 _FB_TSV  = (config.get("factorbook", {}).get("tsv") or
             os.path.join(_FB_DIR, "factorbook_chip_seq_meme_motifs.tsv"))
 _FB_MEME = (config.get("factorbook", {}).get("meme") or
@@ -17,7 +19,7 @@ rule factorbook_logo:
         mem_mb          = config["resources"]["logo"]["mem_mb"],
         runtime         = config["resources"]["logo"]["runtime"],
     params:
-        base_colors = config["meme"].get("base_colors") or {},
+        base_colors = BASE_COLORS,
         tf          = lambda wc: config["samples"][wc.sample].get("tf"),
     log:
         OUT + "/logs/factorbook/{sample}.log"
@@ -60,11 +62,8 @@ rule meme_summits:
         markov_order = config["meme"].get("markov_order", 0),
         maxsize    = config["meme"].get("maxsize", 10000000),
         extra      = config["meme"].get("extra", ""),
-        has_custom = "1" if config["meme"].get("base_colors") else "",
-        a_color    = ((config["meme"].get("base_colors") or {}).get("A") or "008000").lstrip("#"),
-        c_color    = ((config["meme"].get("base_colors") or {}).get("C") or "0000FF").lstrip("#"),
-        g_color    = ((config["meme"].get("base_colors") or {}).get("G") or "FFB300").lstrip("#"),
-        t_color    = ((config["meme"].get("base_colors") or {}).get("T") or "FF0000").lstrip("#"),
+        has_custom = "1" if BASE_COLORS else "",
+        alphabet   = _MEME_ALPHABET,
     threads:
         config["threads"]
     resources:
@@ -85,8 +84,7 @@ rule meme_summits:
                 rm -f "$MEME_IN"
             else
             if [ -n "{params.has_custom}" ]; then
-                printf 'ALPHABET "DNA"\\nA ADENINE {params.a_color} ~ T THYMINE {params.t_color}\\nC CYTOSINE {params.c_color} ~ G GUANINE {params.g_color}\\nEND ALPHABET\\n' \
-                    > {params.outdir}/custom_alph.txt
+                printf '{params.alphabet}' > {params.outdir}/custom_alph.txt
                 ALPH="-alph {params.outdir}/custom_alph.txt"
             else
                 ALPH="-dna"
@@ -95,7 +93,7 @@ rule meme_summits:
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
-                -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
+                -maxsize {params.maxsize} -searchsize 0 -p {threads} -nostatus {params.extra} \
                 2>{log}
             rm -f "$MEME_IN"
             fi
@@ -110,7 +108,7 @@ rule meme_logo_summits:
         logo    = OUT + "/meme/{sample}/summits/logo1.png",
         logo_rc = OUT + "/meme/{sample}/summits/logo_rc1.png",
     params:
-        base_colors = config["meme"].get("base_colors") or {},
+        base_colors = BASE_COLORS,
     resources:
         mem_mb          = config["resources"]["logo"]["mem_mb"],
         runtime         = config["resources"]["logo"]["runtime"],
@@ -135,11 +133,8 @@ rule meme_peaks:
         markov_order = config["meme"].get("markov_order", 0),
         maxsize    = config["meme"].get("maxsize", 10000000),
         extra      = config["meme"].get("extra", ""),
-        has_custom = "1" if config["meme"].get("base_colors") else "",
-        a_color    = ((config["meme"].get("base_colors") or {}).get("A") or "008000").lstrip("#"),
-        c_color    = ((config["meme"].get("base_colors") or {}).get("C") or "0000FF").lstrip("#"),
-        g_color    = ((config["meme"].get("base_colors") or {}).get("G") or "FFB300").lstrip("#"),
-        t_color    = ((config["meme"].get("base_colors") or {}).get("T") or "FF0000").lstrip("#"),
+        has_custom = "1" if BASE_COLORS else "",
+        alphabet   = _MEME_ALPHABET,
     threads:
         config["threads"]
     resources:
@@ -160,8 +155,7 @@ rule meme_peaks:
                 rm -f "$MEME_IN"
             else
             if [ -n "{params.has_custom}" ]; then
-                printf 'ALPHABET "DNA"\\nA ADENINE {params.a_color} ~ T THYMINE {params.t_color}\\nC CYTOSINE {params.c_color} ~ G GUANINE {params.g_color}\\nEND ALPHABET\\n' \
-                    > {params.outdir}/custom_alph.txt
+                printf '{params.alphabet}' > {params.outdir}/custom_alph.txt
                 ALPH="-alph {params.outdir}/custom_alph.txt"
             else
                 ALPH="-dna"
@@ -170,7 +164,7 @@ rule meme_peaks:
                 -mod {params.mod} -nmotifs {params.nmotifs} \
                 -minw {params.minw} -maxw {params.maxw} \
                 -markov_order {params.markov_order} \
-                -maxsize {params.maxsize} -p {threads} -nostatus {params.extra} \
+                -maxsize {params.maxsize} -searchsize 0 -p {threads} -nostatus {params.extra} \
                 2>{log}
             rm -f "$MEME_IN"
             fi
@@ -185,7 +179,7 @@ rule meme_logo_peaks:
         logo    = OUT + "/meme/{sample}/peaks/logo1.png",
         logo_rc = OUT + "/meme/{sample}/peaks/logo_rc1.png",
     params:
-        base_colors = config["meme"].get("base_colors") or {},
+        base_colors = BASE_COLORS,
     resources:
         mem_mb          = config["resources"]["logo"]["mem_mb"],
         runtime         = config["resources"]["logo"]["runtime"],

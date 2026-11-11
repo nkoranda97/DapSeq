@@ -79,6 +79,17 @@ def test_missing_catalog_column_names_the_column(tmp_path):
         m.find_motif_ids(str(bad), ["CTCF"])
 
 
+@pytest.mark.parametrize("text", [
+    TSV.replace("ENCSR3", "\nENCSR3") + "\n\n",   # blank lines, including at the end
+    TSV.replace("\n", "\r\n"),                    # CRLF line endings
+], ids=["blank-lines", "crlf"])
+def test_user_catalog_with_blank_lines_or_crlf_still_matches(tmp_path, text):
+    tsv = tmp_path / "fb.tsv"
+    tsv.write_bytes(text.encode())
+    assert m.find_motif_ids(str(tsv), ["CTCF"]) == ("CTCF", ["ENCSR1_CCGCG", "ENCSR2_CCACT"])
+    assert m.find_motif_ids(str(tsv), ["MYC"]) == ("MYC", ["ENCSR3_CACGTG"])
+
+
 def test_best_motif_has_most_sites(catalog):
     _, meme = catalog
     ppm = m.best_motif_ppm(meme, ["ENCSR1_CCGCG", "ENCSR2_CCACT"])

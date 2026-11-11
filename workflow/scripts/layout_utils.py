@@ -4,7 +4,6 @@ Imported by workflow/rules/common.smk. Kept free of Snakemake objects so the
 logic is unit-testable.
 """
 
-import gzip
 import os
 from decimal import Decimal, InvalidOperation
 
@@ -58,39 +57,44 @@ def fallback_pairs(sample_control, pe_samples, override):
     ]
 
 
-def parse_genome_size(value):
-    """genome_size as a positive whole number. Accepts an int, a digit string,
-    or scientific notation such as "2.7e9"; raises ValueError otherwise."""
+def parse_positive_whole_number(value, key, example):
+    """*value* as a positive whole number. Accepts an int, a digit string, or
+    scientific notation such as "2.7e9"; raises ValueError naming *key* (with
+    *example*, a valid value) otherwise."""
     if value is None or isinstance(value, bool):
-        raise ValueError(f"genome_size must be a positive whole number, got {value!r}")
+        raise ValueError(f"{key} must be a positive whole number, got {value!r}")
     try:
-        size = Decimal(str(value).strip())
+        number = Decimal(str(value).strip())
     except InvalidOperation:
         raise ValueError(
-            f"genome_size must be a number such as 2700000000 or \"2.7e9\", got {value!r}"
+            f"{key} must be a number such as {example}, got {value!r}"
         ) from None
-    if not size.is_finite() or size <= 0 or size != size.to_integral_value():
-        raise ValueError(f"genome_size must be a positive whole number, got {value!r}")
-    return int(size)
+    if not number.is_finite() or number <= 0 or number != number.to_integral_value():
+        raise ValueError(f"{key} must be a positive whole number, got {value!r}")
+    return int(number)
+
+
+def parse_genome_size(value):
+    """genome_size as a positive whole number (see parse_positive_whole_number)."""
+    return parse_positive_whole_number(value, "genome_size", '2700000000 or "2.7e9"')
 
 
 def reference_length(fasta_path):
     """Total sequence length of a reference FASTA, or None when it cannot be read.
 
     Sums <fasta>.fai (samtools faidx) when it exists; otherwise counts the
-    FASTA's sequence letters, through gzip for a .gz path, reading in bounded
-    pieces so an unwrapped chromosome is never held in memory whole. Any
-    failure gives None: the caller only warns, and an exception raised in
-    onstart would stop the run.
+    FASTA's sequence letters, reading in bounded pieces so an unwrapped
+    chromosome is never held in memory whole. A compressed reference is
+    rejected at startup, before this runs. Any failure gives None: the caller
+    only warns, and an exception raised in onstart would stop the run.
     """
     try:
         fai = fasta_path + ".fai"
         if os.path.exists(fai):
             with open(fai) as fh:
                 return sum(int(line.split("\t")[1]) for line in fh if line.strip())
-        opener = gzip.open if fasta_path.endswith(".gz") else open
         total, at_line_start, in_header = 0, True, False
-        with opener(fasta_path, "rt") as fh:
+        with open(fasta_path) as fh:
             while piece := fh.readline(1 << 16):
                 if at_line_start:
                     in_header = piece.startswith(">")
@@ -98,7 +102,7 @@ def reference_length(fasta_path):
                     total += len(piece.strip())
                 at_line_start = piece.endswith("\n")
         return total
-    except Exception:  # corrupt gzip (zlib.error), half-written .fai, memory, ...
+    except Exception:  # half-written .fai, unreadable file, memory, ...
         return None
 
 

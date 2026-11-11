@@ -2,6 +2,24 @@
 
 Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clusters or local workstations via Apptainer.
 
+## What's changed (November 2026)
+
+**Before re-running an existing project:** the trimming, MACS3 and MEME rules changed, so Snakemake recomputes an existing `output_dir` from trimming onward. To keep the existing trimming, alignments and peaks, run with `--rerun-triggers mtime --forcerun meme_summits meme_peaks`; that re-runs only MEME and what depends on it (FIMO, logos, stats, report, database row), which picks up the MEME change below.
+
+- **MEME searches all of its input.** It used to sample the input down to 100,000 letters, so part of a peaks-mode input could be left out of motif discovery without notice. The pipeline now passes `-searchsize 0`. Runs with a large `meme.maxpeaks` take longer; to sample again, add `-searchsize <letters>` to `meme.extra`.
+- **A treatment MACS3 can't model now says why it stopped.** A weak treatment called as `BAM` (single-end, or paired-end with a single-end control) can have too few paired peaks for MACS3's fragment-size model. MACS3 exits 1 and the run stops, as before, but the log and the job output now explain the cause and the `--nomodel --extsize 200` workaround. `logs/macs3/<sample>.log` also keeps MACS3's warnings (`--verbose=1`).
+- **`bbduk.max_frags` subsampling works.** It needed `bc`, which the container doesn't have, so a run with `max_frags` set failed at trimming. The subsampling `reformat.sh` step is now capped at the same thread count as bbduk. `max_frags` must be a whole number (`10000000` or `"1e7"`); a value such as `10,000,000` or `10M` stops the run at startup.
+- **A corrupt or truncated `.fastq.gz` stops trimming with gzip's own error.** Before, it was read as plain text and bbduk failed with a parse error. Detecting gzip also no longer decompresses each input file one extra time.
+- **`meme.base_colors` works.** Setting it used to make both MEME rules fail on an alphabet file MEME rejected. Colors must be quoted hex strings; anything else stops the run at startup with a message.
+- **Sample names are limited to letters, digits, `_`, `+` and `-`.** Other characters, such as `(`, `;` or `$`, used to pass the startup checks and then break a shell command later in the run; they now stop the run at startup. Rename such samples, e.g. `TF(2)` to `TF_2`. Database rows already stored under the old name are not changed.
+- **More config mistakes stop the run at startup with a message:**
+  - a misspelled per-sample key, such as `contol:` (it used to be ignored, so the sample ran without its control);
+  - a sample with no settings at all;
+  - a `macs3.format` other than `BAM` or `BAMPE`, or `BAMPE` when some samples are single-end;
+  - a gzip- or bgzip-compressed `genome_ref`. Before, it failed at indexing, or with bgzip only after alignment and peak calling. Decompress it first.
+- **A section with every key commented out uses its defaults.** A config with `factorbook:` and nothing under it, or `meme:` under `resources:`, used to crash while the workflow loaded.
+- **`rmsk_filter` checks its file.** A repeat file not in UCSC `rmsk.txt` layout (for example a plant TE BED or GFF), or one whose chromosome names don't match the reference (`chr1` vs `1`), used to remove nothing without saying so; it now stops the run with a message. An uncompressed `rmsk.txt` is accepted too.
+
 ## What's changed (October 2026)
 
 ### Update your setup before the next run
@@ -142,7 +160,7 @@ samples:
     control: null                    # a control declares no control of its own
 
 output_dir: /path/to/output/
-genome_ref: /path/to/genome.fa
+genome_ref: /path/to/genome.fa   # uncompressed FASTA (not .gz)
 genome_size: null            # required: effective genome size, see "Choosing genome_size"
 gene_annotation: /path/to/annotation.gtf  # null to skip HOMER annotation
 
@@ -172,6 +190,10 @@ sqlite3 pipeline_db.db "SELECT DISTINCT output_dir, genome_ref, genome_size FROM
 ```
 
 Re-run any project whose size does not fit its reference.
+
+#### Sample names
+
+Sample names may contain only letters, digits, `_`, `+` and `-`, and may not start with `-`. A name made only of digits must be quoted (`"1234":`), because YAML reads it as a number. A sample may not be named `<control>_control` after one of its controls. Names that break these rules stop the run at startup.
 
 #### Running multiple experiments in one run
 
@@ -209,17 +231,17 @@ Each treatment is peak-called against its assigned control. Each control is peak
 | `bamcoverage.ignore_duplicates` | `true` | Count duplicate reads only once (program default: `f`) |
 | `chrom_filter` | `[]` | Chromosomes excluded from peaks before MEME (e.g. `[chrEBV]`) |
 | `blacklist_filter.enabled` / `.bed` | `false` / `null` | Drop peaks overlapping a blacklist BED before MEME. The hg38 ENCODE blacklist ships as `blacklist/hg38-blacklist.v2.bed.gz` |
-| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt.gz` for your genome (not in the repo) |
+| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt` for your genome, gzipped or not (not in the repo). A file in another layout, such as a BED or GFF of repeats, or with chromosome names that don't match the reference, stops the run instead of silently removing nothing |
 | `macs3.foldch_levels` | `[2, 5, 15]` | Three strictly increasing fold-change (narrowPeak column 7) thresholds; each writes `MACS/<sample>_peaks_fold<N>.narrowPeak` (N = 1, 2, 3) |
 | `macs3.meme_foldch_level` | `2` | Which fold level (1-3) feeds blacklist/rmsk filtering and MEME/FIMO. The final MEME input is `MACS/<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak` |
-| `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` to force one format. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
+| `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` (any case) to force one format; other values, or `BAMPE` when any sample is single-end, stop the run at startup. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
 | `meme.nmotifs` | `2` | Number of motifs to search for (program default: `1`) |
 | `meme.maxw` | `32` | Maximum motif width (program default: `50`) |
 | `meme.mod` | `anr` | Motif site distribution model (program default: `zoops`) |
 | `meme.markov_order` | `0` | Background Markov model order built from input sequences; try `2` to suppress composition-driven repeats |
-| `meme.maxsize` | `10000000` | Max total size (bp) of input sequences searched for motifs (`searchsize`; program default: sampling above `100000`) |
+| `meme.maxsize` | `10000000` | Largest MEME input accepted, in letters (`-maxsize`; program default: no limit). MEME searches every input sequence (`-searchsize 0`); the input is already capped by `meme.maxpeaks`, so raising `maxpeaks` makes MEME slower (roughly with the square of the input size) instead of sampling it |
 | `meme.summit_extend` | `50` | bp around the peak summit used for motif search in "summits" mode |
-| `meme.base_colors` | unset | Optional hex color overrides for sequence logos |
+| `meme.base_colors` | unset | Optional colors for MEME's output and the motif logos, as quoted six-digit hex per base, e.g. `base_colors: {A: "#00AA00", T: "AA0000"}`. Unquoted values stop the run at startup, because YAML reads `000000` as a number and `#00AA00` as a comment |
 | `fimo.thresh` | `1.0e-5` | p-value threshold for FIMO motif scanning |
 
 ### Extra arguments
@@ -431,7 +453,7 @@ macs3:
 - `shuf=2` — Kmer size (1-6) whose frequencies are preserved when shuffling primary sequences to create control sequences. Avoid 1 with masked (e.g. RepeatMasker) sequences — type: `int` — program default: `2`
 - `hsfrac=0.5` — Fraction of primary sequences held out for estimating motif width, site count, and significance, for objective functions that require hold-out sets — type: `float` — program default: `0.5`
 - `cefrac=0.25` — Fraction of each sequence's length used as the central region for the Central Enrichment (and Central Distance) objective functions — type: `float` — program default: `0.25`
-- `searchsize=` — Max total size (letters) of primary sequences searched for motifs; larger inputs are randomly subsampled. `0` disables sampling (uses everything, very slow). Doesn't affect reported motif frequencies/sites — type: `int` — program default: sampling occurs above `100000` letters
+- `searchsize=0` — Max total size (letters) of primary sequences searched for motifs; larger inputs are randomly subsampled. `0` disables sampling (uses everything, very slow). Doesn't affect reported motif frequencies/sites. The pipeline passes `0`; set a value in `meme.extra` to sample again — type: `int` — program default: sampling occurs above `100000` letters
 - `norand=f` — Don't randomize sequence order before applying searchsize sampling. Use if sequences are already ordered by confidence — type: `bool` — program default: `f`
 - `csites=1000` — Max sites used for E-value computation with the `classic` objective function; larger sets are subsampled (oops/zoops) or capped (anr) — type: `int` — program default: `1000`
 - `seed=0` — Random seed used for shuffling and sampling sequences — type: `int` — program default: `0`
