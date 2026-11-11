@@ -106,7 +106,7 @@ Concurrent runs are safe as long as each user sets `output_dir` to a unique loca
 
 Genome indexes are written next to `genome_ref`. When several users share a genome that has not been indexed yet, let one run build the index first; otherwise both runs try to write it, and the second is refused by the lock. Each user also needs write access to that directory for the first build.
 
-The shared database (`pipeline_db.db` in the repo root) accumulates results from all users' runs. Set `db_path` in your config to redirect to a private database if needed. Two runs that finish at the same moment on different nodes are kept apart by SQLite's file locks, which work across nodes only on a filesystem that enforces them cluster-wide: GPFS does, and Lustre only when mounted with the `flock` option (check with `mount | grep lustre`).
+The shared database (`pipeline_db.db` in the repo root) accumulates results from all users' runs. Set `db_path` in your config to redirect to a private database if needed. Two runs that finish at the same moment on different nodes are kept apart by SQLite's file locks, which work across nodes only on a filesystem that enforces them cluster-wide: GPFS does, and Lustre does when mounted with the `flock` option, while `localflock` locks per node only (check with `mount | grep lustre`).
 
 ## Outputs
 
