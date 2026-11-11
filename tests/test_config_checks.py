@@ -29,6 +29,40 @@ def test_set_or_absent_sections_are_left_alone():
     assert config == {"bbduk": {"k": 23}, "gene_annotation": None}
 
 
+def test_nested_section_with_all_keys_commented_out_gets_its_defaults():
+    # "resources:\n  meme:\n#    mem_mb: 32000" merges to resources.meme = None
+    config = {"resources": {"meme": None, "fimo": {"mem_mb": 1, "runtime": 2}}}
+    defaults = {"resources": {"meme": {"mem_mb": 16000, "runtime": 120},
+                              "fimo": {"mem_mb": 16000, "runtime": 60}}}
+    assert m.fill_empty_sections(config, defaults) == ["resources.meme"]
+    assert config["resources"]["meme"] == {"mem_mb": 16000, "runtime": 120}
+    assert config["resources"]["fimo"] == {"mem_mb": 1, "runtime": 2}
+
+
+# ── max_frags ─────────────────────────────────────────────────────────────────
+
+@pytest.mark.parametrize("value", [None, "", 0])
+def test_unset_max_frags_means_no_subsampling(value):
+    assert m.max_frags(value) is None
+
+
+@pytest.mark.parametrize("text, expected", [
+    ("max_frags: 10000000", 10_000_000),
+    ('max_frags: "1e7"', 10_000_000),
+    ("max_frags: 1.0e+7", 10_000_000),
+])
+def test_max_frags_accepts_whole_numbers(text, expected):
+    assert m.max_frags(yaml.safe_load(text)["max_frags"]) == expected
+
+
+@pytest.mark.parametrize("text", ["max_frags: 10,000,000", "max_frags: 10M", "max_frags: -5",
+                                  "max_frags: 2.5"])
+def test_max_frags_typos_are_rejected(text):
+    # mawk would read "10,000,000" and "10M" as 10 and keep ~10 fragments per sample
+    with pytest.raises(ValueError, match="bbduk.max_frags"):
+        m.max_frags(yaml.safe_load(text)["max_frags"])
+
+
 # ── sample_config_errors ──────────────────────────────────────────────────────
 
 def test_known_sample_keys_pass():

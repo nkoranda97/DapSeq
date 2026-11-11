@@ -127,6 +127,7 @@ if config.get("rmsk_filter", {}).get("enabled", False):
         input:
             peaks = get_pre_rmsk_peaks,
             rmsk  = config["rmsk_filter"]["txt"],
+            fai   = config["genome_ref"] + ".fai",   # written by the index rule
         output:
             OUT + f"/MACS/{{sample}}_peaks_fold{MEME_FOLD_IDX}{_RMSK_IN_SUFFIX}_rmsk.narrowPeak",
         resources:
@@ -136,8 +137,9 @@ if config.get("rmsk_filter", {}).get("enabled", False):
             OUT + "/logs/rmsk_filter/{sample}.log"
         # UCSC rmsk.txt holds chrom/start/end in columns 6-8; rows whose column 7
         # is not a number (a header, or a file in another layout) are skipped.
-        # A file that yields no intervals would remove nothing, so stop instead.
-        # gzip -cdf reads the file gzipped or plain.
+        # A file that yields no intervals, or none on this genome's chromosomes
+        # (a BED9/BED12 puts the strand in column 6; chr1 vs 1 naming), would
+        # remove nothing, so stop instead. gzip -cdf reads it gzipped or plain.
         shell:
             """
             set -euo pipefail
@@ -150,6 +152,14 @@ if config.get("rmsk_filter", {}).get("enabled", False):
                 "layout (chromosome, start and end in columns 6-8), so the repeat filter" \
                 "would remove nothing. Use a UCSC rmsk.txt(.gz) for this genome, or set" \
                 "rmsk_filter.enabled: false." | tee {log} >&2
+              exit 1
+            fi
+            if ! awk 'NR == FNR {{ chrom[$1]; next }} ($1 in chrom) {{ found = 1; exit }}
+                      END {{ exit !found }}' {input.fai} "$REPEATS"; then
+              echo "ERROR: no repeat in rmsk_filter.txt '{input.rmsk}' lies on a chromosome" \
+                "of genome_ref, so the repeat filter would remove nothing. Check that it is a" \
+                "UCSC rmsk.txt (not a BED or GFF) for this genome and that its chromosome" \
+                "names match the reference (e.g. chr1 vs 1)." | tee {log} >&2
               exit 1
             fi
             bedtools intersect -v -a {input.peaks} -b "$REPEATS" > {output} 2>{log}

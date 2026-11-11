@@ -57,20 +57,26 @@ def fallback_pairs(sample_control, pe_samples, override):
     ]
 
 
-def parse_genome_size(value):
-    """genome_size as a positive whole number. Accepts an int, a digit string,
-    or scientific notation such as "2.7e9"; raises ValueError otherwise."""
+def parse_positive_whole_number(value, key, example):
+    """*value* as a positive whole number. Accepts an int, a digit string, or
+    scientific notation such as "2.7e9"; raises ValueError naming *key* (with
+    *example*, a valid value) otherwise."""
     if value is None or isinstance(value, bool):
-        raise ValueError(f"genome_size must be a positive whole number, got {value!r}")
+        raise ValueError(f"{key} must be a positive whole number, got {value!r}")
     try:
-        size = Decimal(str(value).strip())
+        number = Decimal(str(value).strip())
     except InvalidOperation:
         raise ValueError(
-            f"genome_size must be a number such as 2700000000 or \"2.7e9\", got {value!r}"
+            f"{key} must be a number such as {example}, got {value!r}"
         ) from None
-    if not size.is_finite() or size <= 0 or size != size.to_integral_value():
-        raise ValueError(f"genome_size must be a positive whole number, got {value!r}")
-    return int(size)
+    if not number.is_finite() or number <= 0 or number != number.to_integral_value():
+        raise ValueError(f"{key} must be a positive whole number, got {value!r}")
+    return int(number)
+
+
+def parse_genome_size(value):
+    """genome_size as a positive whole number (see parse_positive_whole_number)."""
+    return parse_positive_whole_number(value, "genome_size", '2700000000 or "2.7e9"')
 
 
 def reference_length(fasta_path):

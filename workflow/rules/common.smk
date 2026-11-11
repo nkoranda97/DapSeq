@@ -11,7 +11,7 @@ from meme_colors import base_colors, meme_alphabet
 from pipeline_version import pipeline_version
 from config_checks import (
     compressed_reference_error, fill_empty_sections, macs3_format_override,
-    sample_config_errors,
+    max_frags, sample_config_errors,
 )
 import yaml
 
@@ -105,6 +105,8 @@ try:
     GENOME_SIZE = parse_genome_size(config["genome_size"])
     # {base: "RRGGBB"} for the MEME alphabet and the logos; {} when unset.
     BASE_COLORS = base_colors(config["meme"].get("base_colors"))
+    # Fragments to subsample to, or None for no subsampling.
+    MAX_FRAGS = max_frags(config["bbduk"].get("max_frags"))
 except ValueError as _e:
     raise ValueError(f"Invalid config value(s):\n  {_e}") from None
 

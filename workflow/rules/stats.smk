@@ -32,7 +32,7 @@ rule sample_stats:
         sample = REPORT_SAMPLE_CONSTRAINT,
     params:
         is_pe             = lambda wc: wc.sample in PE_SAMPLES,
-        max_frags         = config["bbduk"].get("max_frags"),
+        max_frags         = MAX_FRAGS,
         blacklist_enabled = config.get("blacklist_filter", {}).get("enabled", False),
         rmsk_enabled      = config.get("rmsk_filter",     {}).get("enabled", False),
         meme_foldch_level = MEME_FOLD_IDX,

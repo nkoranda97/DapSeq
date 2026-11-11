@@ -6,7 +6,7 @@ rule trim_se:
     output:
         r1           = OUT + "/trimmed/{sample}.R1.fastq.gz",
     params:
-        max_frags = config["bbduk"].get("max_frags") or "None",
+        max_frags = MAX_FRAGS or "None",
         adapters  = config["bbduk"].get("adapters") or "adapters",
         mem_gb    = config["bbduk"].get("mem_gb", 8),
         extra     = config["bbduk"].get("extra", ""),
@@ -104,7 +104,7 @@ rule trim_pe:
         r1               = OUT + "/trimmed/{sample}.R1.fastq.gz",
         r2               = OUT + "/trimmed/{sample}.R2.fastq.gz",
     params:
-        max_frags = config["bbduk"].get("max_frags") or "None",
+        max_frags = MAX_FRAGS or "None",
         adapters  = config["bbduk"].get("adapters") or "adapters",
         mem_gb    = config["bbduk"].get("mem_gb", 8),
         extra     = config["bbduk"].get("extra", ""),

@@ -4,7 +4,10 @@ Imported by workflow/rules/common.smk. Kept free of Snakemake objects so the
 logic is unit-testable.
 """
 
+import copy
 import difflib
+
+from layout_utils import parse_positive_whole_number
 
 # Keys a sample may set under samples: <name>:
 SAMPLE_KEYS = ("r1", "r2", "control", "tf", "experiment_date", "gdna_batch")
@@ -13,20 +16,37 @@ SAMPLE_KEYS = ("r1", "r2", "control", "tf", "experiment_date", "gdna_batch")
 MACS3_FORMATS = ("BAM", "BAMPE")
 
 
-def fill_empty_sections(config, defaults):
+def fill_empty_sections(config, defaults, _prefix=""):
     """Give every section left empty in the user's config its defaults.
 
-    A section header whose keys are all commented out (``factorbook:``) is
-    null after YAML parsing, and Snakemake's merge then replaces the whole
-    default section with None. Treat that as "no overrides". Modifies
-    *config* in place and returns the restored section names.
+    A section header whose keys are all commented out (``factorbook:``, or
+    ``meme:`` under ``resources:``) is null after YAML parsing, and Snakemake's
+    merge then replaces the whole default section with None. Treat that as
+    "no overrides", at any depth. Modifies *config* in place and returns the
+    restored sections as dotted names.
     """
     restored = []
     for key, default in defaults.items():
-        if isinstance(default, dict) and key in config and config[key] is None:
-            config[key] = dict(default)
-            restored.append(key)
+        if not isinstance(default, dict) or key not in config:
+            continue
+        if config[key] is None:
+            config[key] = copy.deepcopy(default)
+            restored.append(_prefix + key)
+        elif isinstance(config[key], dict):
+            restored += fill_empty_sections(config[key], default, f"{_prefix}{key}.")
     return restored
+
+
+def max_frags(value):
+    """bbduk.max_frags as a positive whole number, or None when subsampling
+    is off (null, empty or 0).
+
+    YAML reads 10,000,000 or 10M as a string, which the trim rules' awk would
+    turn into 10, so anything that is not a whole number raises ValueError.
+    """
+    if value is None or value == "" or value == 0:
+        return None
+    return parse_positive_whole_number(value, "bbduk.max_frags", '10000000 or "1e7"')
 
 
 def sample_config_errors(samples_cfg):

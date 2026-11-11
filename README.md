@@ -8,7 +8,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 
 - **MEME searches all of its input.** It used to sample the input down to 100,000 letters, so part of a peaks-mode input could be left out of motif discovery without notice. The pipeline now passes `-searchsize 0`. Runs with a large `meme.maxpeaks` take longer; to sample again, add `-searchsize <letters>` to `meme.extra`.
 - **A treatment MACS3 can't model now says why it stopped.** A weak treatment called as `BAM` (single-end, or paired-end with a single-end control) can have too few paired peaks for MACS3's fragment-size model. MACS3 exits 1 and the run stops, as before, but the log and the job output now explain the cause and the `--nomodel --extsize 200` workaround. `logs/macs3/<sample>.log` also keeps MACS3's warnings (`--verbose=1`).
-- **`bbduk.max_frags` subsampling works.** It needed `bc`, which the container doesn't have, so a run with `max_frags` set failed at trimming. The subsampling `reformat.sh` step is now capped at the same thread count as bbduk.
+- **`bbduk.max_frags` subsampling works.** It needed `bc`, which the container doesn't have, so a run with `max_frags` set failed at trimming. The subsampling `reformat.sh` step is now capped at the same thread count as bbduk. `max_frags` must be a whole number (`10000000` or `"1e7"`); a value such as `10,000,000` or `10M` stops the run at startup.
 - **A corrupt or truncated `.fastq.gz` stops trimming with gzip's own error.** Before, it was read as plain text and bbduk failed with a parse error. Detecting gzip also no longer decompresses each input file one extra time.
 - **`meme.base_colors` works.** Setting it used to make both MEME rules fail on an alphabet file MEME rejected. Colors must be quoted hex strings; anything else stops the run at startup with a message.
 - **Sample names are limited to letters, digits, `_`, `+` and `-`.** Other characters, such as `(`, `;` or `$`, used to pass the startup checks and then break a shell command later in the run; they now stop the run at startup. Rename such samples, e.g. `TF(2)` to `TF_2`. Database rows already stored under the old name are not changed.
@@ -17,8 +17,8 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
   - a sample with no settings at all;
   - a `macs3.format` other than `BAM` or `BAMPE`, or `BAMPE` when some samples are single-end;
   - a gzip- or bgzip-compressed `genome_ref`. Before, it failed at indexing, or with bgzip only after alignment and peak calling. Decompress it first.
-- **A section with every key commented out uses its defaults.** A config with `factorbook:` and nothing under it used to crash while the workflow loaded.
-- **`rmsk_filter` checks its file.** A repeat file not in UCSC `rmsk.txt` layout (for example a plant TE BED or GFF) used to remove nothing without saying so; it now stops the run with a message. An uncompressed `rmsk.txt` is accepted too.
+- **A section with every key commented out uses its defaults.** A config with `factorbook:` and nothing under it, or `meme:` under `resources:`, used to crash while the workflow loaded.
+- **`rmsk_filter` checks its file.** A repeat file not in UCSC `rmsk.txt` layout (for example a plant TE BED or GFF), or one whose chromosome names don't match the reference (`chr1` vs `1`), used to remove nothing without saying so; it now stops the run with a message. An uncompressed `rmsk.txt` is accepted too.
 
 ## What's changed (October 2026)
 
@@ -231,7 +231,7 @@ Each treatment is peak-called against its assigned control. Each control is peak
 | `bamcoverage.ignore_duplicates` | `true` | Count duplicate reads only once (program default: `f`) |
 | `chrom_filter` | `[]` | Chromosomes excluded from peaks before MEME (e.g. `[chrEBV]`) |
 | `blacklist_filter.enabled` / `.bed` | `false` / `null` | Drop peaks overlapping a blacklist BED before MEME. The hg38 ENCODE blacklist ships as `blacklist/hg38-blacklist.v2.bed.gz` |
-| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt` for your genome, gzipped or not (not in the repo). A file in another layout, such as a BED or GFF of repeats, stops the run instead of silently removing nothing |
+| `rmsk_filter.enabled` / `.txt` | `false` / `null` | Drop peaks overlapping RepeatMasker repeats before MEME. Needs a UCSC `rmsk.txt` for your genome, gzipped or not (not in the repo). A file in another layout, such as a BED or GFF of repeats, or with chromosome names that don't match the reference, stops the run instead of silently removing nothing |
 | `macs3.foldch_levels` | `[2, 5, 15]` | Three strictly increasing fold-change (narrowPeak column 7) thresholds; each writes `MACS/<sample>_peaks_fold<N>.narrowPeak` (N = 1, 2, 3) |
 | `macs3.meme_foldch_level` | `2` | Which fold level (1-3) feeds blacklist/rmsk filtering and MEME/FIMO. The final MEME input is `MACS/<sample>_peaks_fold<N>[_bl][_rmsk].narrowPeak` |
 | `macs3.format` | `null` | `null` picks the format per peak call from each sample's and its control's layout: `BAMPE` when both are paired-end, otherwise `BAM` (a PE sample with a single-end control is called as `BAM`, with a startup warning). Set `BAM` or `BAMPE` (any case) to force one format; other values, or `BAMPE` when any sample is single-end, stop the run at startup. Configs copied from the old template set `format: BAMPE`; delete that line to get automatic selection |
