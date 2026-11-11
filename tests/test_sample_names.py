@@ -29,6 +29,29 @@ def test_names_with_dot_slash_or_whitespace_are_rejected():
     assert len(errors) == 4
 
 
+def test_only_letters_digits_underscore_plus_and_minus_are_allowed():
+    ok = ["TF_A", "TF+1", "input-B", "ARF5_rep2", "_x"]
+    assert m.invalid_sample_names(ok) == []
+    # shell metacharacters pass Snakemake's matching but break unquoted shell rules
+    bad = ["TF(2)", "a;b", "x$y", "q'r", "star*", "c:d"]
+    errors = m.invalid_sample_names(bad)
+    assert len(errors) == len(bad)
+    assert all("letters, digits, '_', '+' and '-'" in e for e in errors)
+
+
+def test_name_starting_with_minus_is_rejected():
+    # MACS3 would read "-n -TF" as an option
+    errors = m.invalid_sample_names(["-TF"])
+    assert len(errors) == 1 and "may not start with '-'" in errors[0]
+
+
+def test_numeric_sample_name_gets_a_message_not_a_type_error():
+    # YAML reads an unquoted key such as 1234: as an int
+    errors = m.invalid_sample_names([1234, "TF_A"])
+    assert len(errors) == 1
+    assert "1234" in errors[0] and "quote it" in errors[0]
+
+
 def test_sample_named_like_a_controls_self_call_is_rejected():
     errors = m.control_name_collisions(["input_A", "input_A_control", "TF_control"], ["input_A"])
     assert len(errors) == 1 and "input_A_control" in errors[0]

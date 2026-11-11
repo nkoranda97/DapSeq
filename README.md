@@ -9,6 +9,7 @@ Snakemake implementation of the JGI DAP-seq analysis pipeline. Runs on SLURM clu
 - **`bbduk.max_frags` subsampling works.** It needed `bc`, which the container doesn't have, so a run with `max_frags` set failed at trimming. The subsampling `reformat.sh` step is now capped at the same thread count as bbduk.
 - **A corrupt or truncated `.fastq.gz` stops trimming with gzip's own error.** Before, it was read as plain text and bbduk failed with a parse error. Detecting gzip also no longer decompresses each input file one extra time.
 - **`meme.base_colors` works.** Setting it used to make both MEME rules fail on an alphabet file MEME rejected. Colors must be quoted hex strings; anything else stops the run at startup with a message.
+- **Sample names are limited to letters, digits, `_`, `+` and `-`.** Other characters, such as `(`, `;` or `$`, used to pass the startup checks and then break a shell command later in the run; they now stop the run at startup. Rename such samples, e.g. `TF(2)` to `TF_2`. Database rows already stored under the old name are not changed.
 
 ## What's changed (October 2026)
 
@@ -180,6 +181,10 @@ sqlite3 pipeline_db.db "SELECT DISTINCT output_dir, genome_ref, genome_size FROM
 ```
 
 Re-run any project whose size does not fit its reference.
+
+#### Sample names
+
+Sample names may contain only letters, digits, `_`, `+` and `-`, and may not start with `-`. A name made only of digits must be quoted (`"1234":`), because YAML reads it as a number. A sample may not be named `<control>_control` after one of its controls. Names that break these rules stop the run at startup.
 
 #### Running multiple experiments in one run
 
